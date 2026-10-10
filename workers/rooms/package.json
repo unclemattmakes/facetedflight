@@ -1,0 +1,14 @@
+{
+  "name": "ff10yr-rooms",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The rooms Worker for live multiplayer (DEV-386): one partyserver Durable Object per room, bound to the Pages project as ROOMS. See docs/rooms.md.",
+  "license": "MIT",
+  "dependencies": {
+    "partyserver": "0.5.10"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260926.1"
+  }
+}

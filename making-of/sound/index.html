@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>Building every sound in the browser · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="sound">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        Rather than carry 2016's sound files over, the port worked out what each sound <em>did</em>,
+        and when, and then built every one of them again in the browser from oscillators and
+        filtered noise. Nothing you hear in the game is a recording.
+        Every sound is a short recipe in the source, so there's no file to license.
+      </p>
+
+      <h2>When each sound plays</h2>
+      <p>
+        The part that had to be ported faithfully was the rules: which sound starts on which event,
+        which stops, and which fades under which. In 2016 the engine isn't a
+        smooth curve at all. There's no pitch change anywhere in the original's own code, and what
+        sounds like an engine note is a handful of loops swapped on and off at fixed speeds. The
+        wind comes in above
+        <span data-const="hoverjet.ship.minEffectsSpeed" data-unit="m/s"></span>, the rushing layer
+        takes over at <span data-const="hoverjet.ship.minBoostEffectsSpeed" data-unit="m/s"></span>,
+        and its band ends at
+        <span data-const="hoverjet.ship.minBoostEffect_stage2_speed" data-unit="m/s"></span>: drop
+        back under that and the rush fires again. The last visual stage, at
+        <span data-const="hoverjet.ship.minBoostEffect_stage3_speed" data-unit="m/s"></span>, makes
+        no sound at all. Those are read off the shipped ship, not the script, which disagrees. Each of those engine
+        rules is written down in the source next to the line of 2016 code it came from.
+      </p>
+      <pre data-snippet="src/audio/engine.ts#gateLoop" data-caption="a loop that follows one condition"></pre>
+
+      <h2>Listen</h2>
+      <p>
+        The toy flies the real HoverJet and feeds the real audio director, one physics tick at a
+        time, the way the game does. On the left are the loops the director is running, and on the
+        right is the speed that decides them.
+      </p>
+      <div data-toy="engine-voice"></div>
+      <p>
+        <strong>Try it:</strong> press <em>start sound</em>, open the <em>throttle</em> and listen
+        to the loops change as the speed crosses each line. Tick <em>boost</em> to push past the
+        next ones. Then switch between <em>Classic</em>, which is 2016's sound rules exactly, and
+        <em>Anniversary</em>, which adds a low rumble under the loops and lets the pitch follow your
+        speed.
+      </p>
+
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

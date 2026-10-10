@@ -1,0 +1,1212 @@
+{
+  "$schema": "../levels/_schema.json",
+  "id": "anniv_01_glider",
+  "title": "Anniversary 1 - Glider",
+  "vehicle": "glider",
+  "environment": "simonet",
+  "environmentScene": "LevelArt_SimonetIslands",
+  "difficulty": "intermediate",
+  "difficultySource": "id",
+  "mode": "ringAttack",
+  "forcedMode": null,
+  "forcedModeFf2": null,
+  "chainIndex": null,
+  "inChain": false,
+  "worldOffset": [
+    -2048,
+    0,
+    2048
+  ],
+  "spawn": {
+    "pos": [
+      -299.685275,
+      1000,
+      1041.747084
+    ],
+    "quat": [
+      0,
+      -0.771625,
+      0,
+      0.636078
+    ],
+    "yaw": -101,
+    "launchKind": "direct",
+    "marker": "authored: airborne, nose on the first gate (the Unity nose, three-space -Z; DEV-399 turned it 180 degrees into that convention)"
+  },
+  "respawn": {
+    "pos": [
+      -299.685275,
+      1000,
+      1041.747084
+    ],
+    "quat": [
+      0,
+      -0.771625,
+      0,
+      0.636078
+    ],
+    "yaw": -101,
+    "aboveSpawn": 0,
+    "marker": "authored: same as spawn"
+  },
+  "markerUsedAtLoad": "spawn",
+  "routes": [
+    {
+      "id": 0,
+      "rings": [
+        {
+          "i": 0,
+          "order": 0,
+          "name": "anniv_glider_ring_00",
+          "pos": [
+            0,
+            930,
+            1100
+          ],
+          "quat": [
+            0,
+            -0.71325,
+            0,
+            0.700909
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              0,
+              930,
+              1100
+            ],
+            "quat": [
+              0,
+              -0.71325,
+              0,
+              0.700909
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 1,
+          "order": 1,
+          "name": "anniv_glider_ring_01",
+          "pos": [
+            273.616115,
+            860,
+            1051.754097
+          ],
+          "quat": [
+            0,
+            -0.573576,
+            0,
+            0.819152
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              273.616115,
+              860,
+              1051.754097
+            ],
+            "quat": [
+              0,
+              -0.573576,
+              0,
+              0.819152
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 2,
+          "order": 2,
+          "name": "anniv_glider_ring_02",
+          "pos": [
+            514.230088,
+            790,
+            912.835554
+          ],
+          "quat": [
+            0,
+            -0.422618,
+            0,
+            0.906308
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              514.230088,
+              790,
+              912.835554
+            ],
+            "quat": [
+              0,
+              -0.422618,
+              0,
+              0.906308
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 3,
+          "order": 3,
+          "name": "anniv_glider_ring_03",
+          "pos": [
+            692.820323,
+            720,
+            700
+          ],
+          "quat": [
+            0,
+            -0.258819,
+            0,
+            0.965926
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              692.820323,
+              720,
+              700
+            ],
+            "quat": [
+              0,
+              -0.258819,
+              0,
+              0.965926
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 4,
+          "order": 4,
+          "name": "anniv_glider_ring_04",
+          "pos": [
+            787.846202,
+            650,
+            438.918542
+          ],
+          "quat": [
+            0,
+            -0.087156,
+            0,
+            0.996195
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              787.846202,
+              650,
+              438.918542
+            ],
+            "quat": [
+              0,
+              -0.087156,
+              0,
+              0.996195
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 5,
+          "order": 5,
+          "name": "anniv_glider_ring_05",
+          "pos": [
+            787.846202,
+            580,
+            161.081458
+          ],
+          "quat": [
+            0,
+            0.087156,
+            0,
+            0.996195
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              787.846202,
+              580,
+              161.081458
+            ],
+            "quat": [
+              0,
+              0.087156,
+              0,
+              0.996195
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 6,
+          "order": 6,
+          "name": "anniv_glider_ring_06",
+          "pos": [
+            692.820323,
+            510,
+            -100
+          ],
+          "quat": [
+            0,
+            0.258819,
+            0,
+            0.965926
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              692.820323,
+              510,
+              -100
+            ],
+            "quat": [
+              0,
+              0.258819,
+              0,
+              0.965926
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 7,
+          "order": 7,
+          "name": "anniv_glider_ring_07",
+          "pos": [
+            514.230088,
+            440,
+            -312.835554
+          ],
+          "quat": [
+            0,
+            0.422618,
+            0,
+            0.906308
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              514.230088,
+              440,
+              -312.835554
+            ],
+            "quat": [
+              0,
+              0.422618,
+              0,
+              0.906308
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 8,
+          "order": 8,
+          "name": "anniv_glider_ring_08",
+          "pos": [
+            273.616115,
+            370,
+            -451.754097
+          ],
+          "quat": [
+            0,
+            0.573576,
+            0,
+            0.819152
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              273.616115,
+              370,
+              -451.754097
+            ],
+            "quat": [
+              0,
+              0.573576,
+              0,
+              0.819152
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        },
+        {
+          "i": 9,
+          "order": 9,
+          "name": "anniv_glider_ring_09",
+          "pos": [
+            0,
+            300,
+            -500
+          ],
+          "quat": [
+            0,
+            0.707107,
+            0,
+            0.707107
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              0,
+              300,
+              -500
+            ],
+            "quat": [
+              0,
+              0.707107,
+              0,
+              0.707107
+            ],
+            "radius": 60,
+            "spheres": [
+              {
+                "radius": 60,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": false,
+            "energyBoostAmount": 0,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          }
+        }
+      ]
+    }
+  ],
+  "finish": {
+    "shape": "sphereUnion",
+    "pos": [
+      -273.616115,
+      230,
+      -451.754097
+    ],
+    "quat": [
+      0,
+      -0.642788,
+      0,
+      0.766044
+    ],
+    "radius": 85,
+    "spheres": [
+      {
+        "radius": 85,
+        "center": [
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "orbs": [],
+  "pads": [],
+  "turnIndicators": [],
+  "clouds": [],
+  "ui": {
+    "briefing": "Fly through as many rings as you can before time runs out. Don't CRASH!!\n",
+    "strings": {
+      "gatesLabel": "Gates:",
+      "timeLabel": "Time:",
+      "speedLabel": "Speed :",
+      "timeEmpty": "--",
+      "countPlaceholder": "00/50",
+      "launchPrompt": "Press A to launch",
+      "launching": "Powering On...",
+      "outOfBounds": "Warning!\nLeaving event airspace\nTurn back now!",
+      "outOfBoundsCountdown": "12",
+      "pauseTitle": "- PAUSE -",
+      "pauseResume": "Resume",
+      "pauseRestart": "Restart",
+      "pauseExit": "Exit",
+      "courseComplete": "Course Complete!",
+      "gatesCleared": "Gates cleared:",
+      "medalLabel": "Medal:",
+      "totalScore": "Total Score:",
+      "medalAwarded": "________ medal AwarDeD!",
+      "explorationEnding": "Exploration EnDing...",
+      "orbsFound": "Orbs FounD:",
+      "changeView": "Press the X button to change view."
+    },
+    "_meta": {
+      "prefab": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab",
+      "vehicle": "hoverjet",
+      "textComponents": 132,
+      "note": "UnityEngine.UI.Text is m_Script fileID 708705254 in the UnityEngine.UI assembly (guid f5f67c52d1564df4a8936ccd202a3bd8). Strings are read from the raw bytes by tools/extract/ui-text.mjs, which folds multi-line YAML scalars properly; the shared unity_yaml.js parser returns only the first line of one.",
+      "briefing": {
+        "select": "panel_mission/Text",
+        "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_mission/Text",
+        "fileID": "11422448",
+        "line": 9820,
+        "hud": "firstPerson",
+        "prefab": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab",
+        "liveAtSpawn": true,
+        "matched": 2,
+        "note": "panel_mission carries its own disableAfterDelay: disableDelay 3.8, enabled, targeting itself, at PlayerShip_SR14_Photon.prefab:10176 and :12320, mechanism in disableAfterDelay.cs:8-16. disableDelay is a public float with NO initialiser, so 3.8 is shipped behaviour and not a code default. A panel live at spawn (see liveAtSpawn above) is therefore killed 3.8 s after spawn; one that is not does not start its countdown until something activates it, because Start() does not run on an inactive GameObject. What activates it, if anything, is NOT traced here. HUD_Ship.DelayedStart (HUD_Ship.cs:88-99) then hides it a SECOND time at 0.12+4=4.12 s, against a panel already inactive for 0.32 s. 4.12 is real but it is NOT the figure: DEV-200 made that trade on the strength of a citation pointing at HUD_Ship.cs rather than at the prefab, and DEV-217 undid it. Ends in a newline, which is in the shipped bytes."
+      },
+      "strings": {
+        "gatesLabel": {
+          "select": "panel_shipUI/text_gates",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/text_gates",
+          "fileID": "11484738",
+          "line": 11858,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts — the caller passes `countLabel`; app.ts sends 'GATES'",
+          "note": "2016 writes `Gates:` in sentence case. The port upper-cases it."
+        },
+        "timeLabel": {
+          "select": "panel_shipUI/text_time",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/text_time",
+          "fileID": "11492580",
+          "line": 12079,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts — literal 'TIME:'"
+        },
+        "speedLabel": {
+          "select": "panel_shipUI/panel_speedUI/text_speed",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/panel_speedUI/text_speed",
+          "fileID": "11412160",
+          "line": 9545,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 2,
+          "ff2": "src/render/hud.ts — literal 'SPEED:'",
+          "note": "The two HUDs disagree: first-person `Speed :`, third-person `SpeeD :`. Both carry a space before the colon, which the port drops.",
+          "variants": [
+            {
+              "text": "SpeeD :",
+              "at": [
+                "thirdPerson:PlayerShip_SR14_Photon/shipOffset/CamRoot_3rdPerson/Ship_HUD (1)/offset/panel_shipUI/panel_speedUI/text_speed#11400052"
+              ]
+            }
+          ]
+        },
+        "timeEmpty": {
+          "select": "panel_shipUI/val_time",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/val_time",
+          "fileID": "11482956",
+          "line": 11812,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts — literal '--' for a mission with no timer"
+        },
+        "countPlaceholder": {
+          "select": "panel_shipUI/val_gates",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/val_gates",
+          "fileID": "11485344",
+          "line": 11891,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts `pad2` — the `00/50` shape is why counts are two-digit padded"
+        },
+        "launchPrompt": {
+          "select": "panel_preLaunch/text_poweringOn",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_preLaunch/text_poweringOn",
+          "fileID": "11430288",
+          "line": 10032,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'Press A to launch'"
+        },
+        "launching": {
+          "select": "panel_Startup/text_poweringOn",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_Startup/text_poweringOn",
+          "fileID": "11454298",
+          "line": 10625,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'Powering On...'"
+        },
+        "outOfBounds": {
+          "select": "panel_outofBounds/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_outofBounds/text_end",
+          "fileID": "11476876",
+          "line": 11497,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts `launchBanner()` — literals 'OUT OF BOUNDS' and 'RETURN — <n>'",
+          "note": "THREE lines, not one: `Warning!` / `Leaving event airspace` / `Turn back now!`. The countdown is a separate label parented to this one."
+        },
+        "outOfBoundsCountdown": {
+          "select": "panel_outofBounds/text_end/text_warning_countdown",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_outofBounds/text_end/text_warning_countdown",
+          "fileID": "11471490",
+          "line": 11242,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — the number in `RETURN — <n>`",
+          "note": "Authored as `12`, one less than the 13 s `PlayerBoundary.resetDelay` every scene ships."
+        },
+        "pauseTitle": {
+          "select": "lbl_pause",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_pause",
+          "fileID": "114000010859743976",
+          "line": 38151,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/render/pause.ts — literal '- PAUSE -'"
+        },
+        "pauseResume": {
+          "select": "lbl_resume",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_resume",
+          "fileID": "114000011820366724",
+          "line": 39090,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/boot/app.ts — label 'Resume'"
+        },
+        "pauseRestart": {
+          "select": "lbl_restart",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_restart",
+          "fileID": "114000012529932418",
+          "line": 40013,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/boot/app.ts — label 'Restart'"
+        },
+        "pauseExit": {
+          "select": "lbl_exit",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_exit",
+          "fileID": "114000013247036750",
+          "line": 40829,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/boot/app.ts — label 'Exit'"
+        },
+        "courseComplete": {
+          "select": "panel_endUI/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_end",
+          "fileID": "11429282",
+          "line": 9986,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/render/results.ts — the port leads with the medal instead"
+        },
+        "gatesCleared": {
+          "select": "panel_endUI/text_gatesCleared",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_gatesCleared",
+          "fileID": "11459868",
+          "line": 10863,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/render/results.ts — literal 'GATES' after the count"
+        },
+        "medalLabel": {
+          "select": "panel_endUI/text_score",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score",
+          "fileID": "11462228",
+          "line": 10936,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 4,
+          "ff2": "src/render/results.ts — the medal is drawn with no label",
+          "note": "TWO GameObjects under `panel_endUI` are both named `text_score`, so the only discriminator either has is FILE ORDER, and this is the first. That is a weak selector and it is deliberately used only here, on two labels FF2 does not draw: if Unity ever rewrote the prefab the pair would swap silently. Both strings are in `_meta.variants`, so the swap is at least visible in the output.",
+          "variants": [
+            {
+              "text": "Total Score:",
+              "at": [
+                "thirdPerson:PlayerShip_SR14_Photon/shipOffset/CamRoot_3rdPerson/Ship_HUD (1)/offset/panel_endUI/text_score#11400082",
+                "firstPerson:PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score#11478932"
+              ]
+            }
+          ]
+        },
+        "totalScore": {
+          "select": "panel_endUI/text_score",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score",
+          "fileID": "11478932",
+          "line": 11625,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 4,
+          "ff2": "src/render/results.ts — the score is drawn with no label",
+          "note": "The second `text_score` in file order. See `medalLabel`.",
+          "variants": [
+            {
+              "text": "Medal:",
+              "at": [
+                "thirdPerson:PlayerShip_SR14_Photon/shipOffset/CamRoot_3rdPerson/Ship_HUD (1)/offset/panel_endUI/text_score#11466066",
+                "firstPerson:PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score#11462228"
+              ]
+            }
+          ]
+        },
+        "medalAwarded": {
+          "select": "panel_medalAwarded/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_medalAwarded/text_end",
+          "fileID": "11407754",
+          "line": 9447,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — FF2 has no medal-award banner",
+          "note": "`_CORRECTIONS.md` quotes this as \"<medal> Medal AwarDeD!\". The bytes say `________ medal AwarDeD!` — eight underscores, lower-case `medal`."
+        },
+        "explorationEnding": {
+          "select": "panel_endUI_exploration/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI_exploration/text_end",
+          "fileID": "11456818",
+          "line": 10727,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — Free Flight has no end screen in FF2 yet"
+        },
+        "orbsFound": {
+          "select": "panel_endUI_exploration/text_orbsCleared",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI_exploration/text_orbsCleared",
+          "fileID": "11414870",
+          "line": 9578,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'ORBS' as the non-Ring-Attack count label"
+        },
+        "changeView": {
+          "select": "panel_viewSwitch/Text",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_viewSwitch (1)/Text",
+          "fileID": "11411932",
+          "line": 9512,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — FF2 has no view-switch prompt"
+        }
+      }
+    }
+  },
+  "timer": {
+    "timeLimit": 180,
+    "bonusParTime": 120,
+    "shadowedParTime": 120,
+    "countdown": {
+      "shipped": true,
+      "useCountdownFlag": false,
+      "startedByTrigger": true,
+      "triggerDelay": 2,
+      "steps": 3,
+      "stepSeconds": 1,
+      "seconds": 4,
+      "_meta": {
+        "triggerPath": "levelOffset/PlayerStart_ElevatorShaft_Photon/trigger_enableShip",
+        "triggerFileID": "1847882726",
+        "timerRaceFileID": "1432703964",
+        "note": "Trigger_EnableShip.DelayedEnable() waits `delay`, calls Timer_Race.StartCountdown() with no useCountdown check, and the countdown coroutine then sets useRaceTimer = true — so this is also when the race clock starts."
+      }
+    }
+  },
+  "medals": {
+    "bronze": 300,
+    "silver": 500,
+    "gold": 900,
+    "platinum": 1000
+  },
+  "medalsFf2": null,
+  "scoring": {
+    "gateMultiplier": 100,
+    "levelDelay": 6,
+    "timePenalty": -1,
+    "timeBonusMultiplier": 11.5,
+    "fuelPenaltyEnabled": false,
+    "timeAffectsMedal": true
+  },
+  "boundary": {
+    "enabled": true,
+    "resetDelay": 13,
+    "present": true,
+    "volume": {
+      "shape": "sphere",
+      "centre": [
+        -309,
+        223.35,
+        -39
+      ],
+      "radius": 2918.71165,
+      "isTrigger": true,
+      "gameObject": "trigger_playArea"
+    },
+    "resetFadeSeconds": 2.5
+  },
+  "fog": {
+    "height": 164,
+    "heightDensity": 0.2,
+    "startDistance": 256,
+    "distanceFog": true,
+    "heightFog": true,
+    "radial": true,
+    "excludeFarPixels": true,
+    "color": [
+      0.866667,
+      0.658824,
+      0.698039,
+      1
+    ],
+    "density": 0.0005,
+    "mode": 2,
+    "linearStart": 100,
+    "linearEnd": 2500,
+    "sceneFogEnabled": true
+  },
+  "lighting": {
+    "sun": {
+      "name": "Directional light (1)",
+      "kind": "directional",
+      "colorLinear": [
+        0.911421,
+        0.390311,
+        0.170622
+      ],
+      "colorGamma": [
+        0.830882,
+        0.569395,
+        0.391003
+      ],
+      "intensity": 1.3,
+      "shadows": 2,
+      "direction": [
+        0.962253,
+        -0.069757,
+        0.263062
+      ],
+      "elevationDeg": 4.00003,
+      "_meta": {
+        "fileID": "118365898",
+        "path": "levelOffset/Level Logic/Directional light (1)",
+        "rotationThree": [
+          -0.021175,
+          -0.794407,
+          -0.027742,
+          0.606382
+        ],
+        "rotationRaw": [
+          0.021175,
+          0.794407,
+          -0.027742,
+          0.606382
+        ],
+        "positionThree": [
+          -2048,
+          3.731302,
+          2048
+        ]
+      }
+    },
+    "ambient": {
+      "mode": 0,
+      "modeName": "skybox",
+      "intensity": 0.6,
+      "skyColor": [
+        0.1272,
+        0.1362,
+        0.1554
+      ],
+      "equatorColor": [
+        0.0684,
+        0.075,
+        0.0798
+      ],
+      "groundColor": [
+        0.0282,
+        0.0258,
+        0.021
+      ]
+    },
+    "skyboxMaterial": "Assets/Quantum Theory/PolyWorld Skies/SkyJ.mat",
+    "sky": {
+      "available": true,
+      "material": "Assets/Quantum Theory/PolyWorld Skies/SkyJ.mat",
+      "faces": {
+        "_FrontTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_FR.bmp",
+        "_BackTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_BK.bmp",
+        "_LeftTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_LF.bmp",
+        "_RightTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_RT.bmp",
+        "_UpTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_UP.bmp",
+        "_DownTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_DN.bmp"
+      },
+      "sh": [
+        [
+          1.385655,
+          0.844599,
+          0.775892
+        ],
+        [
+          0.066384,
+          0.030656,
+          0.010668
+        ],
+        [
+          -0.114117,
+          -0.039326,
+          -0.011924
+        ],
+        [
+          -0.125611,
+          -0.058664,
+          0.012834
+        ],
+        [
+          -0.021068,
+          -0.007752,
+          0.018354
+        ],
+        [
+          -0.085352,
+          -0.033521,
+          -0.013579
+        ],
+        [
+          -0.008113,
+          0.005542,
+          0.021858
+        ],
+        [
+          -0.121416,
+          -0.061781,
+          -0.014322
+        ],
+        [
+          0.10184,
+          0.086703,
+          0.047121
+        ]
+      ],
+      "bands": 3,
+      "residual": 0.376125,
+      "sampleCount": 98304,
+      "peakDirectionUnity": [
+        -0.959845,
+        0.096547,
+        0.263395
+      ],
+      "sunAngleDeg": 1.542908
+    },
+    "liveLightCount": 1,
+    "environmentSceneLiveLights": 0,
+    "disabledLightCount": 0
+  },
+  "ghosts": [],
+  "generated": null,
+  "listed": true,
+  "_authored": {
+    "by": "DEV-145",
+    "kind": "hand-authored",
+    "note": "ANNIVERSARY. Not a 2016 course and not extracted from anything. 2016 had six glider missions and shipped none of them (all `enabled: 0` in EditorBuildSettings.asset); this is a new course for the new flight model. It lives in content/authored/ and NOT in content/levels/ so that content/_generated.sha256 keeps meaning \"the extractor wrote these bytes\". DEV-399 (G1) wired the glider as a third aircraft: this course says `\"vehicle\": \"glider\"` and is `listed`, and the tuning it carried as `flightModel` moved to content/aircraft/glider.json, the aircraft's own file. It is on the menus only where the edition flies the glider (`gameplay.glider`, Anniversary), so Classic never lists it.",
+    "geometry": {
+      "frame": "the level JSON's THREE space, metres: Unity's with z flipped. The sim is Unity's; loadAirframeFlight converts on the way in, and a ship's nose is three-space -Z",
+      "spawn": [
+        -299.685275,
+        1000,
+        1041.747084
+      ],
+      "line": [
+        [
+          0,
+          930,
+          1100
+        ],
+        [
+          273.616115,
+          860,
+          1051.754097
+        ],
+        [
+          514.230088,
+          790,
+          912.835554
+        ],
+        [
+          692.820323,
+          720,
+          700
+        ],
+        [
+          787.846202,
+          650,
+          438.918542
+        ],
+        [
+          787.846202,
+          580,
+          161.081458
+        ],
+        [
+          692.820323,
+          510,
+          -100
+        ],
+        [
+          514.230088,
+          440,
+          -312.835554
+        ],
+        [
+          273.616115,
+          370,
+          -451.754097
+        ],
+        [
+          0,
+          300,
+          -500
+        ]
+      ],
+      "finish": [
+        -273.616115,
+        230,
+        -451.754097
+      ],
+      "ringRadius": 60,
+      "finishRadius": 85,
+      "note": "A descending S over Simonet: 820 m down to 196 m across nine gates and a finish, with two reversals. The design constraint is the glider's own best glide of 7.00 : 1 — the course demands the ratio printed below, so a clean line reaches the finish on height alone and a sloppy one spends the rocket. Ring radius is 40 m against 2016's 22.6 m, because a glider cannot sidestep.",
+      "pathMetres": 3178.41202,
+      "horizontalMetres": 3083.665236,
+      "dropMetres": 770,
+      "requiredGlideRatio": 4.00476,
+      "orientation": "DEV-399. The spawn, the respawn and every ring were authored with +Z along the course, and every extracted course has -Z (measured over the HoverJet courses: spawn -Z at ring 0, 20/20 and 27/27 rings -Z along the path). DEV-145 flew the course in a test that never left three space, where the two conventions agree; the game converts into the sim frame, where they do not, and the glider started facing away from ring 0. All eleven were turned 180 degrees about their own up. Positions are unchanged, so the line, the glide ratio and every number above are too.",
+      "placement": "DEV-399. Moved 600 m in three-space -z (sim +z), rigidly, off Simonet's island. DEV-145 authored the course with no terrain in its test and called it over water; flown in the game, the line between rings 3 and 7 was 147 m INSIDE the island (ground up to 702 m under a glider at 623 m) and the autopilot crashed there 49 times in a run. Shifted, every point of the flown line clears the ground by at least 141 m (tests/unit/glider-wire.test.ts measures it against the real height fields). A translation changes no relative number: the line, the 4.00 : 1 and every measurement above are the same."
+    },
+    "copiedFrom": {
+      "level": "int_01_hoverJet",
+      "fields": [
+        "worldOffset",
+        "fog",
+        "lighting",
+        "boundary",
+        "scoring",
+        "ui",
+        "timer.countdown"
+      ],
+      "why": "These are 2016 EXTRACTED facts about Simonet and about the HoverJet cockpit this course borrows, not design choices of this mission. Hand-typing them would be hand-typing constants (hard rule 3), so tests/unit/glider-mission.test.ts asserts every one still deep-equals the generated file. If the extractor re-reads Simonet and a number moves, that test goes red here rather than this file quietly disagreeing."
+    },
+    "speedChain": "rings.scoring.energyBoost is false on every gate. 2016 pays 12 into EnergySystem_Ship per ring and the HoverJet needs it to reach the ghosts. The glider has no thruster and no speed chain, so paying into one would be a number nothing reads (DEV-069)."
+  }
+}

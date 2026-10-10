@@ -1,0 +1,55 @@
+{
+  "$schema": "./_schema.json",
+  "vehicle": "jumpseat",
+  "note": "Anniversary variants over 2016's shipped JumpSeat_Photon. Every number in a variant's `scale` is a MULTIPLIER on the generated sheet's value at that key: the sheet stays 2016's, and `standard` is the sheet because its block is empty. File order is slot order in the hangar: the jumping spider goes ABOVE standard (DEV-383) and overclocked below it (DEV-384). DEV-380.",
+  "variants": [
+    {
+      "id": "spider",
+      "name": "Jumping Spider",
+      "blurb": "Charge a jump. Steer the fall",
+      "listed": false,
+      "scale": {
+        "thruster.thrustForce": 0.6,
+        "fuel.burnRate": 0.3
+      },
+      "mechanics": {
+        "jump": {
+          "chargeSeconds": 1,
+          "minChargeSeconds": 0.15,
+          "impulseMin": 30,
+          "impulseMax": 200,
+          "curve": {
+            "keys": [
+              { "time": 0, "value": 0, "inSlope": 1, "outSlope": 1 },
+              { "time": 1, "value": 1, "inSlope": 1, "outSlope": 1 }
+            ]
+          },
+          "burstSeconds": 0.12,
+          "graceSeconds": 0.15
+        }
+      },
+      "note": "Matt: \"pull both triggers to charge a 'jump burst' that when released, launches players into the air. then a slightly weaker hover jet so you control your descent rather than gain altitude.\" DEV-383, AIRCRAFT-VARIANTS 4. The jet is 0.6 of 2016's thrust (Matt's call, 11 answer 8): 450 N against 480 N of weight, so full throttle sinks at 1.8 m/s and cannot climb, and the best it can do is glide at 2.69 : 1. Height comes only from the jump, off a surface (11 answer 5), along the seat's own up so a lean aims it (answer 6). impulseMax 200 and burn x0.3, NOT the plan's tabled 75 and x0.6: measured over the six courses, 75 m/s cannot reach rookie_01's second pad (it floats 183 m over the valley) and the sea-stack pads on int_01 and adv_02 are 300 m over water with nothing to jump from, reachable only by a kilometre-long glide off a higher pad, which at x0.6 costs more than a tank. At 200 and x0.3 the hop planner finishes all six with every pad (49 of 49); 190 or 210, and x0.28 or x0.32, each drop a course or pads. DEVIATIONS DEV-383 has the table. NOT READY TO SHIP (Matt, 2026-09-25, late): `listed` false, so the hangar does not offer it and ?variant=spider is the only way aboard. DEV-403 made the pilot's head strike apply to every JumpSeat, the hop planner could not fly all six courses clear of it, and Matt abandoned the spider's autopilot rather than keep teaching it. The spider stays exempt from the head strike (headStrikeApplies) and its tests skip while it is unlisted; docs/plan/JUMPSEAT-HEAD-CRASH.md section 9 has the planner work."
+    },
+    {
+      "id": "standard",
+      "name": "Standard",
+      "blurb": "2016's JumpSeat",
+      "scale": {},
+      "note": "The shipped prefab, untouched. tests/unit/variant-standard.test.ts holds it to a flight recorded before the variant layer existed, bit for bit."
+    },
+    {
+      "id": "overclocked",
+      "name": "Overclocked",
+      "blurb": "Much stronger. Falls faster",
+      "scale": {
+        "thruster.thrustForce": 1.5,
+        "fuel.burnRate": 1.05,
+        "hoverMotor.hoverForce": 1.4
+      },
+      "mechanics": {
+        "gravityScale": 1.4
+      },
+      "note": "Matt: \"standard's hover-jet is boosted so it's much stronger. falls faster.\" DEV-384: AIRCRAFT-VARIANTS 3.2 as tabled for thrust, gravity and the cushion. Stronger is thrust x1.5; falls faster is the seat's OWN gravity x1.4 (the world stays -32), because a fall is felt at its start and drag only moves the terminal. hoverForce scales by the same 1.4 so the cushion's equilibrium stays 2016's 0.4922 m; tests/unit/variant-overclocked.test.ts holds any variant with a gravityScale to that. Burn x1.05, NOT the plan's x1.3: measured, x1.3 leaves the JumpSeat autopilot unable to finish four of the six courses and the courses go chaotic from x1.1, while x1.05 finishes all six under every perturbation tried (50.1 s of throttle against 52.6). The trade the variant pays is precision: it lands fewer bullseyes than standard. DEVIATIONS DEV-384 has the measured climb, fall and the six courses."
+    }
+  ]
+}

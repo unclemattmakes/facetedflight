@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ff10yr/content/authored/_lesson.schema.json",
+  "title": "Lesson block (DEV-375)",
+  "description": "The SHAPE of a level's `lesson` block: the flight instructor's pacing, an ordered step list and interrupts. `src/content/level-schema.ts` (`validateLesson`) is the runtime gate and also checks what a schema cannot: a passGate ring against the course, ids unique across steps and interrupts, and resumeWithinMetres below waitBeyondMetres. `tests/unit/lesson-schema.test.ts` runs this over every authored file and holds its trigger kinds and tokens equal to the TypeScript vocabularies. Hand-written, not generated: `content/authored/` is the tree people write.",
+  "type": "object",
+  "required": ["instructor", "steps", "interrupts"],
+  "additionalProperties": false,
+  "properties": {
+    "instructor": { "$ref": "#/$defs/instructor" },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+    "interrupts": { "type": "array", "items": { "$ref": "#/$defs/interrupt" } },
+    "_meta": {
+      "type": "object",
+      "required": ["deviation", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "deviation": { "type": "string", "pattern": "^DEV-[0-9]{3}" },
+        "note": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "positive": { "type": "number", "exclusiveMinimum": 0 },
+    "nonNegative": { "type": "number", "minimum": 0 },
+    "angle": {
+      "description": "Degrees from level: above zero, at most a half turn.",
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 180
+    },
+    "prose": {
+      "description": "Non-blank text whose every brace is a known {token}. The token list is LESSON_TOKENS in level-schema.ts; the test proves this pattern accepts each and refuses others.",
+      "type": "string",
+      "pattern": "^(?=[\\s\\S]*\\S)[^{}]*(?:\\{(?:launch|throttle|boost|slow|fly|roll|pitchUp|pitchDown|nextRing|speed|target)\\}[^{}]*)*$"
+    },
+    "id": { "type": "string", "pattern": "\\S" },
+    "instructor": {
+      "type": "object",
+      "required": [
+        "tuning",
+        "colour",
+        "startArcMetres",
+        "leadMetres",
+        "gain",
+        "waitBeyondMetres",
+        "resumeWithinMetres",
+        "holdAsideMetres",
+        "maxSpeed",
+        "boost"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tuning": {
+          "description": "A key of AI_RACER_TUNINGS (sim/ai-racer.ts), checked where the racer is built.",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "colour": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "startArcMetres": { "$ref": "#/$defs/nonNegative" },
+        "leadMetres": { "$ref": "#/$defs/nonNegative" },
+        "gain": { "$ref": "#/$defs/positive" },
+        "waitBeyondMetres": { "$ref": "#/$defs/positive" },
+        "resumeWithinMetres": { "$ref": "#/$defs/positive" },
+        "holdAsideMetres": { "$ref": "#/$defs/nonNegative" },
+        "maxSpeed": { "$ref": "#/$defs/positive" },
+        "boost": { "type": "boolean" }
+      }
+    },
+    "stepInstructor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxSpeed": { "$ref": "#/$defs/positive" },
+        "boost": { "type": "boolean" },
+        "leadMetres": { "$ref": "#/$defs/nonNegative" },
+        "pace": { "enum": ["lead", "race"] }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["id", "title", "say", "until"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/prose" },
+        "say": { "$ref": "#/$defs/prose" },
+        "until": { "$ref": "#/$defs/untilTrigger" },
+        "instructor": { "$ref": "#/$defs/stepInstructor" },
+        "student": { "$ref": "#/$defs/stepStudent" }
+      }
+    },
+    "stepStudent": {
+      "description": "DEV-790: a speed ceiling on the student for this step, m/s.",
+      "type": "object",
+      "required": ["maxSpeed"],
+      "additionalProperties": false,
+      "properties": {
+        "maxSpeed": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "interrupt": {
+      "type": "object",
+      "required": ["id", "on", "say", "until"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "on": { "$ref": "#/$defs/onTrigger" },
+        "say": { "$ref": "#/$defs/prose" },
+        "until": { "$ref": "#/$defs/untilTrigger" }
+      }
+    },
+    "untilTrigger": {
+      "description": "What ends a step or an interrupt, or a sequence member: every kind except the interrupt-only two.",
+      "oneOf": [
+        { "$ref": "#/$defs/t_launched" },
+        { "$ref": "#/$defs/t_speedAtLeast" },
+        { "$ref": "#/$defs/t_speedAtMost" },
+        { "$ref": "#/$defs/t_passGate" },
+        { "$ref": "#/$defs/t_bankAtLeast" },
+        { "$ref": "#/$defs/t_levelFor" },
+        { "$ref": "#/$defs/t_input" },
+        { "$ref": "#/$defs/t_onLineWithin" },
+        { "$ref": "#/$defs/t_offLineBeyond" },
+        { "$ref": "#/$defs/t_noseAbove" },
+        { "$ref": "#/$defs/t_noseBelow" },
+        { "$ref": "#/$defs/t_finish" },
+        { "$ref": "#/$defs/t_seconds" },
+        { "$ref": "#/$defs/t_sequence" }
+      ]
+    },
+    "onTrigger": {
+      "description": "What starts an interrupt: every kind, including the interrupt-only two.",
+      "oneOf": [
+        { "$ref": "#/$defs/untilTrigger" },
+        { "$ref": "#/$defs/t_crash" },
+        { "$ref": "#/$defs/t_contact" }
+      ]
+    },
+    "t_launched": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "launched" } }
+    },
+    "t_speedAtLeast": {
+      "type": "object",
+      "required": ["kind", "mps", "forSeconds"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "speedAtLeast" },
+        "mps": { "$ref": "#/$defs/positive" },
+        "forSeconds": { "$ref": "#/$defs/nonNegative" }
+      }
+    },
+    "t_speedAtMost": {
+      "type": "object",
+      "required": ["kind", "mps", "forSeconds"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "speedAtMost" },
+        "mps": { "$ref": "#/$defs/positive" },
+        "forSeconds": { "$ref": "#/$defs/nonNegative" }
+      }
+    },
+    "t_passGate": {
+      "description": "`ring` is a 0-based index into the course's live rings; the upper bound is the course's, checked by validateLesson.",
+      "type": "object",
+      "required": ["kind", "ring"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "passGate" },
+        "ring": { "type": "integer", "minimum": 0 },
+        "clean": { "type": "boolean" }
+      }
+    },
+    "t_bankAtLeast": {
+      "type": "object",
+      "required": ["kind", "degrees"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "bankAtLeast" }, "degrees": { "$ref": "#/$defs/angle" } }
+    },
+    "t_levelFor": {
+      "type": "object",
+      "required": ["kind", "degrees", "seconds"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "levelFor" },
+        "degrees": { "$ref": "#/$defs/angle" },
+        "seconds": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "t_input": {
+      "type": "object",
+      "required": ["kind", "action", "forSeconds"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "input" },
+        "action": { "enum": ["throttle", "boost", "brake", "airbrake"] },
+        "forSeconds": { "$ref": "#/$defs/nonNegative" }
+      }
+    },
+    "t_onLineWithin": {
+      "type": "object",
+      "required": ["kind", "metres"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "onLineWithin" }, "metres": { "$ref": "#/$defs/positive" } }
+    },
+    "t_offLineBeyond": {
+      "type": "object",
+      "required": ["kind", "metres"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "offLineBeyond" }, "metres": { "$ref": "#/$defs/positive" } }
+    },
+    "t_noseAbove": {
+      "type": "object",
+      "required": ["kind", "degrees"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "noseAbove" }, "degrees": { "$ref": "#/$defs/angle" } }
+    },
+    "t_noseBelow": {
+      "type": "object",
+      "required": ["kind", "degrees"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "noseBelow" }, "degrees": { "$ref": "#/$defs/angle" } }
+    },
+    "t_finish": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "finish" } }
+    },
+    "t_seconds": {
+      "type": "object",
+      "required": ["kind", "n"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "seconds" }, "n": { "$ref": "#/$defs/positive" } }
+    },
+    "t_sequence": {
+      "type": "object",
+      "required": ["kind", "of"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "sequence" },
+        "of": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/untilTrigger" } }
+      }
+    },
+    "t_crash": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "crash" } }
+    },
+    "t_contact": {
+      "type": "object",
+      "required": ["kind", "mps"],
+      "additionalProperties": false,
+      "properties": { "kind": { "const": "contact" }, "mps": { "$ref": "#/$defs/positive" } }
+    }
+  }
+}

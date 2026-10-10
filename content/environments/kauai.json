@@ -1,0 +1,1042 @@
+{
+  "$schema": "./_schema.json",
+  "id": "kauai",
+  "environmentScene": "LevelArt_Kauai",
+  "source": {
+    "kind": "scene",
+    "path": "Assets/Faceted Flight/Scenes/environments/LevelArt_Kauai.unity",
+    "note": "art lives in the scene"
+  },
+  "spawnClearing": {
+    "radius": 51.97307323178025,
+    "source": "The widest launch-deck footprint in the game: the largest horizontal distance from a mission spawn to any corner of any `spawn.startGrid` box. Those boxes are Unity built-in cubes inside 2016's own PlayerStart_ElevatorShaft_Photon_02.prefab (see src/render/start-grid.ts), and the six scenes that materialise the deck agree to 13 cm.",
+    "note": "DEV-100. A DEVIATION, not a repair: 2016 cleared nothing here — its density maps read 1.0 at six of the thirteen spawns and its own baked draw put a tree 8.86 m from rookie_01_hoverJet's release. Applied in src/sim/props/scatter.ts AFTER the four draws, so every surviving placement is bit-identical and the clearing only subtracts. Cylinders, unbounded in y, because a platform rises straight up and the thing being avoided is occlusion rather than collision.",
+    "missions": [
+      {
+        "id": "hoverJet_kauai_beg",
+        "x": 5837.839840000001,
+        "z": 2657.900815
+      }
+    ]
+  },
+  "scatter": [
+    {
+      "index": 0,
+      "placementMap": "Assets/Faceted Flight/World Machine Content/island_group_02/islands_02_trees.png",
+      "probabilityScale": 0.0064,
+      "heightOffset": 0.2,
+      "scaleMin": 4,
+      "scaleMax": 8,
+      "lodDistance": 1280,
+      "lodTransitionTime": 1,
+      "flipFlopPercent": 0.03,
+      "palette": [
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Palmtree-03.prefab",
+          "guid": "ad3fdf86074d97540989d053aab04294",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Palmtree-03.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-palmtree-03.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "palm",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Palmtree-01.prefab",
+          "guid": "4d44dc8a353ec0c4194e3fff137e6b16",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Palmtree-01.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-palmtree-01.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "palm",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Plant-01.prefab",
+          "guid": "7d6e4c011a0168540a6dadc7f3c00040",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Plant-01.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-plant-01.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "bush",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Plant-02.prefab",
+          "guid": "d08cc51a6484b5c4585a8882d7414d00",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Plant-02.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-plant-02.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "bush",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Palmtree-05.prefab",
+          "guid": "b4efeaf021a61a94086695843d72b84f",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Palmtree-05.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-palmtree-05.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "palm",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Palmtree-03.prefab",
+          "guid": "ad3fdf86074d97540989d053aab04294",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Palmtree-03.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-palmtree-03.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "palm",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Palmtree-02.prefab",
+          "guid": "bf87afe39d4c0f242a5dd328c9ea8328",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Palmtree-02.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-palmtree-02.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "palm",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "prefab": "Assets/Geometric-Landscape-Tropic-Island/Prefabs/GL-Palmtree-01.prefab",
+          "guid": "4d44dc8a353ec0c4194e3fff137e6b16",
+          "mesh": "Assets/Geometric-Landscape-Tropic-Island/FBX/GL-Palmtree-01.fbx",
+          "meshNode": null,
+          "meshAsset": "assets/props/gl-palmtree-01.glb",
+          "origin": "Geometric-Landscape-Tropic-Island",
+          "licence": "LICENSED",
+          "kind": "palm",
+          "meshTransform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "paletteNote": "ORDERED, DUPLICATES INTACT. Random.Range(0, length) is uniform over indices, so repetition is the weighting. Never de-duplicate this array.",
+      "shipped2016": {
+        "componentEnabled": true,
+        "bakedObjects": 0,
+        "note": "NEVER BAKED. The component is enabled but its editor-only GenerateObjects() was never run, so the shipped 2016 build drew none of this pass. Drawing it is a deviation — DEV-102."
+      },
+      "placements": {
+        "count": 1240,
+        "clearedBySpawnClearing": 1,
+        "mapWidth": 2048,
+        "mapHeight": 2048,
+        "seed": 1,
+        "stride": 9,
+        "data": "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"
+      }
+    }
+  ],
+  "landmarks": [
+    {
+      "name": "MM_GL-Palmtree-01",
+      "mesh": "Assets/Faceted Flight/Materialized Mesh/MM_GL-Palmtree-01/MM_GL-Palmtree-01.asset",
+      "meshAsset": "assets/props/gl-palmtree-01.glb",
+      "kind": "palm",
+      "origin": "Geometric-Landscape-Tropic-Island (baked as MM_GL-Palmtree-01)",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/MM_GL-Palmtree-01",
+      "position": [
+        517.8,
+        276.1,
+        1692.4
+      ],
+      "rotation": [
+        -0.09474402,
+        0.09552304,
+        0.15877609,
+        0.9781048
+      ],
+      "scale": [
+        1.9561956,
+        2.9800026,
+        1.9561954
+      ]
+    },
+    {
+      "name": "MM_GL-Palmtree-02",
+      "mesh": "Assets/Faceted Flight/Materialized Mesh/MM_GL-Palmtree-01/MM_GL-Palmtree-01.asset",
+      "meshAsset": "assets/props/gl-palmtree-01.glb",
+      "kind": "palm",
+      "origin": "Geometric-Landscape-Tropic-Island (baked as MM_GL-Palmtree-01)",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/MM_GL-Palmtree-02",
+      "position": [
+        539.92,
+        265.21,
+        1708.74
+      ],
+      "rotation": [
+        0.13202731,
+        0.57315683,
+        0.030925013,
+        0.8081483
+      ],
+      "scale": [
+        1.3736069,
+        2.092508,
+        1.3736076
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (2)/tree_palm_01/Mesh1",
+      "position": [
+        1252.400076,
+        441.39997,
+        3398.20006
+      ],
+      "rotation": [
+        0,
+        0.9892682,
+        0,
+        -0.1461114
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (1)/tree_palm_01/Mesh1",
+      "position": [
+        1331.800076,
+        452.60004,
+        3396.00006
+      ],
+      "rotation": [
+        0,
+        0.43928677,
+        0,
+        0.89834696
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01/tree_palm_01/Mesh1",
+      "position": [
+        2881.8999759999997,
+        379.5,
+        2062.60016
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (13)/tree_palm_01/Mesh1",
+      "position": [
+        1403.6999759999999,
+        460.71,
+        1187.80006
+      ],
+      "rotation": [
+        0,
+        0.7954923,
+        0,
+        0.60596377
+      ],
+      "scale": [
+        3.4976091,
+        3.6336919832578802,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (16)/tree_palm_01/Mesh1",
+      "position": [
+        2200.000076,
+        311.1,
+        1104.40002
+      ],
+      "rotation": [
+        0,
+        0.28486043,
+        0,
+        -0.958569
+      ],
+      "scale": [
+        5.01972416068443,
+        5.0197290849736795,
+        5.0197287352125
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (6)/tree_palm_01/Mesh1",
+      "position": [
+        1158.6000760000002,
+        420.8,
+        3413.3999599999997
+      ],
+      "rotation": [
+        0,
+        0.83777004,
+        0,
+        -0.54602337
+      ],
+      "scale": [
+        4.47653007797439,
+        4.72772676671652,
+        4.4765324843746805
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (21)/tree_palm_01/Mesh1",
+      "position": [
+        3128.0413759999997,
+        593.2104999999999,
+        1010.4473300000001
+      ],
+      "rotation": [
+        0,
+        -0.17101273,
+        0,
+        0.98526883
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (3)/tree_palm_01/Mesh1",
+      "position": [
+        1206.800076,
+        410.8,
+        3339.3999599999997
+      ],
+      "rotation": [
+        0,
+        0.5824351,
+        0,
+        -0.81287724
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (18)/tree_palm_01/Mesh1",
+      "position": [
+        2055.600176,
+        294.4,
+        1141.30006
+      ],
+      "rotation": [
+        0,
+        0.56194925,
+        0,
+        0.8271718
+      ],
+      "scale": [
+        4.38471504101211,
+        4.384719125341141,
+        4.384719125341141
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (23)/tree_palm_01/Mesh1",
+      "position": [
+        3078.800076,
+        579.0999999999999,
+        1083.90002
+      ],
+      "rotation": [
+        -0.06932237,
+        0.54638785,
+        -0.10505422,
+        0.8280208
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (5)/tree_palm_01/Mesh1",
+      "position": [
+        1170.6999759999999,
+        403.9,
+        3323.20006
+      ],
+      "rotation": [
+        0,
+        -0.36818072,
+        0,
+        -0.92975426
+      ],
+      "scale": [
+        4.47652937845257,
+        4.72772676671652,
+        4.47653178485232
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (24)/tree_palm_01/Mesh1",
+      "position": [
+        3080.000076,
+        603.3,
+        1122.19996
+      ],
+      "rotation": [
+        -0.17545232,
+        0.52207446,
+        -0.2658883,
+        0.79117525
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (10)/tree_palm_01/Mesh1",
+      "position": [
+        1161.5000759999998,
+        620.7,
+        997.59996
+      ],
+      "rotation": [
+        0,
+        -0.2680779,
+        0,
+        0.96339726
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (9)/tree_palm_01/Mesh1",
+      "position": [
+        606.499976,
+        435.3,
+        2308.8999599999997
+      ],
+      "rotation": [
+        0,
+        0.74281126,
+        0,
+        0.6695009
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (4)/tree_palm_01/Mesh1",
+      "position": [
+        1191.400076,
+        411.3,
+        3310.50006
+      ],
+      "rotation": [
+        0,
+        0.74635047,
+        0,
+        -0.66555315
+      ],
+      "scale": [
+        4.47652937845257,
+        4.72772676671652,
+        4.47653178485232
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (25)/tree_palm_01/Mesh1",
+      "position": [
+        3179.9399759999997,
+        655.31,
+        985.1300100000001
+      ],
+      "rotation": [
+        0,
+        -0.9816074,
+        0,
+        0.19091073
+      ],
+      "scale": [
+        3.80967732601203,
+        3.8096795673925805,
+        3.8096795673925805
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (19)/tree_palm_01/Mesh1",
+      "position": [
+        2391.600176,
+        423.8,
+        986.70001
+      ],
+      "rotation": [
+        -0.07747837,
+        0.0782488,
+        -0.001060581,
+        0.99391806
+      ],
+      "scale": [
+        4.47693999776091,
+        4.47694275423882,
+        4.476943104
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (14)/tree_palm_01/Mesh1",
+      "position": [
+        2161.352876,
+        269.4,
+        1197.96926
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (11)/tree_palm_01/Mesh1",
+      "position": [
+        1368.1999759999999,
+        594.4000000000001,
+        935.59996
+      ],
+      "rotation": [
+        0,
+        0.9988474,
+        0,
+        -0.047998723
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (15)/tree_palm_01/Mesh1",
+      "position": [
+        2189.370176,
+        293.56,
+        1162.43481
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        8.1176254434537,
+        8.11762891181316,
+        8.11762891181316
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (17)/tree_palm_01/Mesh1",
+      "position": [
+        2071.800076,
+        325.5,
+        1067.30006
+      ],
+      "rotation": [
+        0,
+        0.44523144,
+        0,
+        0.89541554
+      ],
+      "scale": [
+        4.38471504101211,
+        4.384719125341141,
+        4.38471877557996
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (7)/tree_palm_01/Mesh1",
+      "position": [
+        1028.900076,
+        348.4,
+        3396.60016
+      ],
+      "rotation": [
+        0,
+        0.69879246,
+        0,
+        0.7153245
+      ],
+      "scale": [
+        3.58122434218824,
+        3.78218204294334,
+        3.58122605745198
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (20)/tree_palm_01/Mesh1",
+      "position": [
+        2326.800076,
+        403.1,
+        914.40002
+      ],
+      "rotation": [
+        -0.010661919,
+        0.059908018,
+        -0.015097584,
+        -0.9980328
+      ],
+      "scale": [
+        4.476939648,
+        4.47694345376118,
+        4.47694345376118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (22)/tree_palm_01/Mesh1",
+      "position": [
+        3094.8999759999997,
+        578.2,
+        1048.09996
+      ],
+      "rotation": [
+        0,
+        0.5507679,
+        0,
+        0.8346585
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (8)/tree_palm_01/Mesh1",
+      "position": [
+        1202.900076,
+        409.6,
+        3449.20006
+      ],
+      "rotation": [
+        0,
+        0.99561846,
+        0,
+        0.093508646
+      ],
+      "scale": [
+        4.47652972821348,
+        4.72772676671652,
+        4.47653178485232
+      ]
+    },
+    {
+      "name": "Mesh1",
+      "mesh": "Assets/AxeyWorks Low Poly/Models/Tree_Palm_01.fbx",
+      "meshAsset": "assets/props/tree-palm-01.glb",
+      "kind": "palm",
+      "origin": "AxeyWorks Low Poly",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/trees/tree_tropical_01 (12)/tree_palm_01/Mesh1",
+      "position": [
+        1421.6999759999999,
+        456.89997,
+        1158.5
+      ],
+      "rotation": [
+        0,
+        0.40720195,
+        0,
+        0.9133382
+      ],
+      "scale": [
+        3.4976091,
+        3.4976118,
+        3.4976118
+      ]
+    },
+    {
+      "name": "Spire_B_w_Collision",
+      "mesh": "Assets/Quantum Theory/Polyworld/Ancient East/Meshes/Spires/Spire_B.fbx",
+      "meshAsset": "assets/props/spire-b.glb",
+      "kind": "spire",
+      "origin": "Quantum Theory",
+      "licence": "LICENSED",
+      "live": false,
+      "path": "LevelArt_Kauai/art/Spires/Spire_B_w_Collision",
+      "position": [
+        2151.0202600000002,
+        451.37408,
+        2073.6482
+      ],
+      "rotation": [
+        -0.47438154,
+        0.5290528,
+        -0.5319866,
+        -0.46049497
+      ],
+      "scale": [
+        6.603335,
+        6.6033387,
+        6.6033387
+      ]
+    }
+  ],
+  "landmarksConfidence": "UNVERIFIED. Assets/Faceted Flight/Scenes/environments/LevelArt_Kauai.unity is largely a modification set over Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab (28022 references), and this tool does not apply m_Modifications. These are PREFAB BASE values; the scene may override any of them. Treat as a hypothesis until the modification pass lands.",
+  "landmarksNote": "Hand-authored placements: everything carrying a mesh that is NOT parented under a generator's `Objects Root`. Transforms are COMPOSED down the parent chain to the environment root (exclusive), Unity space — the frame the terrain transform in the constants sheet is written in (DEV-135; they used to be the mesh node’s LOCAL transform, which for a palm under a `tree_palm_01` node was the origin). `live` is the m_IsActive walk: false means 2016 did not draw it, and Classic does not either. Clouds are excluded — tools/extract/level.mjs already reads them into the level JSON's `clouds` — and so is anything with no MeshFilter (colliders, the terrain root). NOT here: props a MISSION scene places as stripped prefab instances. Those live in the LEVEL JSON now, as `props` in content/levels/*.json, in this same schema and this same frame (DEV-218, DEV-219). Three missions place any: adv_01_jumpSeat 1 live, int_01_jumpSeat 11 live palms, rookie_02_jumpSeat 12 live of 16 authored. This note used to name two of the three and describe rookie_02 as two objects, which is how a 96-reference guid count got read as one prop: count the 1001 blocks, never the references.",
+  "_meta": {
+    "generator": "Assets/Faceted Flight/Scripts/FacetedTerrainObjectGenerator.cs",
+    "generatedBy": "tools/extract/props.mjs",
+    "geometry": "NONE. This file carries parameters and paths only. Every prop mesh in every shipped environment is bought or a bake of bought geometry — see the per-entry licence field, and docs/private/PROP-AUDIT.md.",
+    "grid": "Placement step is TerrainSize / map.width AFTER Unity import rescale. Both shipped maps are 1025x1025 with nPOTScale: 1, so width is 1024 and the step is 4.0 m on a 4096 m terrain. Go through importUnityTexture(), never the raw PNG (DEV-007).",
+    "scatterIsNotReproducible": "2016's scatter used an UNSEEDED UnityEngine.Random inside an editor-only GenerateObjects(), so the shipped layout cannot be regenerated. It was verified to be pure generator output (grid test, docs/private/PROP-AUDIT.md §4): desert is 9,600 on-grid against 53 hand-placed landmarks, and alpine is on-grid once the Tree Pack prefab offsets are accounted for. Nothing was hand-tuned, so re-rolling with a SEEDED prng loses no authored intent.",
+    "shipped2016": "A component is not a bake. Only two passes were ever RUN in 2016 — alpine’s Tree_Organic pass and desert’s — and each scatter[] entry’s `shipped2016` says what its source file holds. A pass with bakedObjects 0 is one the 2016 build never drew; this port draws it anyway until DEV-102 is decided."
+  }
+}

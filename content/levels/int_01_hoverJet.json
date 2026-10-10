@@ -1,0 +1,7756 @@
+{
+  "$schema": "./_schema.json",
+  "id": "int_01_hoverJet",
+  "title": "Intermediate 1 - HoverJet",
+  "vehicle": "hoverjet",
+  "environment": "simonet",
+  "environmentScene": "LevelArt_SimonetIslands",
+  "difficulty": "intermediate",
+  "difficultySource": "menu",
+  "mode": "ringAttack",
+  "forcedMode": null,
+  "forcedModeFf2": null,
+  "chainIndex": 2,
+  "inChain": true,
+  "worldOffset": [
+    -2048,
+    0,
+    2048
+  ],
+  "spawn": {
+    "pos": [
+      -857.789787,
+      19.788233,
+      2082.385187
+    ],
+    "quat": [
+      0.000096,
+      -0.409373,
+      -0.000149,
+      0.912367
+    ],
+    "yaw": -48.330906,
+    "launchKind": "elevator",
+    "launch": {
+      "clip": "Assets/Faceted Flight/FF_WorldTour/animation/experimental/elevator_up.anim",
+      "keys": [
+        {
+          "time": 0,
+          "value": 0,
+          "inSlope": 0,
+          "outSlope": 0
+        },
+        {
+          "time": 0.6,
+          "value": 0,
+          "inSlope": 0,
+          "outSlope": 0
+        },
+        {
+          "time": 11.05,
+          "value": 79.277756,
+          "inSlope": 14.572144,
+          "outSlope": 14.572144
+        },
+        {
+          "time": 13.166667,
+          "value": 106.494446,
+          "inSlope": 2.030178,
+          "outSlope": 2.030178
+        },
+        {
+          "time": 13.966666,
+          "value": 106.647018,
+          "inSlope": 0.033704,
+          "outSlope": 0.033704
+        },
+        {
+          "time": 15.466666,
+          "value": 106.647018,
+          "inSlope": 0,
+          "outSlope": 0
+        }
+      ],
+      "rise": 106.647018,
+      "duration": 15.466666,
+      "settledAtSeconds": 13.966666,
+      "releaseAtSeconds": 15.466666,
+      "releaseInferred": true,
+      "platform": {
+        "mesh": "Assets/Faceted Flight/Meshes/Converted_Faceted_Meshes/Projector04-Faceted.asset",
+        "meshShippable": false,
+        "size": [
+          9.35,
+          1.75,
+          9.28
+        ],
+        "offset": [
+          0,
+          -1.53,
+          0
+        ],
+        "scale": 1.688,
+        "shipOffset": [
+          0,
+          0.67,
+          1.3
+        ]
+      },
+      "shaft": {
+        "meshes": [
+          "Assets/Faceted Flight/FF_WorldTour/meshes/converted/walls_and_pillars_pwn.asset",
+          "Assets/Faceted Flight/FF_WorldTour/meshes/converted/pipes_LOD3_pwn.asset",
+          "Assets/Faceted Flight/FF_WorldTour/meshes/converted/elev_shaft_013_pwn.asset"
+        ],
+        "meshShippable": false,
+        "segmentsAuthored": 8,
+        "segmentSpacing": 12,
+        "liveSegmentLocalY": [
+          96
+        ],
+        "deadSegmentLocalY": [
+          12,
+          24,
+          36,
+          48,
+          60,
+          72,
+          84
+        ]
+      },
+      "dish": {
+        "node": "levelOffset/PlayerStart_ElevatorShaft_Photon/Position_adjustment/Elevator/Elevator_animator/Projector04-Faceted",
+        "pos": [
+          -0.270001,
+          -2.199998,
+          0.929996
+        ],
+        "quat": [
+          0,
+          0.451556,
+          0,
+          0.892243
+        ],
+        "size": [
+          9.352694,
+          1.669912,
+          9.28515
+        ],
+        "active": true
+      }
+    },
+    "startGrid": {
+      "slabs": [
+        {
+          "pos": [
+            -843.913285,
+            113.799099,
+            2070.424382
+          ],
+          "quat": [
+            0.000094,
+            -0.420234,
+            -0.00015,
+            0.907416
+          ],
+          "size": [
+            16.641142,
+            22.046127,
+            22.059581
+          ]
+        },
+        {
+          "pos": [
+            -834.286044,
+            113.789528,
+            2096.401979
+          ],
+          "quat": [
+            0.000094,
+            -0.420234,
+            -0.00015,
+            0.907416
+          ],
+          "size": [
+            37.734633,
+            22.046127,
+            34.689147
+          ]
+        },
+        {
+          "pos": [
+            -867.248948,
+            113.807435,
+            2057.56475
+          ],
+          "quat": [
+            0.000094,
+            -0.420234,
+            -0.00015,
+            0.907416
+          ],
+          "size": [
+            35.398017,
+            22.046127,
+            34.689147
+          ]
+        }
+      ],
+      "lightBar": {
+        "pos": [
+          -843.056,
+          124.799213,
+          2069.481999
+        ],
+        "quat": [
+          0.000096,
+          -0.409373,
+          -0.000149,
+          0.912367
+        ],
+        "size": [
+          74.859986,
+          1,
+          4.869999
+        ]
+      },
+      "pads": [
+        {
+          "role": "player",
+          "pos": [
+            -858.643768,
+            124.208273,
+            2082.832764
+          ],
+          "quat": [
+            0.000153,
+            0.046725,
+            -0.00009,
+            0.998908
+          ],
+          "size": [
+            9.352694,
+            1.669911,
+            9.28515
+          ]
+        },
+        {
+          "role": "ai",
+          "pos": [
+            -869.675165,
+            124.413627,
+            2071.98556
+          ],
+          "quat": [
+            0.000177,
+            0.493407,
+            -0.000011,
+            0.869799
+          ],
+          "size": [
+            10.342399,
+            1.941531,
+            10.267719
+          ]
+        },
+        {
+          "role": "ai",
+          "pos": [
+            -848.300728,
+            125.0024,
+            2095.87535
+          ],
+          "quat": [
+            0.000177,
+            0.493407,
+            -0.000011,
+            0.869799
+          ],
+          "size": [
+            10.342399,
+            1.941531,
+            10.267719
+          ]
+        }
+      ],
+      "art": [
+        {
+          "part": "floor-a",
+          "pos": [
+            -837.459578,
+            123.303976,
+            2108.132911
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-a",
+          "pos": [
+            -823.334772,
+            123.321526,
+            2098.470769
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-b",
+          "pos": [
+            -848.105303,
+            123.242021,
+            2091.505389
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-b",
+          "pos": [
+            -845.185239,
+            123.203588,
+            2068.869624
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-b",
+          "pos": [
+            -833.980497,
+            123.259571,
+            2081.843247
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-c",
+          "pos": [
+            -872.434146,
+            123.136074,
+            2070.993952
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-c",
+          "pos": [
+            -860.043726,
+            123.103816,
+            2059.323577
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-d",
+          "pos": [
+            -886.371129,
+            123.080337,
+            2061.675675
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "floor-d",
+          "pos": [
+            -874.576801,
+            123.045101,
+            2049.315103
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.856987,
+            6.856988,
+            6.856986
+          ]
+        },
+        {
+          "part": "moulding",
+          "pos": [
+            -845.309762,
+            121.998139,
+            2076.855012
+          ],
+          "quat": [
+            0.000073,
+            -0.535057,
+            -0.000161,
+            0.844816
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "artInShaft": [
+        {
+          "part": "floor-b",
+          "pos": [
+            -857.881351,
+            116.335497,
+            2079.864328
+          ],
+          "quat": [
+            0.247191,
+            -0.661723,
+            0.663724,
+            0.245946
+          ],
+          "scale": [
+            6.171289,
+            6.17129,
+            6.171288
+          ],
+          "node": "Floor_B 2 (1)"
+        }
+      ]
+    },
+    "deadMoverLiftAmplitude": 108.5,
+    "enableShipDelay": 2,
+    "enableGravityOnLaunch": true,
+    "jumpStart": null,
+    "launchTrace": {
+      "canStartElevator": true,
+      "starterScriptsInProject": [
+        "Input_Ship",
+        "Input_Ship_Glider",
+        "Input_Ship_unet"
+      ],
+      "starterScriptsOnShip": [
+        "Input_Ship"
+      ],
+      "enableShipGuardComponent": "Ship_HoverShip",
+      "enableShipApplies": true
+    },
+    "marker": "LaunchElevator.PlayerShipRoot (the elevator seat)",
+    "seatTrace": {
+      "node": "levelOffset/PlayerStart_ElevatorShaft_Photon/Position_adjustment/Elevator/Elevator_animator/PlayerShipRoot",
+      "seatRef": "1024219376",
+      "seatRefAgrees": true,
+      "spawnFieldNode": "levelOffset/PlayerStart_ElevatorShaft_Photon/Position_adjustment/Elevator/Elevator_animator/PlayerShipRoot",
+      "spawnFieldAgrees": true,
+      "spawnFieldAboveSeat": 0
+    }
+  },
+  "respawn": {
+    "pos": [
+      -859.630538,
+      127.862215,
+      2084.298471
+    ],
+    "quat": [
+      0.000098,
+      -0.393899,
+      -0.000147,
+      0.919154
+    ],
+    "yaw": -46.394661,
+    "aboveSpawn": 108.073982,
+    "marker": "SinglePlayerRespawnPosition"
+  },
+  "markerUsedAtLoad": "respawn",
+  "routes": [
+    {
+      "id": "CurvyClonePath",
+      "rings": [
+        {
+          "i": 0,
+          "order": 0,
+          "name": "0000Checkpoint_Ring(Clone)",
+          "pos": [
+            -761.0396,
+            149.63263,
+            2007.77136
+          ],
+          "quat": [
+            0.020678,
+            -0.439067,
+            0.010109,
+            0.898159
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -761.480961,
+              149.428425,
+              2009.563003
+            ],
+            "quat": [
+              -0.790016,
+              0.427396,
+              -0.373758,
+              0.231329
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1783516269",
+            "triggerFileID": "644739865",
+            "triggerCheckpointFileID": "644739869",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0000Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -761.0396,
+                149.63263,
+                -2007.77136
+              ],
+              "quat": [
+                -0.020678,
+                0.439067,
+                0.010109,
+                0.898159
+              ]
+            }
+          }
+        },
+        {
+          "i": 1,
+          "order": 1,
+          "name": "0001Checkpoint_Ring(Clone)",
+          "pos": [
+            -323.31372,
+            170.92204,
+            1751.50736
+          ],
+          "quat": [
+            0.014405,
+            -0.567163,
+            0.009922,
+            0.82342
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -324.262028,
+              170.733862,
+              1753.092222
+            ],
+            "quat": [
+              -0.724593,
+              0.391258,
+              -0.488777,
+              0.28806
+            ],
+            "radius": 22.619487,
+            "spheres": [
+              {
+                "radius": 22.619487,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "688909681",
+            "triggerFileID": "1923659001",
+            "triggerCheckpointFileID": "1923659005",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0001Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -323.31372,
+                170.92204,
+                -1751.50736
+              ],
+              "quat": [
+                -0.014405,
+                0.567163,
+                0.009922,
+                0.82342
+              ]
+            }
+          }
+        },
+        {
+          "i": 2,
+          "order": 2,
+          "name": "0002Checkpoint_Ring(Clone)",
+          "pos": [
+            151.29135,
+            204.07208,
+            1558.98116
+          ],
+          "quat": [
+            0.036133,
+            -0.541889,
+            0.023328,
+            0.839349
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              150.449873,
+              203.810094,
+              1560.615101
+            ],
+            "quat": [
+              -0.745028,
+              0.387277,
+              -0.456131,
+              0.294778
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1910967655",
+            "triggerFileID": "2135372836",
+            "triggerCheckpointFileID": "2135372840",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0002Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                151.29135,
+                204.07208,
+                -1558.98116
+              ],
+              "quat": [
+                -0.036133,
+                0.541889,
+                0.023328,
+                0.839349
+              ]
+            }
+          }
+        },
+        {
+          "i": 3,
+          "order": 3,
+          "name": "0003Checkpoint_Ring(Clone)",
+          "pos": [
+            603.2055,
+            283.57556,
+            1332.09556
+          ],
+          "quat": [
+            0.143813,
+            -0.48286,
+            0.080744,
+            0.860026
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              602.662629,
+              282.971811,
+              1333.76507
+            ],
+            "quat": [
+              -0.790989,
+              0.347131,
+              -0.352232,
+              0.360234
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1259263715",
+            "triggerFileID": "1238412010",
+            "triggerCheckpointFileID": "1238412014",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0003Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                603.2055,
+                283.57556,
+                -1332.09556
+              ],
+              "quat": [
+                -0.143813,
+                0.48286,
+                0.080744,
+                0.860026
+              ]
+            }
+          }
+        },
+        {
+          "i": 4,
+          "order": 4,
+          "name": "0004Checkpoint_Ring(Clone)",
+          "pos": [
+            947.9169,
+            558.9194,
+            1075.51976
+          ],
+          "quat": [
+            0.284041,
+            -0.357615,
+            0.115148,
+            0.882141
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              947.969074,
+              557.957956,
+              1077.107018
+            ],
+            "quat": [
+              -0.827032,
+              0.327798,
+              -0.174644,
+              0.42198
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1623130084",
+            "triggerFileID": "1383010419",
+            "triggerCheckpointFileID": "1383010423",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0004Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                947.9169,
+                558.9194,
+                -1075.51976
+              ],
+              "quat": [
+                -0.284041,
+                0.357615,
+                0.115148,
+                0.882141
+              ]
+            }
+          }
+        },
+        {
+          "i": 5,
+          "order": 5,
+          "name": "0005Checkpoint_Ring(Clone)",
+          "pos": [
+            1088.5594,
+            699.33887,
+            645.32332
+          ],
+          "quat": [
+            -0.166108,
+            0.187667,
+            0.032219,
+            0.967549
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              1090.149781,
+              699.695251,
+              646.212234
+            ],
+            "quat": [
+              -0.86141,
+              0.441771,
+              0.083367,
+              -0.236349
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1446540319",
+            "triggerFileID": "1892044522",
+            "triggerCheckpointFileID": "1892044526",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0005Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                1088.5594,
+                699.33887,
+                -645.32332
+              ],
+              "quat": [
+                0.166108,
+                -0.187667,
+                0.032219,
+                0.967549
+              ]
+            }
+          }
+        },
+        {
+          "i": 6,
+          "order": 6,
+          "name": "0006Checkpoint_Ring(Clone)",
+          "pos": [
+            800.0041,
+            422.48633,
+            327.23672
+          ],
+          "quat": [
+            -0.23435,
+            0.279889,
+            0.070658,
+            0.928305
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              801.701102,
+              423.056864,
+              327.727802
+            ],
+            "quat": [
+              -0.845775,
+              0.38911,
+              0.130836,
+              -0.340793
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1698605236",
+            "triggerFileID": "1773049768",
+            "triggerCheckpointFileID": "1773049772",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0006Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                800.0041,
+                422.48633,
+                -327.23672
+              ],
+              "quat": [
+                0.23435,
+                -0.279889,
+                0.070658,
+                0.928305
+              ]
+            }
+          }
+        },
+        {
+          "i": 7,
+          "order": 7,
+          "name": "0007Checkpoint_Ring(Clone)",
+          "pos": [
+            709.24646,
+            312.24814,
+            -157.60577
+          ],
+          "quat": [
+            -0.161263,
+            0.065279,
+            0.010691,
+            0.984692
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              710.567212,
+              312.582646,
+              -156.344736
+            ],
+            "quat": [
+              -0.865939,
+              0.468916,
+              -0.021263,
+              -0.17267
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "602502867",
+            "triggerFileID": "176114583",
+            "triggerCheckpointFileID": "176114587",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0007Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                709.24646,
+                312.24814,
+                157.60577
+              ],
+              "quat": [
+                0.161263,
+                -0.065279,
+                0.010691,
+                0.984692
+              ]
+            }
+          }
+        },
+        {
+          "i": 8,
+          "order": 8,
+          "name": "0008Checkpoint_Ring(Clone)",
+          "pos": [
+            584.9093,
+            300.01648,
+            -638.48274
+          ],
+          "quat": [
+            0.160999,
+            0.192723,
+            -0.032073,
+            0.967424
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              586.47587,
+              299.414804,
+              -637.688807
+            ],
+            "quat": [
+              -0.830074,
+              0.497909,
+              0.246661,
+              0.047129
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1694438304",
+            "triggerFileID": "694895096",
+            "triggerCheckpointFileID": "694895100",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0008Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                584.9093,
+                300.01648,
+                638.48274
+              ],
+              "quat": [
+                -0.160999,
+                -0.192723,
+                -0.032073,
+                0.967424
+              ]
+            }
+          }
+        },
+        {
+          "i": 9,
+          "order": 9,
+          "name": "0009Checkpoint_Ring(Clone)",
+          "pos": [
+            470.5714,
+            602.1518,
+            -1021.788
+          ],
+          "quat": [
+            0.447718,
+            0.052596,
+            -0.026392,
+            0.892236
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              471.79557,
+              600.901913,
+              -1021.166971
+            ],
+            "quat": [
+              -0.76711,
+              0.456426,
+              0.26343,
+              0.365817
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "111865250",
+            "triggerFileID": "849484670",
+            "triggerCheckpointFileID": "849484674",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0009Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                470.5714,
+                602.1518,
+                1021.788
+              ],
+              "quat": [
+                -0.447718,
+                -0.052596,
+                -0.026392,
+                0.892236
+              ]
+            }
+          }
+        },
+        {
+          "i": 10,
+          "order": 10,
+          "name": "0010Checkpoint_Ring(Clone)",
+          "pos": [
+            514.434,
+            887.75793,
+            -1424.47844
+          ],
+          "quat": [
+            0.056724,
+            0.04171,
+            -0.002372,
+            0.997515
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              515.692258,
+              887.456371,
+              -1423.147149
+            ],
+            "quat": [
+              -0.870804,
+              0.486562,
+              0.06401,
+              0.029326
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1399968268",
+            "triggerFileID": "1885414189",
+            "triggerCheckpointFileID": "1885414193",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0010Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                514.434,
+                887.75793,
+                1424.47844
+              ],
+              "quat": [
+                -0.056724,
+                -0.04171,
+                -0.002372,
+                0.997515
+              ]
+            }
+          }
+        },
+        {
+          "i": 11,
+          "order": 11,
+          "name": "0011Checkpoint_Ring(Clone)",
+          "pos": [
+            220.8314,
+            858.09796,
+            -1726.80584
+          ],
+          "quat": [
+            -0.013278,
+            0.846806,
+            0.021163,
+            0.531315
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              221.650353,
+              858.03358,
+              -1728.47067
+            ],
+            "quat": [
+              -0.474716,
+              0.239558,
+              0.733767,
+              -0.422897
+            ],
+            "radius": 22.619487,
+            "spheres": [
+              {
+                "radius": 22.619487,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "2002493709",
+            "triggerFileID": "1519805329",
+            "triggerCheckpointFileID": "1519805333",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0011Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                220.8314,
+                858.09796,
+                1726.80584
+              ],
+              "quat": [
+                0.013278,
+                -0.846806,
+                0.021163,
+                0.531315
+              ]
+            }
+          }
+        },
+        {
+          "i": 12,
+          "order": 12,
+          "name": "0012Checkpoint_Ring(Clone)",
+          "pos": [
+            -32.724426,
+            669.2074,
+            -1359.66594
+          ],
+          "quat": [
+            0.087629,
+            -0.908248,
+            -0.240376,
+            -0.3311
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -32.740623,
+              669.808619,
+              -1361.422288
+            ],
+            "quat": [
+              0.406173,
+              0.049306,
+              -0.751364,
+              0.51773
+            ],
+            "radius": 22.619489,
+            "spheres": [
+              {
+                "radius": 22.619489,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "214583389",
+            "triggerFileID": "1431134784",
+            "triggerCheckpointFileID": "1431134788",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0012Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -32.724426,
+                669.2074,
+                1359.66594
+              ],
+              "quat": [
+                -0.087629,
+                0.908248,
+                -0.240376,
+                -0.3311
+              ]
+            }
+          }
+        },
+        {
+          "i": 13,
+          "order": 13,
+          "name": "0013Checkpoint_Ring(Clone)",
+          "pos": [
+            -366.35696,
+            389.73535,
+            -1088.33454
+          ],
+          "quat": [
+            0.119523,
+            -0.864697,
+            -0.244961,
+            -0.421908
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -366.02591,
+              390.382434,
+              -1090.042806
+            ],
+            "quat": [
+              0.487779,
+              0.009209,
+              -0.697804,
+              0.524458
+            ],
+            "radius": 22.619487,
+            "spheres": [
+              {
+                "radius": 22.619487,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "975303600",
+            "triggerFileID": "913622739",
+            "triggerCheckpointFileID": "913622743",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0013Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -366.35696,
+                389.73535,
+                1088.33454
+              ],
+              "quat": [
+                -0.119523,
+                0.864697,
+                -0.244961,
+                -0.421908
+              ]
+            }
+          }
+        },
+        {
+          "i": 14,
+          "order": 14,
+          "name": "0014Checkpoint_Ring(Clone)",
+          "pos": [
+            -692.3839,
+            179.72957,
+            -757.97494
+          ],
+          "quat": [
+            0.031202,
+            -0.9511,
+            -0.102426,
+            -0.289731
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -692.522768,
+              179.905545,
+              -759.817827
+            ],
+            "quat": [
+              -0.30301,
+              0.051188,
+              0.816229,
+              -0.489219
+            ],
+            "radius": 22.619485,
+            "spheres": [
+              {
+                "radius": 22.619485,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "84975410",
+            "triggerFileID": "1887014067",
+            "triggerCheckpointFileID": "1887014071",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0014Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -692.3839,
+                179.72957,
+                757.97494
+              ],
+              "quat": [
+                -0.031202,
+                0.9511,
+                -0.102426,
+                -0.289731
+              ]
+            }
+          }
+        },
+        {
+          "i": 15,
+          "order": 15,
+          "name": "0015Checkpoint_Ring(Clone)",
+          "pos": [
+            -935.97626,
+            134.47939,
+            -309.80454
+          ],
+          "quat": [
+            0.000537,
+            -0.976076,
+            -0.002409,
+            -0.217417
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -936.392424,
+              134.34927,
+              -311.609079
+            ],
+            "quat": [
+              -0.191221,
+              0.103492,
+              0.852954,
+              -0.474545
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "12660756",
+            "triggerFileID": "693999193",
+            "triggerCheckpointFileID": "693999197",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0015Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -935.97626,
+                134.47939,
+                309.80454
+              ],
+              "quat": [
+                -0.000537,
+                0.976076,
+                -0.002409,
+                -0.217417
+              ]
+            }
+          }
+        },
+        {
+          "i": 16,
+          "order": 16,
+          "name": "0016Checkpoint_Ring(Clone)",
+          "pos": [
+            -1135.2661,
+            160.53537,
+            162.32007
+          ],
+          "quat": [
+            -0.010157,
+            -0.982694,
+            0.056695,
+            -0.176054
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -1135.840896,
+              160.231447,
+              160.581184
+            ],
+            "quat": [
+              -0.126357,
+              0.135067,
+              0.863934,
+              -0.468412
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1890338237",
+            "triggerFileID": "1126884854",
+            "triggerCheckpointFileID": "1126884858",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0016Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -1135.2661,
+                160.53537,
+                -162.32007
+              ],
+              "quat": [
+                0.010157,
+                0.982694,
+                0.056695,
+                -0.176054
+              ]
+            }
+          }
+        },
+        {
+          "i": 17,
+          "order": 17,
+          "name": "0017Checkpoint_Ring(Clone)",
+          "pos": [
+            -1235.7169,
+            327.66177,
+            620.91216
+          ],
+          "quat": [
+            0.028872,
+            -0.922894,
+            0.377424,
+            0.0706
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -1236.989768,
+              326.543107,
+              620.153948
+            ],
+            "quat": [
+              0.245026,
+              0.295626,
+              0.792704,
+              -0.473484
+            ],
+            "radius": 22.619488,
+            "spheres": [
+              {
+                "radius": 22.619488,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "439249404",
+            "triggerFileID": "1158413488",
+            "triggerCheckpointFileID": "1158413492",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0017Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -1235.7169,
+                327.66177,
+                -620.91216
+              ],
+              "quat": [
+                -0.028872,
+                0.922894,
+                0.377424,
+                0.0706
+              ]
+            }
+          }
+        },
+        {
+          "i": 18,
+          "order": 18,
+          "name": "0018Checkpoint_Ring(Clone)",
+          "pos": [
+            -1010.2469,
+            660.38495,
+            902.38606
+          ],
+          "quat": [
+            0.038674,
+            -0.83707,
+            0.059679,
+            0.542454
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -1012.012035,
+              660.042375,
+              902.848042
+            ],
+            "quat": [
+              0.50316,
+              -0.211301,
+              0.712922,
+              -0.440367
+            ],
+            "radius": 22.619488,
+            "spheres": [
+              {
+                "radius": 22.619488,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572152,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1640995291",
+            "triggerFileID": "1010567336",
+            "triggerCheckpointFileID": "1010567340",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0018Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -1010.2469,
+                660.38495,
+                -902.38606
+              ],
+              "quat": [
+                -0.038674,
+                0.83707,
+                0.059679,
+                0.542454
+              ]
+            }
+          }
+        },
+        {
+          "i": 19,
+          "order": 19,
+          "name": "0019Checkpoint_Ring(Clone)",
+          "pos": [
+            -614.29694,
+            452.75446,
+            775.22416
+          ],
+          "quat": [
+            -0.328893,
+            -0.338391,
+            -0.127575,
+            0.872379
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -614.252019,
+              453.612967,
+              776.869588
+            ],
+            "quat": [
+              -0.700608,
+              0.535228,
+              -0.455538,
+              -0.12314
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "1720129169",
+            "triggerFileID": "815509685",
+            "triggerCheckpointFileID": "815509689",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0019Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -614.29694,
+                452.75446,
+                -775.22416
+              ],
+              "quat": [
+                0.328893,
+                0.338391,
+                -0.127575,
+                0.872379
+              ]
+            }
+          }
+        },
+        {
+          "i": 20,
+          "order": 20,
+          "name": "0020Checkpoint_Ring(Clone)",
+          "pos": [
+            -346.91934,
+            170.6327,
+            445.07086
+          ],
+          "quat": [
+            -0.141807,
+            -0.331581,
+            -0.050487,
+            0.931341
+          ],
+          "scale": [
+            2,
+            2,
+            2
+          ],
+          "trigger": {
+            "pos": [
+              -346.938348,
+              170.935137,
+              446.902432
+            ],
+            "quat": [
+              -0.78959,
+              0.49648,
+              -0.358719,
+              0.03709
+            ],
+            "radius": 22.619486,
+            "spheres": [
+              {
+                "radius": 22.619486,
+                "center": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  0.514,
+                  -0.727,
+                  0
+                ]
+              },
+              {
+                "radius": 10.572151,
+                "center": [
+                  -0.579,
+                  0.82,
+                  0
+                ]
+              }
+            ]
+          },
+          "scoring": {
+            "addScore": 1,
+            "energyBoost": true,
+            "energyBoostAmount": 12,
+            "triggerOnce": true,
+            "silent": false,
+            "triggerNextRoute": false
+          },
+          "_meta": {
+            "ringFileID": "522652364",
+            "triggerFileID": "10550837",
+            "triggerCheckpointFileID": "10550841",
+            "path": "levelOffset/RingAttack_objects/CurvyClonePath/0020Checkpoint_Ring(Clone)",
+            "raw": {
+              "pos": [
+                -346.91934,
+                170.6327,
+                -445.07086
+              ],
+              "quat": [
+                0.141807,
+                0.331581,
+                -0.050487,
+                0.931341
+              ]
+            }
+          }
+        }
+      ],
+      "_meta": {
+        "fileID": "594708239",
+        "path": "levelOffset/RingAttack_objects/CurvyClonePath"
+      }
+    }
+  ],
+  "finish": {
+    "shape": "sphereUnion",
+    "pos": [
+      -198.347949,
+      115.972141,
+      271.932605
+    ],
+    "quat": [
+      0.266367,
+      -0.909352,
+      0.081115,
+      -0.309108
+    ],
+    "radius": 68.590014,
+    "spheres": [
+      {
+        "radius": 68.590014,
+        "center": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "radius": 32.058376,
+        "center": [
+          0.514,
+          -0.727,
+          0
+        ]
+      },
+      {
+        "radius": 32.058376,
+        "center": [
+          -0.579,
+          0.82,
+          0
+        ]
+      }
+    ],
+    "art": {
+      "frame": {
+        "mesh": "Assets/Faceted Flight/Meshes/jumpGate_diamond.fbx",
+        "material": "Assets/Faceted Flight/Materials/checkpoint_finish.mat",
+        "pos": [
+          -195.713656,
+          121.68855,
+          268.398899
+        ],
+        "quat": [
+          0.006905,
+          -0.3195,
+          0.006357,
+          0.94754
+        ],
+        "scale": [
+          23.561421,
+          23.561432,
+          23.561424
+        ]
+      },
+      "studMaterial": "Assets/Faceted Flight/Materials/glowyMaterial.mat",
+      "studs": [
+        {
+          "pos": [
+            -153.590249,
+            121.744655,
+            304.494549
+          ],
+          "quat": [
+            0.006905,
+            -0.3195,
+            0.006357,
+            0.94754
+          ],
+          "scale": [
+            3.405973,
+            5.564297,
+            50.186332
+          ]
+        },
+        {
+          "pos": [
+            -173.815806,
+            121.145542,
+            333.984368
+          ],
+          "quat": [
+            0.006411,
+            -0.247758,
+            0.006855,
+            0.968777
+          ],
+          "scale": [
+            3.405974,
+            5.564298,
+            23.113626
+          ]
+        },
+        {
+          "pos": [
+            -170.988784,
+            213.699001,
+            247.066841
+          ],
+          "quat": [
+            -0.16783,
+            -0.281937,
+            0.689674,
+            0.645518
+          ],
+          "scale": [
+            3.405978,
+            5.453542,
+            25.052524
+          ]
+        },
+        {
+          "pos": [
+            -193.203109,
+            211.726732,
+            276.296712
+          ],
+          "quat": [
+            -0.221038,
+            -0.230803,
+            0.674507,
+            0.665517
+          ],
+          "scale": [
+            3.405977,
+            5.453531,
+            50.186332
+          ]
+        },
+        {
+          "pos": [
+            -205.605966,
+            211.607742,
+            266.858202
+          ],
+          "quat": [
+            -0.221038,
+            -0.230803,
+            0.674507,
+            0.665517
+          ],
+          "scale": [
+            3.405978,
+            5.453533,
+            50.186332
+          ]
+        },
+        {
+          "pos": [
+            -183.391672,
+            213.58001,
+            237.628366
+          ],
+          "quat": [
+            -0.16783,
+            -0.281937,
+            0.689674,
+            0.645518
+          ],
+          "scale": [
+            3.405978,
+            5.453549,
+            25.052536
+          ]
+        },
+        {
+          "pos": [
+            -229.417181,
+            212.146568,
+            298.141192
+          ],
+          "quat": [
+            -0.263263,
+            -0.188241,
+            0.659174,
+            0.678784
+          ],
+          "scale": [
+            3.405979,
+            5.453564,
+            29.50168
+          ]
+        },
+        {
+          "pos": [
+            -224.028235,
+            29.820653,
+            293.358298
+          ],
+          "quat": [
+            -0.150034,
+            -0.298449,
+            0.693763,
+            0.638053
+          ],
+          "scale": [
+            3.405979,
+            5.453576,
+            22.383332
+          ]
+        },
+        {
+          "pos": [
+            -181.48061,
+            31.329148,
+            237.428401
+          ],
+          "quat": [
+            -0.272591,
+            -0.178589,
+            0.655371,
+            0.681387
+          ],
+          "scale": [
+            3.405978,
+            5.453555,
+            23.10911
+          ]
+        },
+        {
+          "pos": [
+            -202.879655,
+            32.603615,
+            265.532329
+          ],
+          "quat": [
+            -0.221038,
+            -0.230803,
+            0.674507,
+            0.665517
+          ],
+          "scale": [
+            3.405978,
+            5.453535,
+            50.186332
+          ]
+        },
+        {
+          "pos": [
+            -190.814489,
+            32.719368,
+            274.713582
+          ],
+          "quat": [
+            -0.221038,
+            -0.230803,
+            0.674507,
+            0.665517
+          ],
+          "scale": [
+            3.405979,
+            5.453537,
+            50.186332
+          ]
+        },
+        {
+          "pos": [
+            -169.415562,
+            31.444898,
+            246.609801
+          ],
+          "quat": [
+            -0.272591,
+            -0.178589,
+            0.655371,
+            0.681387
+          ],
+          "scale": [
+            3.405976,
+            5.453556,
+            23.109137
+          ]
+        },
+        {
+          "pos": [
+            -133.117869,
+            122.305559,
+            279.688305
+          ],
+          "quat": [
+            0.007361,
+            -0.389453,
+            0.005823,
+            0.920999
+          ],
+          "scale": [
+            3.405974,
+            5.564297,
+            17.677241
+          ]
+        },
+        {
+          "pos": [
+            -211.963177,
+            29.936403,
+            302.539683
+          ],
+          "quat": [
+            -0.150034,
+            -0.298449,
+            0.693763,
+            0.638053
+          ],
+          "scale": [
+            3.405979,
+            5.453578,
+            22.383335
+          ]
+        },
+        {
+          "pos": [
+            -187.341221,
+            224.817101,
+            255.595954
+          ],
+          "quat": [
+            -0.218542,
+            -0.233947,
+            0.675313,
+            0.664425
+          ],
+          "scale": [
+            4.544466,
+            11.289661,
+            3.65174
+          ]
+        },
+        {
+          "pos": [
+            -208.532297,
+            223.914437,
+            283.353901
+          ],
+          "quat": [
+            -0.218542,
+            -0.233947,
+            0.675313,
+            0.664425
+          ],
+          "scale": [
+            4.544466,
+            11.289664,
+            3.65174
+          ]
+        },
+        {
+          "pos": [
+            -174.462234,
+            217.983934,
+            226.339617
+          ],
+          "quat": [
+            -0.3195,
+            -0.006905,
+            0.94754,
+            -0.006357
+          ],
+          "scale": [
+            6.26429,
+            7.308376,
+            3.651739
+          ]
+        },
+        {
+          "pos": [
+            -161.981682,
+            218.133649,
+            235.875946
+          ],
+          "quat": [
+            -0.3195,
+            -0.006905,
+            0.94754,
+            -0.006357
+          ],
+          "scale": [
+            6.26429,
+            7.308375,
+            3.651739
+          ]
+        },
+        {
+          "pos": [
+            -222.928484,
+            216.407306,
+            315.986535
+          ],
+          "quat": [
+            -0.3195,
+            -0.006905,
+            0.94754,
+            -0.006357
+          ],
+          "scale": [
+            6.26429,
+            7.308373,
+            9.024213
+          ]
+        },
+        {
+          "pos": [
+            -235.427893,
+            216.287389,
+            306.474608
+          ],
+          "quat": [
+            -0.3195,
+            -0.006905,
+            0.94754,
+            -0.006357
+          ],
+          "scale": [
+            6.26429,
+            7.308375,
+            9.024216
+          ]
+        },
+        {
+          "pos": [
+            -222.847511,
+            121.474275,
+            208.128377
+          ],
+          "quat": [
+            0.006411,
+            -0.247758,
+            0.006855,
+            0.968777
+          ],
+          "scale": [
+            3.405974,
+            5.564299,
+            23.113631
+          ]
+        },
+        {
+          "pos": [
+            -264.754957,
+            120.282709,
+            263.713789
+          ],
+          "quat": [
+            0.007361,
+            -0.389453,
+            0.005823,
+            0.920999
+          ],
+          "scale": [
+            3.405975,
+            5.564299,
+            23.113634
+          ]
+        },
+        {
+          "pos": [
+            -242.340908,
+            120.893189,
+            236.95632
+          ],
+          "quat": [
+            0.006905,
+            -0.3195,
+            0.006357,
+            0.94754
+          ],
+          "scale": [
+            3.405973,
+            5.564297,
+            50.186332
+          ]
+        },
+        {
+          "pos": [
+            -217.014392,
+            212.265556,
+            307.579791
+          ],
+          "quat": [
+            -0.263263,
+            -0.188241,
+            0.659174,
+            0.678784
+          ],
+          "scale": [
+            3.405979,
+            5.453552,
+            29.501639
+          ]
+        },
+        {
+          "pos": [
+            -214.4455,
+            172.007341,
+            223.777102
+          ],
+          "quat": [
+            -0.217818,
+            -0.922025,
+            -0.078012,
+            -0.310385
+          ],
+          "scale": [
+            3.405976,
+            84.102149,
+            4.10781
+          ]
+        },
+        {
+          "pos": [
+            -228.796601,
+            167.005004,
+            254.516556
+          ],
+          "quat": [
+            -0.226163,
+            -0.87339,
+            -0.048791,
+            -0.428555
+          ],
+          "scale": [
+            1.656352,
+            102.35695,
+            4.107805
+          ]
+        },
+        {
+          "pos": [
+            -216.605246,
+            167.229001,
+            238.493347
+          ],
+          "quat": [
+            -0.205683,
+            -0.954807,
+            -0.105948,
+            -0.18658
+          ],
+          "scale": [
+            1.656351,
+            102.356936,
+            4.107807
+          ]
+        },
+        {
+          "pos": [
+            -243.68823,
+            171.543964,
+            262.109757
+          ],
+          "quat": [
+            -0.217818,
+            -0.922025,
+            -0.078012,
+            -0.310385
+          ],
+          "scale": [
+            3.405976,
+            84.102137,
+            4.107808
+          ]
+        },
+        {
+          "pos": [
+            -241.018882,
+            65.8027,
+            261.938349
+          ],
+          "quat": [
+            -0.310758,
+            0.072193,
+            0.920006,
+            -0.227611
+          ],
+          "scale": [
+            3.405976,
+            84.102146,
+            4.10781
+          ]
+        },
+        {
+          "pos": [
+            -215.278042,
+            70.914307,
+            239.866376
+          ],
+          "quat": [
+            -0.187496,
+            0.101403,
+            0.952799,
+            -0.216185
+          ],
+          "scale": [
+            1.656352,
+            102.356946,
+            4.107805
+          ]
+        },
+        {
+          "pos": [
+            -227.469396,
+            70.690311,
+            255.889584
+          ],
+          "quat": [
+            -0.428916,
+            0.041669,
+            0.871213,
+            -0.235122
+          ],
+          "scale": [
+            1.656351,
+            102.356932,
+            4.107806
+          ]
+        },
+        {
+          "pos": [
+            -211.872918,
+            66.265148,
+            223.532059
+          ],
+          "quat": [
+            -0.310758,
+            0.072193,
+            0.920006,
+            -0.227611
+          ],
+          "scale": [
+            3.405976,
+            84.102134,
+            4.107808
+          ]
+        },
+        {
+          "pos": [
+            -149.65817,
+            67.210813,
+            272.560831
+          ],
+          "quat": [
+            -0.922938,
+            0.215233,
+            -0.307461,
+            0.085597
+          ],
+          "scale": [
+            3.405976,
+            84.102149,
+            4.10781
+          ]
+        },
+        {
+          "pos": [
+            -174.863033,
+            70.71878,
+            294.921461
+          ],
+          "quat": [
+            -0.955275,
+            0.202157,
+            -0.183843,
+            0.113069
+          ],
+          "scale": [
+            1.656352,
+            102.35695,
+            4.107805
+          ]
+        },
+        {
+          "pos": [
+            -162.675671,
+            71.185321,
+            278.900441
+          ],
+          "quat": [
+            -0.874554,
+            0.224612,
+            -0.426033,
+            0.056583
+          ],
+          "scale": [
+            1.656351,
+            102.356936,
+            4.107807
+          ]
+        },
+        {
+          "pos": [
+            -178.792156,
+            66.020646,
+            310.960555
+          ],
+          "quat": [
+            -0.922938,
+            0.215233,
+            -0.307461,
+            0.085597
+          ],
+          "scale": [
+            3.405976,
+            84.102137,
+            4.107808
+          ]
+        },
+        {
+          "pos": [
+            -177.737393,
+            171.808643,
+            312.747304
+          ],
+          "quat": [
+            -0.06457,
+            -0.31358,
+            0.230154,
+            0.918982
+          ],
+          "scale": [
+            3.405977,
+            84.102154,
+            4.107811
+          ]
+        },
+        {
+          "pos": [
+            -162.860541,
+            168.20159,
+            282.527151
+          ],
+          "quat": [
+            -0.033847,
+            -0.431323,
+            0.236632,
+            0.869954
+          ],
+          "scale": [
+            1.656352,
+            102.356956,
+            4.107805
+          ]
+        },
+        {
+          "pos": [
+            -175.047905,
+            167.735049,
+            298.548175
+          ],
+          "quat": [
+            -0.094243,
+            -0.190147,
+            0.219678,
+            0.95221
+          ],
+          "scale": [
+            1.656351,
+            102.356942,
+            4.107807
+          ]
+        },
+        {
+          "pos": [
+            -148.506636,
+            172.999738,
+            274.421209
+          ],
+          "quat": [
+            -0.06457,
+            -0.31358,
+            0.230154,
+            0.918982
+          ],
+          "scale": [
+            3.405976,
+            84.102142,
+            4.107809
+          ]
+        }
+      ],
+      "_meta": {
+        "root": "levelOffset/RingAttack_objects/FinishLine/Checkpoint_Ring",
+        "frameFileID": "1229508480:456250",
+        "inactiveRenderers": [
+          "TriangularJumpgate2Green_pwm"
+        ]
+      }
+    },
+    "_meta": {
+      "fileID": "1229508480:459542",
+      "path": "levelOffset/RingAttack_objects/FinishLine/Checkpoint_Ring/trigger_checkpoint",
+      "scripts": [
+        "Trigger_FinishLine"
+      ],
+      "worldScale": [
+        65.660994,
+        74.554363,
+        4.182001
+      ],
+      "raw": {
+        "pos": [
+          -198.347949,
+          115.972141,
+          -271.932605
+        ],
+        "quat": [
+          -0.266367,
+          0.909352,
+          0.081115,
+          -0.309108
+        ]
+      },
+      "note": "Ends the run via Trigger_FinishLine.OnTriggerEnter -> finaleLogic.StartEnd(). Non-scoring: never counted in ringsPassed/ringsTotal."
+    }
+  },
+  "route": [
+    [
+      -761.6,
+      149.6,
+      2008.2
+    ],
+    [
+      -756.12726,
+      149.92128,
+      2003.7849
+    ],
+    [
+      -750.4855,
+      150.25768,
+      1998.7806
+    ],
+    [
+      -744.6089,
+      150.61208,
+      1993.2185
+    ],
+    [
+      -738.43195,
+      150.98735,
+      1987.1302
+    ],
+    [
+      -731.88904,
+      151.3864,
+      1980.547
+    ],
+    [
+      -724.9145,
+      151.8121,
+      1973.5004
+    ],
+    [
+      -717.4427,
+      152.26735,
+      1966.0219
+    ],
+    [
+      -709.40796,
+      152.75502,
+      1958.1427
+    ],
+    [
+      -700.74475,
+      153.27802,
+      1949.8945
+    ],
+    [
+      -691.38745,
+      153.83922,
+      1941.3087
+    ],
+    [
+      -681.2704,
+      154.44151,
+      1932.4167
+    ],
+    [
+      -670.32794,
+      155.08778,
+      1923.2501
+    ],
+    [
+      -658.4945,
+      155.78091,
+      1913.8401
+    ],
+    [
+      -645.70447,
+      156.5238,
+      1904.2183
+    ],
+    [
+      -631.89215,
+      157.31932,
+      1894.4161
+    ],
+    [
+      -616.99194,
+      158.17036,
+      1884.465
+    ],
+    [
+      -600.93823,
+      159.07982,
+      1874.3964
+    ],
+    [
+      -583.66547,
+      160.05057,
+      1864.2417
+    ],
+    [
+      -565.1079,
+      161.0855,
+      1854.0325
+    ],
+    [
+      -545.19995,
+      162.1875,
+      1843.8
+    ],
+    [
+      -523.5882,
+      163.29594,
+      1833.4128
+    ],
+    [
+      -500.07184,
+      164.3595,
+      1822.7296
+    ],
+    [
+      -474.81436,
+      165.39507,
+      1811.7668
+    ],
+    [
+      -447.97913,
+      166.41948,
+      1800.5414
+    ],
+    [
+      -419.7296,
+      167.44963,
+      1789.07
+    ],
+    [
+      -390.22922,
+      168.50238,
+      1777.3693
+    ],
+    [
+      -359.6414,
+      169.59459,
+      1765.456
+    ],
+    [
+      -328.12952,
+      170.74313,
+      1753.347
+    ],
+    [
+      -295.85706,
+      171.96489,
+      1741.0591
+    ],
+    [
+      -262.98743,
+      173.27672,
+      1728.6088
+    ],
+    [
+      -229.68402,
+      174.69548,
+      1716.013
+    ],
+    [
+      -196.11029,
+      176.23805,
+      1703.2882
+    ],
+    [
+      -162.42967,
+      177.92131,
+      1690.4513
+    ],
+    [
+      -128.80562,
+      179.7621,
+      1677.5192
+    ],
+    [
+      -95.40147,
+      181.77733,
+      1664.5083
+    ],
+    [
+      -62.380695,
+      183.98381,
+      1651.4355
+    ],
+    [
+      -29.906725,
+      186.39847,
+      1638.3175
+    ],
+    [
+      1.857021,
+      189.03813,
+      1625.1711
+    ],
+    [
+      32.747078,
+      191.91968,
+      1612.0131
+    ],
+    [
+      62.600098,
+      195.06,
+      1598.86
+    ],
+    [
+      91.9861,
+      198.22406,
+      1585.668
+    ],
+    [
+      121.550095,
+      201.20619,
+      1572.3823
+    ],
+    [
+      151.24109,
+      204.06732,
+      1559.0039
+    ],
+    [
+      181.00809,
+      206.86832,
+      1545.5331
+    ],
+    [
+      210.80008,
+      209.6701,
+      1531.9708
+    ],
+    [
+      240.56609,
+      212.53355,
+      1518.3175
+    ],
+    [
+      270.25507,
+      215.51958,
+      1504.574
+    ],
+    [
+      299.81607,
+      218.68906,
+      1490.741
+    ],
+    [
+      329.19806,
+      222.10292,
+      1476.819
+    ],
+    [
+      358.35004,
+      225.82204,
+      1462.8087
+    ],
+    [
+      387.22104,
+      229.90732,
+      1448.7109
+    ],
+    [
+      415.76004,
+      234.41965,
+      1434.5262
+    ],
+    [
+      443.91605,
+      239.41994,
+      1420.2552
+    ],
+    [
+      471.63803,
+      244.96907,
+      1405.8988
+    ],
+    [
+      498.87503,
+      251.12796,
+      1391.4574
+    ],
+    [
+      525.57605,
+      257.9575,
+      1376.9316
+    ],
+    [
+      551.69,
+      265.51855,
+      1362.3224
+    ],
+    [
+      577.166,
+      273.87207,
+      1347.6302
+    ],
+    [
+      601.953,
+      283.07892,
+      1332.856
+    ],
+    [
+      626,
+      293.2,
+      1318
+    ],
+    [
+      649.5768,
+      304.6413,
+      1303.0602
+    ],
+    [
+      672.9571,
+      317.65057,
+      1288.0338
+    ],
+    [
+      696.09607,
+      332.05164,
+      1272.9213
+    ],
+    [
+      718.9488,
+      347.66818,
+      1257.7225
+    ],
+    [
+      741.4703,
+      364.3239,
+      1242.438
+    ],
+    [
+      763.6157,
+      381.8426,
+      1227.0676
+    ],
+    [
+      785.34,
+      400.04794,
+      1211.6119
+    ],
+    [
+      806.5984,
+      418.7637,
+      1196.0709
+    ],
+    [
+      827.3459,
+      437.81357,
+      1180.4447
+    ],
+    [
+      847.5375,
+      457.02124,
+      1164.7338
+    ],
+    [
+      867.12836,
+      476.21054,
+      1148.9381
+    ],
+    [
+      886.0736,
+      495.20514,
+      1133.0579
+    ],
+    [
+      904.32825,
+      513.82874,
+      1117.0935
+    ],
+    [
+      921.8473,
+      531.9051,
+      1101.045
+    ],
+    [
+      938.58594,
+      549.258,
+      1084.9126
+    ],
+    [
+      954.4992,
+      565.71106,
+      1068.6967
+    ],
+    [
+      969.5422,
+      581.0881,
+      1052.3971
+    ],
+    [
+      983.6699,
+      595.21277,
+      1036.0144
+    ],
+    [
+      996.83746,
+      607.9088,
+      1019.54865
+    ],
+    [
+      1009,
+      619,
+      1003
+    ],
+    [
+      1020.37616,
+      629.08826,
+      986.3328
+    ],
+    [
+      1031.1923,
+      638.85913,
+      969.5188
+    ],
+    [
+      1041.4146,
+      648.2616,
+      952.569
+    ],
+    [
+      1051.0096,
+      657.2448,
+      935.4944
+    ],
+    [
+      1059.9437,
+      665.7578,
+      918.3063
+    ],
+    [
+      1068.1835,
+      673.7497,
+      901.0156
+    ],
+    [
+      1075.695,
+      681.16956,
+      883.63354
+    ],
+    [
+      1082.4448,
+      687.96643,
+      866.1712
+    ],
+    [
+      1088.3994,
+      694.08936,
+      848.63965
+    ],
+    [
+      1093.525,
+      699.4875,
+      831.05
+    ],
+    [
+      1097.7882,
+      704.1099,
+      813.4133
+    ],
+    [
+      1101.1553,
+      707.90564,
+      795.7408
+    ],
+    [
+      1103.5925,
+      710.8237,
+      778.04346
+    ],
+    [
+      1105.0667,
+      712.8133,
+      760.3324
+    ],
+    [
+      1105.5438,
+      713.8235,
+      742.6188
+    ],
+    [
+      1104.9905,
+      713.8032,
+      724.91364
+    ],
+    [
+      1103.373,
+      712.70166,
+      707.2281
+    ],
+    [
+      1100.6578,
+      710.4679,
+      689.5732
+    ],
+    [
+      1096.8114,
+      707.051,
+      671.9602
+    ],
+    [
+      1091.8,
+      702.4,
+      654.4
+    ],
+    [
+      1084.9535,
+      695.9241,
+      636.87476
+    ],
+    [
+      1075.7826,
+      687.2174,
+      619.35693
+    ],
+    [
+      1064.5258,
+      676.5069,
+      601.84344
+    ],
+    [
+      1051.4209,
+      664.0192,
+      584.33124
+    ],
+    [
+      1036.7063,
+      649.98126,
+      566.8172
+    ],
+    [
+      1020.62024,
+      634.6198,
+      549.29834
+    ],
+    [
+      1003.4009,
+      618.1617,
+      531.7715
+    ],
+    [
+      985.28644,
+      600.8336,
+      514.23364
+    ],
+    [
+      966.5151,
+      582.8625,
+      496.68167
+    ],
+    [
+      947.3251,
+      564.47504,
+      479.11255
+    ],
+    [
+      927.9545,
+      545.8981,
+      461.52316
+    ],
+    [
+      908.64166,
+      527.3584,
+      443.91043
+    ],
+    [
+      889.6247,
+      509.08286,
+      426.27133
+    ],
+    [
+      871.14185,
+      491.29822,
+      408.60275
+    ],
+    [
+      853.43134,
+      474.23126,
+      390.9016
+    ],
+    [
+      836.73126,
+      458.1088,
+      373.16486
+    ],
+    [
+      821.2799,
+      443.15765,
+      355.38937
+    ],
+    [
+      807.3154,
+      429.60458,
+      337.57214
+    ],
+    [
+      795.0761,
+      417.67645,
+      319.71005
+    ],
+    [
+      784.80005,
+      407.6,
+      301.80005
+    ],
+    [
+      776.1849,
+      399.10013,
+      283.84363
+    ],
+    [
+      768.70764,
+      391.68912,
+      265.84564
+    ],
+    [
+      762.2758,
+      385.27472,
+      247.80807
+    ],
+    [
+      756.7968,
+      379.7648,
+      229.73285
+    ],
+    [
+      752.17816,
+      375.0672,
+      211.62192
+    ],
+    [
+      748.3272,
+      371.0897,
+      193.47723
+    ],
+    [
+      745.1515,
+      367.74017,
+      175.30077
+    ],
+    [
+      742.5584,
+      364.9264,
+      157.09444
+    ],
+    [
+      740.45544,
+      362.55624,
+      138.8602
+    ],
+    [
+      738.75,
+      360.5375,
+      120.60003
+    ],
+    [
+      737.34955,
+      358.778,
+      102.31585
+    ],
+    [
+      736.16156,
+      357.1856,
+      84.00961
+    ],
+    [
+      735.0935,
+      355.6681,
+      65.68328
+    ],
+    [
+      734.0528,
+      354.1333,
+      47.33882
+    ],
+    [
+      732.94684,
+      352.48904,
+      28.978138
+    ],
+    [
+      731.68317,
+      350.6432,
+      10.603207
+    ],
+    [
+      730.1692,
+      348.50354,
+      -7.784026
+    ],
+    [
+      728.3124,
+      345.9779,
+      -26.181608
+    ],
+    [
+      726.02014,
+      342.97412,
+      -44.587566
+    ],
+    [
+      723.19995,
+      339.4,
+      -63
+    ],
+    [
+      720.1879,
+      335.1777,
+      -81.38837
+    ],
+    [
+      717.35986,
+      330.3558,
+      -99.7309
+    ],
+    [
+      714.6826,
+      325.03156,
+      -118.038795
+    ],
+    [
+      712.12317,
+      319.3024,
+      -136.32321
+    ],
+    [
+      709.6484,
+      313.26562,
+      -154.59534
+    ],
+    [
+      707.2252,
+      307.0186,
+      -172.86632
+    ],
+    [
+      704.8207,
+      300.65866,
+      -191.14735
+    ],
+    [
+      702.40155,
+      294.2832,
+      -209.44963
+    ],
+    [
+      699.9348,
+      287.98953,
+      -227.7843
+    ],
+    [
+      697.38745,
+      281.875,
+      -246.16254
+    ],
+    [
+      694.7263,
+      276.03696,
+      -264.59552
+    ],
+    [
+      691.91833,
+      270.57278,
+      -283.09445
+    ],
+    [
+      688.9305,
+      265.57983,
+      -301.67047
+    ],
+    [
+      685.7296,
+      261.1554,
+      -320.33475
+    ],
+    [
+      682.2828,
+      257.39688,
+      -339.09848
+    ],
+    [
+      678.55676,
+      254.4016,
+      -357.97287
+    ],
+    [
+      674.51855,
+      252.26692,
+      -376.96902
+    ],
+    [
+      670.1351,
+      251.0902,
+      -396.09818
+    ],
+    [
+      665.3732,
+      250.96878,
+      -415.37143
+    ],
+    [
+      660.19995,
+      252,
+      -434.80005
+    ],
+    [
+      654.4614,
+      254.00867,
+      -454.53513
+    ],
+    [
+      648.07556,
+      256.7403,
+      -474.68265
+    ],
+    [
+      641.1171,
+      260.1734,
+      -495.18607
+    ],
+    [
+      633.66077,
+      264.2864,
+      -515.98883
+    ],
+    [
+      625.78125,
+      269.0578,
+      -537.0344
+    ],
+    [
+      617.55316,
+      274.4661,
+      -558.26624
+    ],
+    [
+      609.05133,
+      280.48975,
+      -579.62775
+    ],
+    [
+      600.3504,
+      287.1072,
+      -601.0624
+    ],
+    [
+      591.5251,
+      294.29697,
+      -622.5137
+    ],
+    [
+      582.65,
+      302.0375,
+      -643.925
+    ],
+    [
+      573.8,
+      310.30728,
+      -665.2398
+    ],
+    [
+      565.0496,
+      319.0848,
+      -686.40155
+    ],
+    [
+      556.4737,
+      328.3485,
+      -707.35376
+    ],
+    [
+      548.14685,
+      338.0769,
+      -728.03973
+    ],
+    [
+      540.1438,
+      348.24844,
+      -748.4031
+    ],
+    [
+      532.53925,
+      358.8416,
+      -768.38715
+    ],
+    [
+      525.40796,
+      369.83487,
+      -787.9354
+    ],
+    [
+      518.82446,
+      381.2067,
+      -806.99133
+    ],
+    [
+      512.86365,
+      392.93558,
+      -825.49835
+    ],
+    [
+      507.6001,
+      405,
+      -843.3999
+    ],
+    [
+      502.8649,
+      417.905,
+      -860.7588
+    ],
+    [
+      498.4356,
+      432.075,
+      -877.692
+    ],
+    [
+      494.30655,
+      447.3675,
+      -894.22437
+    ],
+    [
+      490.4721,
+      463.64,
+      -910.3807
+    ],
+    [
+      486.92667,
+      480.75,
+      -926.18585
+    ],
+    [
+      483.6646,
+      498.555,
+      -941.6646
+    ],
+    [
+      480.6803,
+      516.9125,
+      -956.8418
+    ],
+    [
+      477.9681,
+      535.68,
+      -971.7423
+    ],
+    [
+      475.52243,
+      554.715,
+      -986.3909
+    ],
+    [
+      473.33762,
+      573.875,
+      -1000.81244
+    ],
+    [
+      471.40805,
+      593.0175,
+      -1015.0317
+    ],
+    [
+      469.72812,
+      612,
+      -1029.0735
+    ],
+    [
+      468.29218,
+      630.68,
+      -1042.9628
+    ],
+    [
+      467.0946,
+      648.915,
+      -1056.7242
+    ],
+    [
+      466.1298,
+      666.5625,
+      -1070.3828
+    ],
+    [
+      465.39212,
+      683.48,
+      -1083.9631
+    ],
+    [
+      464.87592,
+      699.525,
+      -1097.4902
+    ],
+    [
+      464.5756,
+      714.555,
+      -1110.9889
+    ],
+    [
+      464.48553,
+      728.4275,
+      -1124.4839
+    ],
+    [
+      464.6001,
+      741,
+      -1138
+    ],
+    [
+      465.17133,
+      752.56274,
+      -1151.4325
+    ],
+    [
+      466.40488,
+      763.5148,
+      -1164.6691
+    ],
+    [
+      468.22565,
+      773.8771,
+      -1177.723
+    ],
+    [
+      470.55847,
+      783.6704,
+      -1190.608
+    ],
+    [
+      473.3282,
+      792.91565,
+      -1203.3375
+    ],
+    [
+      476.45966,
+      801.6336,
+      -1215.925
+    ],
+    [
+      479.87772,
+      809.84515,
+      -1228.3842
+    ],
+    [
+      483.50723,
+      817.5712,
+      -1240.7281
+    ],
+    [
+      487.27307,
+      824.8325,
+      -1252.9706
+    ],
+    [
+      491.10004,
+      831.65,
+      -1265.1251
+    ],
+    [
+      494.913,
+      838.0445,
+      -1277.2052
+    ],
+    [
+      498.6368,
+      844.0368,
+      -1289.2242
+    ],
+    [
+      502.19632,
+      849.6478,
+      -1301.1957
+    ],
+    [
+      505.5164,
+      854.8984,
+      -1313.1332
+    ],
+    [
+      508.52185,
+      859.8094,
+      -1325.0503
+    ],
+    [
+      511.13757,
+      864.4016,
+      -1336.9602
+    ],
+    [
+      513.2884,
+      868.6959,
+      -1348.8767
+    ],
+    [
+      514.8992,
+      872.7132,
+      -1360.8132
+    ],
+    [
+      515.8947,
+      876.4743,
+      -1372.7833
+    ],
+    [
+      516.19995,
+      880,
+      -1384.8003
+    ],
+    [
+      515.9832,
+      883.0836,
+      -1396.9353
+    ],
+    [
+      515.46716,
+      885.537,
+      -1409.2281
+    ],
+    [
+      514.6579,
+      887.409,
+      -1421.646
+    ],
+    [
+      513.5615,
+      888.7484,
+      -1434.1555
+    ],
+    [
+      512.1843,
+      889.6041,
+      -1446.7238
+    ],
+    [
+      510.53235,
+      890.0249,
+      -1459.3176
+    ],
+    [
+      508.6118,
+      890.05963,
+      -1471.904
+    ],
+    [
+      506.42877,
+      889.7572,
+      -1484.45
+    ],
+    [
+      503.98944,
+      889.1663,
+      -1496.9222
+    ],
+    [
+      501.3,
+      888.33594,
+      -1509.2878
+    ],
+    [
+      498.36652,
+      887.3148,
+      -1521.5137
+    ],
+    [
+      495.1952,
+      886.1518,
+      -1533.5668
+    ],
+    [
+      491.79214,
+      884.8957,
+      -1545.4138
+    ],
+    [
+      488.1636,
+      883.59546,
+      -1557.022
+    ],
+    [
+      484.3156,
+      882.2998,
+      -1568.3582
+    ],
+    [
+      480.2544,
+      881.05756,
+      -1579.3892
+    ],
+    [
+      475.98608,
+      879.91766,
+      -1590.0819
+    ],
+    [
+      471.51678,
+      878.92883,
+      -1600.4034
+    ],
+    [
+      466.85272,
+      878.14,
+      -1610.3206
+    ],
+    [
+      462,
+      877.6,
+      -1619.8003
+    ],
+    [
+      456.95297,
+      877.19836,
+      -1629.1243
+    ],
+    [
+      451.6999,
+      876.7898,
+      -1638.5544
+    ],
+    [
+      446.23764,
+      876.37054,
+      -1648.028
+    ],
+    [
+      440.5632,
+      875.937,
+      -1657.4819
+    ],
+    [
+      434.67343,
+      875.48535,
+      -1666.8534
+    ],
+    [
+      428.56528,
+      875.0119,
+      -1676.0797
+    ],
+    [
+      422.2357,
+      874.51306,
+      -1685.0979
+    ],
+    [
+      415.68155,
+      873.985,
+      -1693.8451
+    ],
+    [
+      408.89984,
+      873.4241,
+      -1702.2585
+    ],
+    [
+      401.88745,
+      872.82654,
+      -1710.2753
+    ],
+    [
+      394.6413,
+      872.1888,
+      -1717.8325
+    ],
+    [
+      387.15833,
+      871.507,
+      -1724.8676
+    ],
+    [
+      379.43546,
+      870.7775,
+      -1731.3173
+    ],
+    [
+      371.46964,
+      869.9967,
+      -1737.1189
+    ],
+    [
+      363.25772,
+      869.16077,
+      -1742.2097
+    ],
+    [
+      354.79672,
+      868.266,
+      -1746.5267
+    ],
+    [
+      346.0835,
+      867.3088,
+      -1750.0071
+    ],
+    [
+      337.115,
+      866.28534,
+      -1752.5881
+    ],
+    [
+      327.88818,
+      865.19196,
+      -1754.2068
+    ],
+    [
+      318.3999,
+      864.025,
+      -1754.8003
+    ],
+    [
+      308.4007,
+      862.9304,
+      -1754.3793
+    ],
+    [
+      297.6972,
+      862.02783,
+      -1753.027
+    ],
+    [
+      286.37067,
+      861.2741,
+      -1750.7898
+    ],
+    [
+      274.5023,
+      860.62604,
+      -1747.7139
+    ],
+    [
+      262.17334,
+      860.04047,
+      -1743.8456
+    ],
+    [
+      249.465,
+      859.47424,
+      -1739.2312
+    ],
+    [
+      236.45853,
+      858.88416,
+      -1733.9169
+    ],
+    [
+      223.2351,
+      858.22705,
+      -1727.9491
+    ],
+    [
+      209.87599,
+      857.4597,
+      -1721.3739
+    ],
+    [
+      196.46242,
+      856.53906,
+      -1714.2378
+    ],
+    [
+      183.07558,
+      855.42194,
+      -1706.5868
+    ],
+    [
+      169.79672,
+      854.065,
+      -1698.4674
+    ],
+    [
+      156.70706,
+      852.4253,
+      -1689.9259
+    ],
+    [
+      143.88783,
+      850.4595,
+      -1681.0083
+    ],
+    [
+      131.42024,
+      848.12445,
+      -1671.7612
+    ],
+    [
+      119.38554,
+      845.377,
+      -1662.2306
+    ],
+    [
+      107.86492,
+      842.1741,
+      -1652.463
+    ],
+    [
+      96.93964,
+      838.47235,
+      -1642.5045
+    ],
+    [
+      86.69091,
+      834.2287,
+      -1632.4015
+    ],
+    [
+      77.19995,
+      829.4,
+      -1622.2002
+    ],
+    [
+      69.03391,
+      824.30035,
+      -1611.9904
+    ],
+    [
+      62.543655,
+      819.2292,
+      -1601.7877
+    ],
+    [
+      57.485947,
+      814.12146,
+      -1591.5272
+    ],
+    [
+      53.61756,
+      808.912,
+      -1581.1442
+    ],
+    [
+      50.69528,
+      803.53577,
+      -1570.5736
+    ],
+    [
+      48.47587,
+      797.92755,
+      -1559.7506
+    ],
+    [
+      46.71611,
+      792.02234,
+      -1548.6104
+    ],
+    [
+      45.172775,
+      785.755,
+      -1537.0881
+    ],
+    [
+      43.602642,
+      779.0604,
+      -1525.1188
+    ],
+    [
+      41.76248,
+      771.8734,
+      -1512.6376
+    ],
+    [
+      39.409073,
+      764.129,
+      -1499.5796
+    ],
+    [
+      36.299187,
+      755.76196,
+      -1485.88
+    ],
+    [
+      32.189598,
+      746.7073,
+      -1471.4739
+    ],
+    [
+      26.837093,
+      736.8998,
+      -1456.2965
+    ],
+    [
+      19.998432,
+      726.2744,
+      -1440.2827
+    ],
+    [
+      11.430394,
+      714.766,
+      -1423.3679
+    ],
+    [
+      0.889755,
+      702.30945,
+      -1405.487
+    ],
+    [
+      -11.866711,
+      688.83966,
+      -1386.5754
+    ],
+    [
+      -27.082209,
+      674.29156,
+      -1366.568
+    ],
+    [
+      -45,
+      658.6,
+      -1345.3999
+    ],
+    [
+      -65.79599,
+      640.9549,
+      -1323.5376
+    ],
+    [
+      -89.3189,
+      620.79456,
+      -1301.4268
+    ],
+    [
+      -115.32117,
+      598.42615,
+      -1278.9713
+    ],
+    [
+      -143.5552,
+      574.1568,
+      -1256.0751
+    ],
+    [
+      -173.77344,
+      548.2937,
+      -1232.6421
+    ],
+    [
+      -205.72832,
+      521.14417,
+      -1208.5762
+    ],
+    [
+      -239.17223,
+      493.01532,
+      -1183.7814
+    ],
+    [
+      -273.85764,
+      464.2144,
+      -1158.1615
+    ],
+    [
+      -309.53693,
+      435.04852,
+      -1131.6205
+    ],
+    [
+      -345.96252,
+      405.82498,
+      -1104.0624
+    ],
+    [
+      -382.8869,
+      376.85092,
+      -1075.391
+    ],
+    [
+      -420.06244,
+      348.43356,
+      -1045.5103
+    ],
+    [
+      -457.2416,
+      320.88013,
+      -1014.32416
+    ],
+    [
+      -494.17673,
+      294.4978,
+      -981.7366
+    ],
+    [
+      -530.62036,
+      269.59375,
+      -947.6514
+    ],
+    [
+      -566.3248,
+      246.47519,
+      -911.97266
+    ],
+    [
+      -601.04266,
+      225.44934,
+      -874.6042
+    ],
+    [
+      -634.5262,
+      206.82338,
+      -835.44995
+    ],
+    [
+      -666.52783,
+      190.90456,
+      -794.41394
+    ],
+    [
+      -696.80005,
+      178,
+      -751.3999
+    ],
+    [
+      -726.5634,
+      167.49019,
+      -705.0821
+    ],
+    [
+      -757.0767,
+      158.5195,
+      -654.5283
+    ],
+    [
+      -788.15015,
+      151.04106,
+      -600.23315
+    ],
+    [
+      -819.5936,
+      145.008,
+      -542.6911
+    ],
+    [
+      -851.2172,
+      140.37344,
+      -482.3968
+    ],
+    [
+      -882.83093,
+      137.0905,
+      -419.84473
+    ],
+    [
+      -914.2448,
+      135.11232,
+      -355.52948
+    ],
+    [
+      -945.26886,
+      134.392,
+      -289.94553
+    ],
+    [
+      -975.7131,
+      134.88269,
+      -223.5875
+    ],
+    [
+      -1005.3875,
+      136.5375,
+      -156.94995
+    ],
+    [
+      -1034.1023,
+      139.30957,
+      -90.52737
+    ],
+    [
+      -1061.6672,
+      143.15201,
+      -24.814333
+    ],
+    [
+      -1087.8926,
+      148.01794,
+      39.694603
+    ],
+    [
+      -1112.5881,
+      153.8605,
+      102.504814
+    ],
+    [
+      -1135.5641,
+      160.63281,
+      163.12189
+    ],
+    [
+      -1156.6304,
+      168.28801,
+      221.05122
+    ],
+    [
+      -1175.5972,
+      176.77919,
+      275.79825
+    ],
+    [
+      -1192.2743,
+      186.05951,
+      326.86844
+    ],
+    [
+      -1206.4719,
+      196.08206,
+      373.76718
+    ],
+    [
+      -1218,
+      206.8,
+      416
+    ],
+    [
+      -1226.8492,
+      219.3014,
+      454.3508
+    ],
+    [
+      -1233.2389,
+      234.5012,
+      490.0285
+    ],
+    [
+      -1237.3219,
+      252.0928,
+      523.17596
+    ],
+    [
+      -1239.2512,
+      271.7696,
+      553.936
+    ],
+    [
+      -1239.1797,
+      293.225,
+      582.45154
+    ],
+    [
+      -1237.2603,
+      316.1524,
+      608.8655
+    ],
+    [
+      -1233.646,
+      340.2452,
+      633.3207
+    ],
+    [
+      -1228.4896,
+      365.1968,
+      655.96
+    ],
+    [
+      -1221.9441,
+      390.70062,
+      676.92633
+    ],
+    [
+      -1214.1625,
+      416.45,
+      696.3625
+    ],
+    [
+      -1205.2976,
+      442.1384,
+      714.41144
+    ],
+    [
+      -1195.5024,
+      467.4592,
+      731.216
+    ],
+    [
+      -1184.9298,
+      492.1058,
+      746.91907
+    ],
+    [
+      -1173.7327,
+      515.7716,
+      761.6635
+    ],
+    [
+      -1162.0641,
+      538.15,
+      775.59216
+    ],
+    [
+      -1150.0768,
+      558.9344,
+      788.848
+    ],
+    [
+      -1137.9238,
+      577.81824,
+      801.5738
+    ],
+    [
+      -1125.758,
+      594.4948,
+      813.91254
+    ],
+    [
+      -1113.7325,
+      608.6576,
+      826.00696
+    ],
+    [
+      -1102,
+      620,
+      838
+    ],
+    [
+      -1090.0046,
+      629.27045,
+      849.73254
+    ],
+    [
+      -1077.1251,
+      637.4256,
+      860.90857
+    ],
+    [
+      -1063.4163,
+      644.4711,
+      871.4655
+    ],
+    [
+      -1048.9327,
+      650.4128,
+      881.3408
+    ],
+    [
+      -1033.7297,
+      655.2562,
+      890.47186
+    ],
+    [
+      -1017.8617,
+      659.0072,
+      898.7962
+    ],
+    [
+      -1001.38367,
+      661.6713,
+      906.2512
+    ],
+    [
+      -984.3504,
+      663.2544,
+      912.7744
+    ],
+    [
+      -966.8167,
+      663.762,
+      918.30316
+    ],
+    [
+      -948.83746,
+      663.2,
+      922.77496
+    ],
+    [
+      -930.46747,
+      661.574,
+      926.1273
+    ],
+    [
+      -911.7616,
+      658.8896,
+      928.2976
+    ],
+    [
+      -892.77454,
+      655.15265,
+      929.22327
+    ],
+    [
+      -873.5613,
+      650.3688,
+      928.8418
+    ],
+    [
+      -854.1765,
+      644.54376,
+      927.0906
+    ],
+    [
+      -834.6752,
+      637.6832,
+      923.90717
+    ],
+    [
+      -815.112,
+      629.79285,
+      919.22894
+    ],
+    [
+      -795.5419,
+      620.8784,
+      912.99335
+    ],
+    [
+      -776.0196,
+      610.94556,
+      905.1379
+    ],
+    [
+      -756.6,
+      600,
+      895.6
+    ],
+    [
+      -737.24005,
+      586.9801,
+      884.2462
+    ],
+    [
+      -717.8404,
+      571.041,
+      871.04596
+    ],
+    [
+      -698.37134,
+      552.51337,
+      856.0907
+    ],
+    [
+      -678.80316,
+      531.728,
+      839.472
+    ],
+    [
+      -659.1062,
+      509.01562,
+      821.28125
+    ],
+    [
+      -639.2508,
+      484.707,
+      801.61
+    ],
+    [
+      -619.20715,
+      459.13287,
+      780.54974
+    ],
+    [
+      -598.94556,
+      432.624,
+      758.19196
+    ],
+    [
+      -578.4364,
+      405.5111,
+      734.62823
+    ],
+    [
+      -557.64996,
+      378.125,
+      709.95
+    ],
+    [
+      -536.5565,
+      350.79636,
+      684.2487
+    ],
+    [
+      -515.1264,
+      323.856,
+      657.61597
+    ],
+    [
+      -493.32983,
+      297.6346,
+      630.14325
+    ],
+    [
+      -471.1372,
+      272.463,
+      601.922
+    ],
+    [
+      -448.51874,
+      248.67188,
+      573.04376
+    ],
+    [
+      -425.4448,
+      226.592,
+      543.6
+    ],
+    [
+      -401.88565,
+      206.55412,
+      513.68225
+    ],
+    [
+      -377.81158,
+      188.88899,
+      483.382
+    ],
+    [
+      -353.19296,
+      173.92738,
+      452.79077
+    ],
+    [
+      -328,
+      162,
+      422
+    ],
+    [
+      -301.41232,
+      152.86188,
+      389.5365
+    ],
+    [
+      -272.8177,
+      145.925,
+      354.128
+    ],
+    [
+      -242.49861,
+      141.00563,
+      316.16748
+    ],
+    [
+      -210.7376,
+      137.92,
+      276.048
+    ],
+    [
+      -177.81718,
+      136.48438,
+      234.16249
+    ],
+    [
+      -144.0199,
+      136.515,
+      190.90398
+    ],
+    [
+      -109.628265,
+      137.82812,
+      146.6655
+    ],
+    [
+      -74.9248,
+      140.24,
+      101.83998
+    ],
+    [
+      -40.192028,
+      143.56688,
+      56.820465
+    ],
+    [
+      -5.712501,
+      147.625,
+      11.999977
+    ],
+    [
+      28.231295,
+      152.23062,
+      -32.228535
+    ],
+    [
+      61.356815,
+      157.2,
+      -75.472046
+    ],
+    [
+      93.38153,
+      162.34938,
+      -117.33756
+    ],
+    [
+      124.022896,
+      167.495,
+      -157.43202
+    ],
+    [
+      152.99844,
+      172.45312,
+      -195.36253
+    ],
+    [
+      180.0256,
+      177.04001,
+      -230.73605
+    ],
+    [
+      204.82187,
+      181.07188,
+      -263.15955
+    ],
+    [
+      227.10472,
+      184.365,
+      -292.24005
+    ],
+    [
+      246.59158,
+      186.73563,
+      -317.58453
+    ],
+    [
+      263,
+      188,
+      -338.80005
+    ]
+  ],
+  "orbs": [
+    {
+      "i": 0,
+      "name": "EnergyOrb",
+      "live": true,
+      "pos": [
+        -1630.913944,
+        561.66582,
+        182.08518
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1004336982",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -1630.913944,
+            561.66582,
+            -182.08518
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 1,
+      "name": "EnergyOrb 1",
+      "live": true,
+      "pos": [
+        -3683.16204,
+        442.77806,
+        1592.2383
+      ],
+      "posFf2": null,
+      "speed": 0.5,
+      "_meta": {
+        "fileID": "499244360",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 1",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -3683.16204,
+            442.77806,
+            -1592.2383
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 2,
+      "name": "EnergyOrb 10",
+      "live": true,
+      "pos": [
+        -918.76204,
+        936.77806,
+        3554.2383
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "673328962",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 10",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -918.76204,
+            936.77806,
+            -3554.2383
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 3,
+      "name": "EnergyOrb 11",
+      "live": true,
+      "pos": [
+        884.03796,
+        -159.62194,
+        -3654.1617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1197013962",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 11",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            884.03796,
+            -159.62194,
+            3654.1617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 4,
+      "name": "EnergyOrb 2",
+      "live": true,
+      "pos": [
+        -3730.76204,
+        217.57806,
+        -1116.9617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1001774166",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 2",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -3730.76204,
+            217.57806,
+            1116.9617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 5,
+      "name": "EnergyOrb 3",
+      "live": true,
+      "pos": [
+        -3165.96204,
+        19.17806,
+        -1308.9617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "10143542",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 3",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -3165.96204,
+            19.17806,
+            1308.9617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 6,
+      "name": "EnergyOrb 4",
+      "live": true,
+      "pos": [
+        -401.56204,
+        640.37806,
+        -1003.3617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1978276330",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 4",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -401.56204,
+            640.37806,
+            1003.3617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 7,
+      "name": "EnergyOrb 5",
+      "live": true,
+      "pos": [
+        166.43796,
+        1459.17806,
+        -2813.3617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "216509679",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 5",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            166.43796,
+            1459.17806,
+            2813.3617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 8,
+      "name": "EnergyOrb 6",
+      "live": true,
+      "pos": [
+        -955.96204,
+        2903.57806,
+        -3084.9617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1035366139",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 6",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            -955.96204,
+            2903.57806,
+            3084.9617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 9,
+      "name": "EnergyOrb 7",
+      "live": true,
+      "pos": [
+        836.43796,
+        -124.42194,
+        -295.7617
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1045150226",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 7",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            836.43796,
+            -124.42194,
+            295.7617
+          ]
+        },
+        "ff2": null
+      }
+    },
+    {
+      "i": 10,
+      "name": "EnergyOrb 8",
+      "live": true,
+      "pos": [
+        1068.03796,
+        1300.37806,
+        1811.8383
+      ],
+      "posFf2": null,
+      "speed": 0.25,
+      "_meta": {
+        "fileID": "1306095828",
+        "path": "levelOffset/freeFlight_objects/EnergyOrb 8",
+        "selfActive": true,
+        "magnetComponentEnabled": false,
+        "raw": {
+          "pos": [
+            1068.03796,
+            1300.37806,
+            -1811.8383
+          ]
+        },
+        "ff2": null
+      }
+    }
+  ],
+  "pads": [],
+  "turnIndicators": [
+    {
+      "i": 0,
+      "name": "turnIndicator",
+      "live": true,
+      "pos": [
+        1238,
+        734,
+        891
+      ],
+      "quat": [
+        0.501577,
+        -0.073747,
+        0.850007,
+        -0.143073
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "1849918450",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            1238,
+            734,
+            -891
+          ],
+          "rot": [
+            -0.501577,
+            0.073747,
+            0.850007,
+            -0.143073
+          ]
+        }
+      }
+    },
+    {
+      "i": 1,
+      "name": "turnIndicator (1)",
+      "live": true,
+      "pos": [
+        1243,
+        795,
+        649
+      ],
+      "quat": [
+        -0.733822,
+        -0.22356,
+        -0.585087,
+        0.263058
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "128676938",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (1)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            1243,
+            795,
+            -649
+          ],
+          "rot": [
+            0.733822,
+            0.22356,
+            -0.585087,
+            0.263058
+          ]
+        }
+      }
+    },
+    {
+      "i": 2,
+      "name": "turnIndicator (2)",
+      "live": true,
+      "pos": [
+        1285,
+        786,
+        767
+      ],
+      "quat": [
+        0.679706,
+        -0.018323,
+        0.683106,
+        -0.266516
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "355091587",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (2)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            1285,
+            786,
+            -767
+          ],
+          "rot": [
+            -0.679706,
+            0.018323,
+            0.683106,
+            -0.266516
+          ]
+        }
+      }
+    },
+    {
+      "i": 3,
+      "name": "turnIndicator (3)",
+      "live": true,
+      "pos": [
+        300.9,
+        901.3,
+        -1848.3
+      ],
+      "quat": [
+        -0.042024,
+        0.173741,
+        0.026218,
+        0.983545
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "1352631446",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (3)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            300.9,
+            901.3,
+            1848.3
+          ],
+          "rot": [
+            0.042024,
+            -0.173741,
+            0.026218,
+            0.983545
+          ]
+        }
+      }
+    },
+    {
+      "i": 4,
+      "name": "turnIndicator (4)",
+      "live": true,
+      "pos": [
+        400.2,
+        908.1,
+        -1846
+      ],
+      "quat": [
+        -0.031781,
+        -0.140897,
+        0.037991,
+        0.988784
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "1377231212",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (4)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            400.2,
+            908.1,
+            1846
+          ],
+          "rot": [
+            0.031781,
+            0.140897,
+            0.037991,
+            0.988784
+          ]
+        }
+      }
+    },
+    {
+      "i": 5,
+      "name": "turnIndicator (5)",
+      "live": true,
+      "pos": [
+        472.1,
+        917.3,
+        -1786.3
+      ],
+      "quat": [
+        -0.018338,
+        -0.442421,
+        0.046012,
+        0.895439
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "1982633683",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (5)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            472.1,
+            917.3,
+            1786.3
+          ],
+          "rot": [
+            0.018338,
+            0.442421,
+            0.046012,
+            0.895439
+          ]
+        }
+      }
+    },
+    {
+      "i": 6,
+      "name": "turnIndicator (6)",
+      "live": true,
+      "pos": [
+        -823.3,
+        654.7,
+        978.1
+      ],
+      "quat": [
+        -0.094204,
+        -0.99503,
+        -0.000608,
+        0.032249
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "1580441909",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (6)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            -823.3,
+            654.7,
+            -978.1
+          ],
+          "rot": [
+            0.094204,
+            0.99503,
+            -0.000608,
+            0.032249
+          ]
+        }
+      }
+    },
+    {
+      "i": 7,
+      "name": "turnIndicator (7)",
+      "live": true,
+      "pos": [
+        -718.4,
+        614.8,
+        950.2
+      ],
+      "quat": [
+        -0.216854,
+        -0.937361,
+        0.155903,
+        0.223658
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "819280378",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (7)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            -718.4,
+            614.8,
+            -950.2
+          ],
+          "rot": [
+            0.216854,
+            0.937361,
+            0.155903,
+            0.223658
+          ]
+        }
+      }
+    },
+    {
+      "i": 8,
+      "name": "turnIndicator (8)",
+      "live": true,
+      "pos": [
+        -640.1,
+        556.2,
+        893
+      ],
+      "quat": [
+        -0.317639,
+        -0.875721,
+        0.122656,
+        0.342306
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "art": null,
+      "_meta": {
+        "fileID": "303547188",
+        "path": "levelOffset/RingAttack_objects/Turn Indicators/turnIndicator (8)",
+        "prefab": "Assets/Faceted Flight/Prefabs/turnIndicator.prefab",
+        "selfActive": true,
+        "raw": {
+          "pos": [
+            -640.1,
+            556.2,
+            -893
+          ],
+          "rot": [
+            0.317639,
+            0.875721,
+            0.122656,
+            0.342306
+          ]
+        }
+      }
+    }
+  ],
+  "clouds": [
+    {
+      "i": 0,
+      "name": "GL-Cloud-01",
+      "pos": [
+        -1152,
+        781,
+        163
+      ],
+      "quat": [
+        0,
+        -0.93631,
+        0,
+        0.351176
+      ],
+      "scale": [
+        181.652136,
+        73.81998,
+        181.652186
+      ],
+      "shape": "01",
+      "_meta": {
+        "fileID": "4000014283305028",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-01",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -1152,
+            781,
+            -163
+          ]
+        }
+      }
+    },
+    {
+      "i": 1,
+      "name": "GL-Cloud-02",
+      "pos": [
+        449,
+        1163,
+        251
+      ],
+      "quat": [
+        0,
+        0.359334,
+        0,
+        0.933209
+      ],
+      "scale": [
+        455.371341,
+        217.93523,
+        455.371501
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000012531060290",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-02",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            449,
+            1163,
+            -251
+          ]
+        }
+      }
+    },
+    {
+      "i": 2,
+      "name": "GL-Cloud-02 (1)",
+      "pos": [
+        768,
+        984,
+        -1680
+      ],
+      "quat": [
+        0,
+        -0.543364,
+        0,
+        0.839497
+      ],
+      "scale": [
+        327.486157,
+        327.4863,
+        327.486337
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013573235094",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-02 (1)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            768,
+            984,
+            1680
+          ]
+        }
+      }
+    },
+    {
+      "i": 3,
+      "name": "GL-Cloud-03",
+      "pos": [
+        -2350,
+        1234,
+        585
+      ],
+      "quat": [
+        -0.020664,
+        0.387196,
+        0.006406,
+        0.921743
+      ],
+      "scale": [
+        333.902507,
+        117.536766,
+        333.901907
+      ],
+      "shape": "03",
+      "_meta": {
+        "fileID": "4000013432140564",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-03",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -2350,
+            1234,
+            -585
+          ]
+        }
+      }
+    },
+    {
+      "i": 4,
+      "name": "GL-Cloud-04",
+      "pos": [
+        406,
+        946,
+        1898
+      ],
+      "quat": [
+        0,
+        -0.882733,
+        0,
+        0.469874
+      ],
+      "scale": [
+        650.218784,
+        274.70422,
+        561.313773
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013574264690",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-04",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            406,
+            946,
+            -1898
+          ]
+        }
+      }
+    },
+    {
+      "i": 5,
+      "name": "GL-Cloud-04 (1)",
+      "pos": [
+        1005,
+        902,
+        1525
+      ],
+      "quat": [
+        0.012219,
+        0.584209,
+        -0.058297,
+        0.809415
+      ],
+      "scale": [
+        393.058935,
+        166.05936,
+        339.31563
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013332842022",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-04 (1)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            1005,
+            902,
+            -1525
+          ]
+        }
+      }
+    },
+    {
+      "i": 6,
+      "name": "GL-Cloud-05",
+      "pos": [
+        154,
+        1382,
+        -1673
+      ],
+      "quat": [
+        0,
+        -0.865789,
+        0,
+        0.500409
+      ],
+      "scale": [
+        327.486211,
+        327.4863,
+        327.486331
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000011331187654",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            154,
+            1382,
+            1673
+          ]
+        }
+      }
+    },
+    {
+      "i": 7,
+      "name": "GL-Cloud-05 (1)",
+      "pos": [
+        -238,
+        1186,
+        -1194
+      ],
+      "quat": [
+        0,
+        -0.762667,
+        0,
+        0.646791
+      ],
+      "scale": [
+        492.680466,
+        267.10193,
+        430.196197
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000012308610022",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (1)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -238,
+            1186,
+            1194
+          ]
+        }
+      }
+    },
+    {
+      "i": 8,
+      "name": "GL-Cloud-05 (2)",
+      "pos": [
+        429,
+        1347,
+        -841
+      ],
+      "quat": [
+        0,
+        -0.983683,
+        0,
+        0.179911
+      ],
+      "scale": [
+        327.486173,
+        327.4863,
+        327.486323
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000010267020776",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (2)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            429,
+            1347,
+            841
+          ]
+        }
+      }
+    },
+    {
+      "i": 9,
+      "name": "GL-Cloud-05 (3)",
+      "pos": [
+        -1045,
+        1306,
+        -305
+      ],
+      "quat": [
+        0,
+        -0.730527,
+        0,
+        0.682883
+      ],
+      "scale": [
+        337.059858,
+        171.74432,
+        294.312351
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000014168907256",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (3)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -1045,
+            1306,
+            305
+          ]
+        }
+      }
+    },
+    {
+      "i": 10,
+      "name": "GL-Cloud-05 (4)",
+      "pos": [
+        -996,
+        1034,
+        -1744
+      ],
+      "quat": [
+        0,
+        -0.728351,
+        0,
+        0.685204
+      ],
+      "scale": [
+        541.593905,
+        249.76978,
+        472.906685
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000011742491722",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (4)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -996,
+            1034,
+            1744
+          ]
+        }
+      }
+    },
+    {
+      "i": 11,
+      "name": "GL-Cloud-05 (5)",
+      "pos": [
+        1355,
+        1021,
+        -1335
+      ],
+      "quat": [
+        0.013599,
+        -0.827109,
+        0.020031,
+        0.561521
+      ],
+      "scale": [
+        720.763841,
+        320.3644,
+        787.84423
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013066429752",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (5)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            1355,
+            1021,
+            1335
+          ]
+        }
+      }
+    },
+    {
+      "i": 12,
+      "name": "GL-Cloud-05 (6)",
+      "pos": [
+        1315,
+        1038,
+        -278
+      ],
+      "quat": [
+        0.013599,
+        -0.827109,
+        0.020031,
+        0.561521
+      ],
+      "scale": [
+        720.763891,
+        320.3645,
+        787.84423
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000011888285062",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (6)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            1315,
+            1038,
+            278
+          ]
+        }
+      }
+    },
+    {
+      "i": 13,
+      "name": "GL-Cloud-05 (7)",
+      "pos": [
+        -145,
+        1219,
+        -324
+      ],
+      "quat": [
+        0.013599,
+        -0.827109,
+        0.020031,
+        0.561521
+      ],
+      "scale": [
+        720.763991,
+        320.36453,
+        787.84423
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000012177862272",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (7)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -145,
+            1219,
+            324
+          ]
+        }
+      }
+    },
+    {
+      "i": 14,
+      "name": "GL-Cloud-05 (8)",
+      "pos": [
+        1566,
+        1229,
+        -2400
+      ],
+      "quat": [
+        0,
+        -0.992865,
+        0,
+        0.119243
+      ],
+      "scale": [
+        500.388696,
+        303.2181,
+        500.389016
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013421905350",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (8)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            1566,
+            1229,
+            2400
+          ]
+        }
+      }
+    },
+    {
+      "i": 15,
+      "name": "GL-Cloud-05 (9)",
+      "pos": [
+        3082,
+        1229,
+        -1982
+      ],
+      "quat": [
+        0,
+        -0.992865,
+        0,
+        0.119243
+      ],
+      "scale": [
+        893.245607,
+        342.8341,
+        893.245877
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013622571284",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-05 (9)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            3082,
+            1229,
+            1982
+          ]
+        }
+      }
+    },
+    {
+      "i": 16,
+      "name": "GL-Cloud-06",
+      "pos": [
+        -2516,
+        845,
+        1445
+      ],
+      "quat": [
+        0,
+        -0.917213,
+        0,
+        0.398397
+      ],
+      "scale": [
+        543.627095,
+        217.0617,
+        543.627235
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013375279894",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-06",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -2516,
+            845,
+            -1445
+          ]
+        }
+      }
+    },
+    {
+      "i": 17,
+      "name": "GL-Cloud-06 (1)",
+      "pos": [
+        -1074,
+        1018,
+        1291
+      ],
+      "quat": [
+        0,
+        -0.917213,
+        0,
+        0.398397
+      ],
+      "scale": [
+        543.627355,
+        217.0617,
+        543.627395
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013582062542",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-06 (1)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -1074,
+            1018,
+            -1291
+          ]
+        }
+      }
+    },
+    {
+      "i": 18,
+      "name": "GL-Cloud-06 (2)",
+      "pos": [
+        -3148,
+        539,
+        -1782
+      ],
+      "quat": [
+        0,
+        -0.917213,
+        0,
+        0.398397
+      ],
+      "scale": [
+        543.627355,
+        217.0617,
+        543.627395
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "4000013827316646",
+        "path": "LevelArt_SimonetIslands/art/clouds/GL-Cloud-06 (2)",
+        "prefab": "Assets/Faceted Flight/Prefabs/Levels/LevelArt_SimonetIslands.prefab",
+        "source": "levelArtPrefabInstance",
+        "instanceOrigin": [
+          -2048,
+          0,
+          -2048
+        ],
+        "raw": {
+          "pos": [
+            -3148,
+            539,
+            1782
+          ]
+        }
+      }
+    }
+  ],
+  "props": [],
+  "ui": {
+    "briefing": "Fly through as many rings as you can before time runs out. Don't CRASH!!\n",
+    "strings": {
+      "gatesLabel": "Gates:",
+      "timeLabel": "Time:",
+      "speedLabel": "Speed :",
+      "timeEmpty": "--",
+      "countPlaceholder": "00/50",
+      "launchPrompt": "Press A to launch",
+      "launching": "Powering On...",
+      "outOfBounds": "Warning!\nLeaving event airspace\nTurn back now!",
+      "outOfBoundsCountdown": "12",
+      "pauseTitle": "- PAUSE -",
+      "pauseResume": "Resume",
+      "pauseRestart": "Restart",
+      "pauseExit": "Exit",
+      "courseComplete": "Course Complete!",
+      "gatesCleared": "Gates cleared:",
+      "medalLabel": "Medal:",
+      "totalScore": "Total Score:",
+      "medalAwarded": "________ medal AwarDeD!",
+      "explorationEnding": "Exploration EnDing...",
+      "orbsFound": "Orbs FounD:",
+      "changeView": "Press the X button to change view."
+    },
+    "_meta": {
+      "prefab": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab",
+      "vehicle": "hoverjet",
+      "textComponents": 132,
+      "note": "UnityEngine.UI.Text is m_Script fileID 708705254 in the UnityEngine.UI assembly (guid f5f67c52d1564df4a8936ccd202a3bd8). Strings are read from the raw bytes by tools/extract/ui-text.mjs, which folds multi-line YAML scalars properly; the shared unity_yaml.js parser returns only the first line of one.",
+      "briefing": {
+        "select": "panel_mission/Text",
+        "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_mission/Text",
+        "fileID": "11422448",
+        "line": 9820,
+        "hud": "firstPerson",
+        "prefab": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab",
+        "liveAtSpawn": true,
+        "matched": 2,
+        "note": "panel_mission carries its own disableAfterDelay: disableDelay 3.8, enabled, targeting itself, at PlayerShip_SR14_Photon.prefab:10176 and :12320, mechanism in disableAfterDelay.cs:8-16. disableDelay is a public float with NO initialiser, so 3.8 is shipped behaviour and not a code default. A panel live at spawn (see liveAtSpawn above) is therefore killed 3.8 s after spawn; one that is not does not start its countdown until something activates it, because Start() does not run on an inactive GameObject. What activates it, if anything, is NOT traced here. HUD_Ship.DelayedStart (HUD_Ship.cs:88-99) then hides it a SECOND time at 0.12+4=4.12 s, against a panel already inactive for 0.32 s. 4.12 is real but it is NOT the figure: DEV-200 made that trade on the strength of a citation pointing at HUD_Ship.cs rather than at the prefab, and DEV-217 undid it. Ends in a newline, which is in the shipped bytes."
+      },
+      "strings": {
+        "gatesLabel": {
+          "select": "panel_shipUI/text_gates",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/text_gates",
+          "fileID": "11484738",
+          "line": 11858,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts — the caller passes `countLabel`; app.ts sends 'GATES'",
+          "note": "2016 writes `Gates:` in sentence case. The port upper-cases it."
+        },
+        "timeLabel": {
+          "select": "panel_shipUI/text_time",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/text_time",
+          "fileID": "11492580",
+          "line": 12079,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts — literal 'TIME:'"
+        },
+        "speedLabel": {
+          "select": "panel_shipUI/panel_speedUI/text_speed",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/panel_speedUI/text_speed",
+          "fileID": "11412160",
+          "line": 9545,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 2,
+          "ff2": "src/render/hud.ts — literal 'SPEED:'",
+          "note": "The two HUDs disagree: first-person `Speed :`, third-person `SpeeD :`. Both carry a space before the colon, which the port drops.",
+          "variants": [
+            {
+              "text": "SpeeD :",
+              "at": [
+                "thirdPerson:PlayerShip_SR14_Photon/shipOffset/CamRoot_3rdPerson/Ship_HUD (1)/offset/panel_shipUI/panel_speedUI/text_speed#11400052"
+              ]
+            }
+          ]
+        },
+        "timeEmpty": {
+          "select": "panel_shipUI/val_time",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/val_time",
+          "fileID": "11482956",
+          "line": 11812,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts — literal '--' for a mission with no timer"
+        },
+        "countPlaceholder": {
+          "select": "panel_shipUI/val_gates",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_shipUI/val_gates",
+          "fileID": "11485344",
+          "line": 11891,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 1,
+          "ff2": "src/render/hud.ts `pad2` — the `00/50` shape is why counts are two-digit padded"
+        },
+        "launchPrompt": {
+          "select": "panel_preLaunch/text_poweringOn",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_preLaunch/text_poweringOn",
+          "fileID": "11430288",
+          "line": 10032,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'Press A to launch'"
+        },
+        "launching": {
+          "select": "panel_Startup/text_poweringOn",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_Startup/text_poweringOn",
+          "fileID": "11454298",
+          "line": 10625,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'Powering On...'"
+        },
+        "outOfBounds": {
+          "select": "panel_outofBounds/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_outofBounds/text_end",
+          "fileID": "11476876",
+          "line": 11497,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts `launchBanner()` — literals 'OUT OF BOUNDS' and 'RETURN — <n>'",
+          "note": "THREE lines, not one: `Warning!` / `Leaving event airspace` / `Turn back now!`. The countdown is a separate label parented to this one."
+        },
+        "outOfBoundsCountdown": {
+          "select": "panel_outofBounds/text_end/text_warning_countdown",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_outofBounds/text_end/text_warning_countdown",
+          "fileID": "11471490",
+          "line": 11242,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — the number in `RETURN — <n>`",
+          "note": "Authored as `12`, one less than the 13 s `PlayerBoundary.resetDelay` every scene ships."
+        },
+        "pauseTitle": {
+          "select": "lbl_pause",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_pause",
+          "fileID": "114000010859743976",
+          "line": 38151,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/render/pause.ts — literal '- PAUSE -'"
+        },
+        "pauseResume": {
+          "select": "lbl_resume",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_resume",
+          "fileID": "114000011820366724",
+          "line": 39090,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/boot/app.ts — label 'Resume'"
+        },
+        "pauseRestart": {
+          "select": "lbl_restart",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_restart",
+          "fileID": "114000012529932418",
+          "line": 40013,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/boot/app.ts — label 'Restart'"
+        },
+        "pauseExit": {
+          "select": "lbl_exit",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_pause (1)/lbl_exit",
+          "fileID": "114000013247036750",
+          "line": 40829,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 3,
+          "ff2": "src/boot/app.ts — label 'Exit'"
+        },
+        "courseComplete": {
+          "select": "panel_endUI/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_end",
+          "fileID": "11429282",
+          "line": 9986,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/render/results.ts — the port leads with the medal instead"
+        },
+        "gatesCleared": {
+          "select": "panel_endUI/text_gatesCleared",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_gatesCleared",
+          "fileID": "11459868",
+          "line": 10863,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/render/results.ts — literal 'GATES' after the count"
+        },
+        "medalLabel": {
+          "select": "panel_endUI/text_score",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score",
+          "fileID": "11462228",
+          "line": 10936,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 4,
+          "ff2": "src/render/results.ts — the medal is drawn with no label",
+          "note": "TWO GameObjects under `panel_endUI` are both named `text_score`, so the only discriminator either has is FILE ORDER, and this is the first. That is a weak selector and it is deliberately used only here, on two labels FF2 does not draw: if Unity ever rewrote the prefab the pair would swap silently. Both strings are in `_meta.variants`, so the swap is at least visible in the output.",
+          "variants": [
+            {
+              "text": "Total Score:",
+              "at": [
+                "thirdPerson:PlayerShip_SR14_Photon/shipOffset/CamRoot_3rdPerson/Ship_HUD (1)/offset/panel_endUI/text_score#11400082",
+                "firstPerson:PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score#11478932"
+              ]
+            }
+          ]
+        },
+        "totalScore": {
+          "select": "panel_endUI/text_score",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score",
+          "fileID": "11478932",
+          "line": 11625,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 4,
+          "ff2": "src/render/results.ts — the score is drawn with no label",
+          "note": "The second `text_score` in file order. See `medalLabel`.",
+          "variants": [
+            {
+              "text": "Medal:",
+              "at": [
+                "thirdPerson:PlayerShip_SR14_Photon/shipOffset/CamRoot_3rdPerson/Ship_HUD (1)/offset/panel_endUI/text_score#11466066",
+                "firstPerson:PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI/text_score#11462228"
+              ]
+            }
+          ]
+        },
+        "medalAwarded": {
+          "select": "panel_medalAwarded/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_medalAwarded/text_end",
+          "fileID": "11407754",
+          "line": 9447,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — FF2 has no medal-award banner",
+          "note": "`_CORRECTIONS.md` quotes this as \"<medal> Medal AwarDeD!\". The bytes say `________ medal AwarDeD!` — eight underscores, lower-case `medal`."
+        },
+        "explorationEnding": {
+          "select": "panel_endUI_exploration/text_end",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI_exploration/text_end",
+          "fileID": "11456818",
+          "line": 10727,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — Free Flight has no end screen in FF2 yet"
+        },
+        "orbsFound": {
+          "select": "panel_endUI_exploration/text_orbsCleared",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_endUI_exploration/text_orbsCleared",
+          "fileID": "11414870",
+          "line": 9578,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'ORBS' as the non-Ring-Attack count label"
+        },
+        "changeView": {
+          "select": "panel_viewSwitch/Text",
+          "path": "PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_viewSwitch (1)/Text",
+          "fileID": "11411932",
+          "line": 9512,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — FF2 has no view-switch prompt"
+        }
+      }
+    }
+  },
+  "timer": {
+    "timeLimit": 180,
+    "bonusParTime": 180,
+    "shadowedParTime": 180,
+    "countdown": {
+      "shipped": true,
+      "useCountdownFlag": false,
+      "startedByTrigger": true,
+      "triggerDelay": 2,
+      "steps": 3,
+      "stepSeconds": 1,
+      "seconds": 4,
+      "_meta": {
+        "triggerPath": "levelOffset/PlayerStart_ElevatorShaft_Photon/trigger_enableShip",
+        "triggerFileID": "1847882726",
+        "timerRaceFileID": "1432703964",
+        "note": "Trigger_EnableShip.DelayedEnable() waits `delay`, calls Timer_Race.StartCountdown() with no useCountdown check, and the countdown coroutine then sets useRaceTimer = true — so this is also when the race clock starts."
+      }
+    }
+  },
+  "medals": {
+    "bronze": 900,
+    "silver": 1400,
+    "gold": 1900,
+    "platinum": 2100
+  },
+  "medalsFf2": {
+    "bronze": 900,
+    "silver": 1400,
+    "gold": 1900,
+    "platinum": 2100,
+    "_meta": {
+      "deviation": "DEV-393 follow-up",
+      "ringCeiling": 2100,
+      "note": "Matt, 2026-09-25: \"gold medal = 90, plat = 100\". bronze/silver/gold are the 2016 values; platinum is every ring. A missed ring forfeits the time bonus (DEV-393), so a run reaches platinum exactly when it takes every ring. DEV-004's time-based platinum is retired."
+    }
+  },
+  "medalsExp": {
+    "bronze": 3,
+    "silver": 5,
+    "gold": 9,
+    "platinum": 12
+  },
+  "scoring": {
+    "gateMultiplier": 100,
+    "levelDelay": 6,
+    "timePenalty": -1,
+    "timeBonusMultiplier": 11.5,
+    "fuelPenaltyEnabled": false,
+    "timeAffectsMedal": true
+  },
+  "boundary": {
+    "enabled": true,
+    "resetDelay": 13,
+    "present": true,
+    "volume": {
+      "shape": "sphere",
+      "centre": [
+        -309,
+        223.35,
+        -39
+      ],
+      "radius": 2918.71165,
+      "isTrigger": true,
+      "gameObject": "trigger_playArea"
+    },
+    "resetFadeSeconds": 2.5
+  },
+  "fog": {
+    "height": 164,
+    "heightDensity": 0.2,
+    "startDistance": 256,
+    "distanceFog": true,
+    "heightFog": true,
+    "radial": true,
+    "excludeFarPixels": true,
+    "color": [
+      0.866667,
+      0.658824,
+      0.698039,
+      1
+    ],
+    "density": 0.0005,
+    "mode": 2,
+    "linearStart": 100,
+    "linearEnd": 2500,
+    "sceneFogEnabled": true
+  },
+  "lighting": {
+    "sun": {
+      "name": "Directional light (1)",
+      "kind": "directional",
+      "colorLinear": [
+        0.911421,
+        0.390311,
+        0.170622
+      ],
+      "colorGamma": [
+        0.830882,
+        0.569395,
+        0.391003
+      ],
+      "intensity": 1.3,
+      "shadows": 2,
+      "direction": [
+        0.962253,
+        -0.069757,
+        0.263062
+      ],
+      "elevationDeg": 4.00003,
+      "_meta": {
+        "fileID": "118365898",
+        "path": "levelOffset/Level Logic/Directional light (1)",
+        "rotationThree": [
+          -0.021175,
+          -0.794407,
+          -0.027742,
+          0.606382
+        ],
+        "rotationRaw": [
+          0.021175,
+          0.794407,
+          -0.027742,
+          0.606382
+        ],
+        "positionThree": [
+          -2048,
+          3.731302,
+          2048
+        ]
+      }
+    },
+    "ambient": {
+      "mode": 0,
+      "modeName": "skybox",
+      "intensity": 0.6,
+      "skyColor": [
+        0.1272,
+        0.1362,
+        0.1554
+      ],
+      "equatorColor": [
+        0.0684,
+        0.075,
+        0.0798
+      ],
+      "groundColor": [
+        0.0282,
+        0.0258,
+        0.021
+      ]
+    },
+    "skyboxMaterial": "Assets/Quantum Theory/PolyWorld Skies/SkyJ.mat",
+    "sky": {
+      "available": true,
+      "material": "Assets/Quantum Theory/PolyWorld Skies/SkyJ.mat",
+      "faces": {
+        "_FrontTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_FR.bmp",
+        "_BackTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_BK.bmp",
+        "_LeftTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_LF.bmp",
+        "_RightTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_RT.bmp",
+        "_UpTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_UP.bmp",
+        "_DownTex": "Assets/Quantum Theory/PolyWorld Skies/Textures/SkyJ_DN.bmp"
+      },
+      "sh": [
+        [
+          1.385655,
+          0.844599,
+          0.775892
+        ],
+        [
+          0.066384,
+          0.030656,
+          0.010668
+        ],
+        [
+          -0.114117,
+          -0.039326,
+          -0.011924
+        ],
+        [
+          -0.125611,
+          -0.058664,
+          0.012834
+        ],
+        [
+          -0.021068,
+          -0.007752,
+          0.018354
+        ],
+        [
+          -0.085352,
+          -0.033521,
+          -0.013579
+        ],
+        [
+          -0.008113,
+          0.005542,
+          0.021858
+        ],
+        [
+          -0.121416,
+          -0.061781,
+          -0.014322
+        ],
+        [
+          0.10184,
+          0.086703,
+          0.047121
+        ]
+      ],
+      "bands": 3,
+      "residual": 0.376125,
+      "sampleCount": 98304,
+      "peakDirectionUnity": [
+        -0.959845,
+        0.096547,
+        0.263395
+      ],
+      "sunAngleDeg": 1.542908
+    },
+    "liveLightCount": 1,
+    "environmentSceneLiveLights": 0,
+    "disabledLightCount": 0
+  },
+  "ghosts": [
+    {
+      "clip": "int_01_leftSpawn_fast_01",
+      "spawn": [
+        -868.121,
+        126.28609,
+        2070.458817
+      ],
+      "quat": [
+        0.000098,
+        -0.39633,
+        -0.000148,
+        0.918108
+      ],
+      "startTime": 0.55,
+      "animationEnabled": true,
+      "playAutomatically": null,
+      "start": [
+        -871.0973,
+        127.868256,
+        2071.414616
+      ],
+      "_meta": {
+        "fileID": "104834126",
+        "path": "levelOffset/GhostRacer_int_01",
+        "scene": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/environments/LevelArt_SimonetIslands.unity",
+        "raw": {
+          "pos": [
+            -868.121,
+            126.28609,
+            -2070.458817
+          ]
+        },
+        "ghostName": "GhostRacer_int_01",
+        "origin": "environment",
+        "effectiveClipPool": [
+          "int_01_leftSpawn_fast_01",
+          "int_01_leftSpawn_fast_01"
+        ],
+        "randomiserIsNoOp": true,
+        "start": {
+          "clip": "Assets/OMS_Animation/Resources/int_01_leftSpawn_fast_01.anim",
+          "firstKeyRaw": [
+            1176.9027,
+            127.868256,
+            -23.414616
+          ],
+          "parent": "levelOffset",
+          "note": "The clip first root key, through the parent world transform (a legacy Animation writes root keys into localPosition)."
+        }
+      }
+    },
+    {
+      "clip": "int_01_rightSpawn_slow_01",
+      "spawn": [
+        -847.4458,
+        126.93403,
+        2093.634743
+      ],
+      "quat": [
+        0.040396,
+        -0.418071,
+        0.028944,
+        0.907054
+      ],
+      "startTime": 0.55,
+      "animationEnabled": true,
+      "playAutomatically": true,
+      "start": [
+        -848.3285,
+        127.85628,
+        2096.997414
+      ],
+      "_meta": {
+        "fileID": "1201732122",
+        "path": "levelOffset/GhostRacer_int_02",
+        "scene": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/environments/LevelArt_SimonetIslands.unity",
+        "raw": {
+          "pos": [
+            -847.4458,
+            126.93403,
+            -2093.634743
+          ]
+        },
+        "ghostName": "GhostRacer_int_02",
+        "origin": "environment",
+        "effectiveClipPool": [
+          "int_01_rightSpawn_slow_01",
+          "int_01_rightSpawn_slow_01"
+        ],
+        "randomiserIsNoOp": true,
+        "start": {
+          "clip": "Assets/OMS_Animation/Resources/int_01_rightSpawn_slow_01.anim",
+          "firstKeyRaw": [
+            1199.6715,
+            127.85628,
+            -48.997414
+          ],
+          "parent": "levelOffset",
+          "note": "The clip first root key, through the parent world transform (a legacy Animation writes root keys into localPosition)."
+        }
+      }
+    }
+  ],
+  "ambientTraffic": null,
+  "generated": null,
+  "_meta": {
+    "generatedBy": "tools/extract/level.mjs",
+    "sourceSceneModified": "2016-12-30T03:50:42.610Z",
+    "sourceScene": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity",
+    "sourceSceneAbs": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity",
+    "environmentSceneAbs": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/environments/LevelArt_SimonetIslands.unity",
+    "legacyProjectRoot": "$FF2_LEGACY",
+    "coordinateConvention": {
+      "rule": "Unity(x,y,z) -> three(x,y,-z); quat(x,y,z,w) -> (-x,-y,z,w); scale unchanged",
+      "handedness": "Unity left-handed +Z forward -> three.js right-handed -Z forward",
+      "determinant": -1,
+      "pairedWith": "triangle winding reversed and UV V-flipped on meshes (not emitted here)",
+      "validatedBy": "tools/prototype/axis_test.js -- see content/levels/_axis-validation.md",
+      "rawAlsoEmitted": "every element carries _meta.raw in untouched Unity coordinates"
+    },
+    "livenessRule": "TriggerCheckpoint.m_Enabled==1 && addScore!=0 && every ancestor m_IsActive==1, EXCEPT Level.ringAttackParent / Level.freeFlightParent which Level.cs toggles at runtime.",
+    "courseSelection": null,
+    "structural": {
+      "shipPrefab": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab",
+      "shipPrefabGuid": "159a650edd630ef40bb44d10d1c6d216",
+      "forceGameMode": 0,
+      "forcedGameMode": 1,
+      "liveRingCount": 21,
+      "ringClonesPlaced": 22,
+      "ringsLiveOffCourse": 0,
+      "routeCount": 1,
+      "orbCountLive": 11,
+      "orbCountPlaced": 11,
+      "padCountLive": 0,
+      "padCountPlaced": 0,
+      "padTriggerVolumes": 0,
+      "cloudCountLive": 19,
+      "cloudSource": "levelArtPrefabInstance",
+      "uiStringCount": 21,
+      "uiStringDigest": "26a9281c5e9a856a",
+      "countdownShipped": true,
+      "countdownUseFlag": false,
+      "countdownStartedByTrigger": true,
+      "finishShape": "sphereUnion",
+      "launchKind": "elevator",
+      "launchStarterScriptsOnShip": [
+        "Input_Ship"
+      ],
+      "launchSeatMarker": "LaunchElevator.PlayerShipRoot (the elevator seat)",
+      "spawnFieldAgreesWithSeat": true,
+      "spawnFieldAboveSeat": 0,
+      "jumpStartSeconds": null,
+      "playerBoundaryEnabled": true,
+      "playerBoundaryResetDelay": 13,
+      "fogHeight": 164,
+      "fogHeightDensity": 0.2,
+      "levelComponentEnabled": false,
+      "respawningFlag": true,
+      "sceneDocumentCount": 3517,
+      "gameObjectCount": 908
+    },
+    "route": {
+      "space": "world",
+      "splineRoot": "levelOffset/RingAttack_objects/Curvy Spline",
+      "splineRootFileID": "913238045",
+      "controlPoints": 22,
+      "granularity": 20,
+      "interpolation": 1,
+      "closed": false,
+      "note": "Approximation arrays concatenated in control-point name order; duplicate seam points dropped."
+    },
+    "ghosts": {
+      "candidatesInspected": 4,
+      "ranInThisMissionIn2016": 4,
+      "note": "Level.SinglePlayerGhosts is [] in all 13 scenes and is only read in the Multiplayer branch, so 2016 ran EVERY GhostRacer in the environment scene in EVERY mission that used it. FF2 filters on clip-name prefix -- a logged deviation. PlayRandomAnimation picks uniformly from the resolved animationClips pool; in every shipped ghost that pool collapses to one clip, so the randomiser is a no-op.",
+      "attribution": "mission-scene ghosts always claimed; environment-scene ghosts claimed only on a clip-stem match AND vehicle === hoverjet (all clips are HoverJet recordings).",
+      "rejected": [
+        {
+          "name": "GhostRacer_adv_02",
+          "clips": [
+            "adv_02_leftSpawn_slow_02",
+            "adv_02_leftSpawn_slow_02"
+          ],
+          "origin": "environment",
+          "why": "clip stem does not match this mission"
+        },
+        {
+          "name": "GhostRacer_adv_02",
+          "clips": [
+            "adv_02_rightSpawn_fast_01",
+            "adv_02_rightSpawn_fast_01"
+          ],
+          "origin": "environment",
+          "why": "clip stem does not match this mission"
+        }
+      ]
+    },
+    "checks": [
+      {
+        "id": "platinum-reachable",
+        "ok": true,
+        "msg": "platinum 2100 needs 21 rings x 100; 21 live ring(s) in 1 route(s) -> max 2100"
+      },
+      {
+        "id": "boundary-present",
+        "ok": true,
+        "msg": "PlayerBoundary enabled=true resetDelay=13"
+      },
+      {
+        "id": "spawn-present",
+        "ok": true,
+        "msg": "spawn marker resolved (LaunchElevator.PlayerShipRoot (the elevator seat)); code path uses the respawn marker"
+      },
+      {
+        "id": "orbs-all-live",
+        "ok": true,
+        "msg": "11 live of 11 placed orb(s)"
+      },
+      {
+        "id": "pads-all-live",
+        "ok": true,
+        "msg": "0 live of 0 placed pad(s)"
+      },
+      {
+        "id": "respawn-present",
+        "ok": true,
+        "msg": "Level.SinglePlayerRespawnPosition resolved"
+      },
+      {
+        "id": "seat-brackets-the-ride",
+        "ok": true,
+        "msg": "respawn marker 108.073982 m above the seat, against a 106.647018 m ride; Level.SinglePlayerSpawnPosition names the seat"
+      },
+      {
+        "id": "route-space-resolved",
+        "ok": true,
+        "msg": "Curvy Approximation space = world"
+      },
+      {
+        "id": "pads-have-triggers",
+        "ok": true,
+        "msg": "no pads in this mission"
+      },
+      {
+        "id": "pads-have-solid",
+        "ok": true,
+        "msg": "no pads in this mission"
+      },
+      {
+        "id": "clouds-present",
+        "ok": true,
+        "msg": "19 live cloud(s) from levelArtPrefabInstance"
+      },
+      {
+        "id": "finish-present",
+        "ok": true,
+        "msg": "finish gate: sphereUnion at [-198.347949,115.972141,271.932605]"
+      },
+      {
+        "id": "start-sequence-present",
+        "ok": true,
+        "msg": "elevator launch, starter [\"Input_Ship\"]"
+      },
+      {
+        "id": "ui-strings-read",
+        "ok": true,
+        "msg": "21 string(s) + briefing from Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab"
+      }
+    ],
+    "provenance": [
+      {
+        "field": "vehicle",
+        "value": "hoverjet",
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1090602514 Level.ShipPrefab",
+        "detail": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab"
+      },
+      {
+        "field": "chainIndex",
+        "value": 2,
+        "source": "Assets/Faceted Flight/Scripts/Button_Next.cs Button_Next.SetNextLevel()",
+        "detail": "position 2 of 13"
+      },
+      {
+        "field": "difficulty",
+        "value": "intermediate",
+        "source": "Assets/Faceted Flight/Scenes/setGameplayOptions.unity",
+        "detail": "Assets/Faceted Flight/Scenes/setGameplayOptions.unity missionSel_hoverJet_int (the id agrees)"
+      },
+      {
+        "field": "forcedMode",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1090602514 Level.ForceGameMode/ForcedGameMode",
+        "detail": "ForceGameMode=0 ForcedGameMode=1 (serialised but INERT)"
+      },
+      {
+        "field": "forcedModeFf2",
+        "value": null,
+        "source": "no deviation; `forcedMode` stands"
+      },
+      {
+        "field": "environment",
+        "value": "simonet",
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#172161502 LoadLevelArt.levelName",
+        "detail": "LevelArt_SimonetIslands"
+      },
+      {
+        "field": "worldOffset",
+        "value": [
+          -2048,
+          0,
+          2048
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#316635962 levelOffset Transform",
+        "detail": "raw Unity [-2048,0,-2048]"
+      },
+      {
+        "field": "props",
+        "value": 0,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity stripped prefab instances, expandPrefabs:true",
+        "detail": "0 authored, 0 live"
+      },
+      {
+        "field": "spawn.pos",
+        "value": [
+          -857.789787,
+          19.788233,
+          2082.385187
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#614952391 LaunchElevator.PlayerShipRoot",
+        "detail": "levelOffset/PlayerStart_ElevatorShaft_Photon/Position_adjustment/Elevator/Elevator_animator/PlayerShipRoot"
+      },
+      {
+        "field": "respawn.pos",
+        "value": [
+          -859.630538,
+          127.862215,
+          2084.298471
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1097228478 Level.SinglePlayerRespawnPosition",
+        "detail": "levelOffset/PlayerStart_ElevatorShaft_Photon/respawn_position"
+      },
+      {
+        "field": "markerUsedAtLoad",
+        "value": "respawn",
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1090602514 Level.respawning",
+        "detail": "serialised respawning=1; Level.cs:287-294 selects the respawn marker. The C# initialiser says false; the scene says 1."
+      },
+      {
+        "field": "ui.briefing",
+        "value": "\"Fly through as many rings as you can before time runs out. Don't CRASH!!\\n\"",
+        "source": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab#11422448 UnityEngine.UI.Text.m_Text",
+        "detail": "Assets/Faceted Flight/Resources/PlayerShip_SR14_Photon.prefab:9820 (PlayerShip_SR14_Photon/shipOffset/art_pivot/Art/FirstPerson/FirstPersonHUDRoot/Ship_HUD/panel_mission/Text)"
+      },
+      {
+        "field": "routes",
+        "value": "1 route(s), 21 live rings",
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity TriggerCheckpoint liveness walk",
+        "detail": "m_Enabled==1 && addScore!=0 && parent chain m_IsActive==1 (mode parents excepted)"
+      },
+      {
+        "field": "orbs.posFf2",
+        "value": null,
+        "source": "DEVIATION DEV-067 (Matt, 2026-09-13)",
+        "detail": "no orb of this mission is inside its own terrain, or its mode does not collect orbs"
+      },
+      {
+        "field": "medals.bronze",
+        "value": 900,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.bronzeMin",
+        "detail": "prefabInstanceOverride"
+      },
+      {
+        "field": "medals.silver",
+        "value": 1400,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.silverMin",
+        "detail": "prefabInstanceOverride"
+      },
+      {
+        "field": "medals.gold",
+        "value": 1900,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.goldMin",
+        "detail": "prefabInstanceOverride"
+      },
+      {
+        "field": "medals.platinum",
+        "value": 2100,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.platinumMin",
+        "detail": "prefabInstanceOverride"
+      },
+      {
+        "field": "medalsExp.bronze",
+        "value": 3,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.bronzeMinExp",
+        "detail": "prefabBase (not overridden by this scene)"
+      },
+      {
+        "field": "medalsExp.silver",
+        "value": 5,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.silverMinExp",
+        "detail": "prefabBase (not overridden by this scene)"
+      },
+      {
+        "field": "medalsExp.gold",
+        "value": 9,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.goldMinExp",
+        "detail": "prefabBase (not overridden by this scene)"
+      },
+      {
+        "field": "medalsExp.platinum",
+        "value": 12,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.platMinExp",
+        "detail": "prefabInstanceOverride"
+      },
+      {
+        "field": "timer.timeLimit",
+        "value": 180,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1432703964 Timer_Race.maxRaceTime",
+        "detail": "sceneSerialized"
+      },
+      {
+        "field": "timer.shadowedParTime",
+        "value": 180,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1926146201 RaceTimer.timeAttack_maxTime",
+        "detail": "overwritten by LevelEnd.cs:298 SetInt -- see _verify-v-modes E13"
+      },
+      {
+        "field": "scoring.gateMultiplier",
+        "value": 100,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.gateMultiplier",
+        "detail": "prefabBase (not overridden by this scene)"
+      },
+      {
+        "field": "scoring.levelDelay",
+        "value": 6,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#11400000 LevelEnd.levelDelay",
+        "detail": "prefabInstanceOverride"
+      },
+      {
+        "field": "scoring.timeBonusMultiplier",
+        "value": 11.5,
+        "source": "Scoreboard.cs:14",
+        "detail": "private double = 11.5, not serialised: code default IS shipped behaviour"
+      },
+      {
+        "field": "scoring.timeAffectsMedal",
+        "value": true,
+        "source": "DEVIATION DEV-004 (Matt, 2026-09-09)",
+        "detail": "2016 ignored time for medals; FF2 pays the time bonus into the score, and only on a run that took every ring (DEV-393). With platinum at every ring it orders clean runs and moves no medal (DEV-393 follow-up)."
+      },
+      {
+        "field": "boundary.enabled",
+        "value": true,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#596678727 PlayerBoundary.m_Enabled + GameObject.m_IsActive",
+        "detail": "component enabled flag = 1, GameObject \"trigger_playArea\" activeInHierarchy = true"
+      },
+      {
+        "field": "boundary.resetDelay",
+        "value": 13,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#596678727 PlayerBoundary.resetDelay",
+        "detail": "the C# initialiser says 10; the shipped scenes say 13. The scene wins."
+      },
+      {
+        "field": "medalsFf2.platinum",
+        "value": 2100,
+        "source": "DEVIATION DEV-393 follow-up (Matt, 2026-09-25)",
+        "detail": "ringCeiling 2100: every live ring x 100, on the route with the most"
+      },
+      {
+        "field": "fog.height",
+        "value": 164,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1090602515 LevelEffects_GlobalFog.height",
+        "detail": "sceneSerialized"
+      },
+      {
+        "field": "fog.heightDensity",
+        "value": 0.2,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#1090602515 LevelEffects_GlobalFog.heightDensity",
+        "detail": "sceneSerialized"
+      },
+      {
+        "field": "fog.color",
+        "value": [
+          0.866667,
+          0.658824,
+          0.698039,
+          1
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity RenderSettings.m_FogColor",
+        "detail": "scene RenderSettings document"
+      },
+      {
+        "field": "lighting.sun",
+        "value": "directional I=1.3",
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity#118365898 Light",
+        "detail": "the ONLY light with m_Enabled=1 and an active parent chain. The LevelArt prefab’s own \"Directional light\" is m_IsActive: 0 — disabled — so the mission scene’s copy is what ships."
+      },
+      {
+        "field": "lighting.ambient.mode",
+        "value": 0,
+        "source": "Assets/Faceted Flight/Scenes/missions/HoverJet/int_01_hoverJet.unity RenderSettings.m_AmbientMode",
+        "detail": "0 = from skybox, 1 = gradient, 3 = flat colour"
+      },
+      {
+        "field": "ghosts",
+        "value": [
+          "int_01_leftSpawn_fast_01",
+          "int_01_rightSpawn_slow_01"
+        ],
+        "source": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/environments/LevelArt_SimonetIslands.unity",
+        "detail": "Level.SinglePlayerGhosts is [] in all 13 scenes and is only read in the Multiplayer branch, so 2016 ran EVERY GhostRacer in the environment scene in EVERY mission that used it. FF2 filters on clip-name prefix -- a logged deviation. PlayRandomAnimation picks uniformly from the resolved animationClips pool; in every shipped ghost that pool collapses to one clip, so the randomiser is a no-op."
+      }
+    ],
+    "sceneStats": {
+      "documents": 3517,
+      "gameObjects": 908,
+      "prefabInstances": 28
+    }
+  }
+}

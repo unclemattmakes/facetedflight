@@ -1,0 +1,1 @@
+{ "type": "commonjs", "//": "These prototype extractors are CommonJS. The repo root sets type=module; this scopes that off so require() keeps working." }

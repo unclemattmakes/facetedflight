@@ -1,0 +1,39 @@
+{
+  "$schema": "./_schema.json",
+  "vehicle": "glider",
+  "note": "ANNIVERSARY. The third aircraft: 2016 authored a glider at every level of the game (six missions, a player prefab, level-select tables) and shipped it switched off at every level, so under hard rule 2 there is nothing to extract and every number here is new (DEV-145). Unlike the HoverJet and the JumpSeat, whose variants SCALE 2016's generated sheet, the glider carries its own absolute numbers in `tuning`, because no sheet has them. They moved here from the one course's `flightModel` when the glider was wired (DEV-399, AIRCRAFT-VARIANTS section 5, G1), as level-schema.ts had asked before a second course copied them. Three were CHOSEN (terminal dive 170 m/s, cruise 55 m/s, glide 7:1 at trim) and the rest SOLVED from them against 4 x 32 = 128 N of weight; sim/glider.ts's PROTOTYPE_GLIDER comment carries the solve and the measurements, and tests/unit/glider-mission.test.ts pins that copy to this one. NONE of it has been flown by a human: G4 is the headset session. One variant until G5, whose acrobat and speed are DESIGN targets re-solved into a tuning (section 3.3), never scales on these solved fields.",
+  "tuning": {
+    "mass": 4,
+    "angularDrag": 2.2,
+    "aeroScale": 0.177163,
+    "liftSlope": 3.5,
+    "liftMax": 0.55748,
+    "parasiteDrag": 0.025,
+    "inducedDrag": 0.15988,
+    "stallSpeed": 32,
+    "stallWidth": 10,
+    "stalledControl": 0.25,
+    "trimAngleOfAttack": 0.06824,
+    "weathervane": 0.002,
+    "weathervaneYaw": 0.0016,
+    "pitchDamping": 0.0012,
+    "rollRate": 4.7347,
+    "pitchRate": 2.1701,
+    "yawRate": 0.7891,
+    "sideBleed": 0.02,
+    "rocketThrust": 180,
+    "rocketSeconds": 3,
+    "rocketRecharge": 0.25,
+    "groundEffectHeight": 30,
+    "groundEffectGain": 0.3
+  },
+  "variants": [
+    {
+      "id": "standard",
+      "name": "Standard",
+      "blurb": "Gravity on, thrust off",
+      "scale": {},
+      "note": "DEV-145's prototype, as tuned on a monitor. The hangar shows it as a one-table page (section 6.2's no-skip rule) until G5 adds acrobat and speed either side of it. The blurb is 2016's own design intent for the glider prefab: useGravity 1, maxSpeed 0."
+    }
+  ]
+}

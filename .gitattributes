@@ -1,0 +1,96 @@
+# .gitattributes — line endings, diff behaviour, and what GitHub is allowed to call "the repo".
+#
+# Companion to .gitignore and .githooks/check-denylist.mjs. See ASSET-PROVENANCE.md for the
+# licensing ruling those enforce (DECISIONS.md D12 + D26).
+
+# ── Line endings ───────────────────────────────────────────────────────────────────────────
+# Normalise every text file to LF in the object store and on checkout.
+#
+# Without this, a clone on Windows (where `core.autocrlf=true` is the default installer setting)
+# gets CRLF in the working tree, and `biome check .` then reports every file as a diff — a
+# platform-correct result that is practically unrunnable. Pinning LF makes `pnpm check` behave
+# identically on Windows, Linux and macOS. This was observed for real: staging this repo's own
+# files raised "LF will be replaced by CRLF the next time Git touches it" on four of five files.
+* text=auto eol=lf
+
+# ── Hooks and shell scripts MUST be LF ─────────────────────────────────────────────────────
+# A CRLF in the shebang line of .githooks/pre-commit makes Linux and macOS report
+# "/bin/sh^M: bad interpreter" and the hook silently stops running — which for a licensing gate
+# means it stops protecting anything while still appearing to be installed. Belt and braces on
+# top of the `eol=lf` above, because this is the one file whose failure mode is invisible.
+.githooks/*        text eol=lf
+*.sh               text eol=lf
+*.mjs              text eol=lf
+
+# ── Binary types: never normalise, never diff as text ──────────────────────────────────────
+# None of these should EVER appear in this repo (the pre-commit hook and the CI denylist job
+# both reject them). They are declared anyway so that if one is ever force-added during an
+# incident, git does not silently corrupt it by translating line endings while somebody works
+# out how to get it back out again.
+*.glb        binary
+*.gltf       binary
+*.bin        binary
+*.fbx        binary
+*.blend      binary
+*.blend1     binary
+*.png        binary
+*.jpg        binary
+*.jpeg       binary
+*.webp       binary
+*.gif        binary
+*.ico        binary
+*.tga        binary
+*.psd        binary
+*.exr        binary
+*.hdr        binary
+*.dds        binary
+*.ktx2       binary
+*.basis      binary
+*.wav        binary
+*.mp3        binary
+*.ogg        binary
+*.opus       binary
+*.flac       binary
+*.aif        binary
+*.mp4        binary
+*.webm       binary
+*.mov        binary
+*.ttf        binary
+*.otf        binary
+*.woff       binary
+*.woff2      binary
+*.pdf        binary
+*.zip        binary
+*.7z         binary
+*.gz         binary
+*.dll        binary
+*.exe        binary
+*.so         binary
+*.dylib      binary
+*.unitypackage binary
+
+# ── Generated files: keep them out of review noise ─────────────────────────────────────────
+# These are real, versioned, load-bearing files (see ASSET-PROVENANCE.md §2) — but they are
+# machine output, so collapse them in PR diffs and exclude them from language statistics.
+# `linguist-generated` implies "not a diff a human should read"; it does NOT mean "not tracked".
+src/generated/constants.generated.ts    linguist-generated=true
+src/generated/constants.generated.json  linguist-generated=true -diff
+src/generated/constants.generated.sha256 -diff
+content/levels/*.json                   linguist-generated=true
+pnpm-lock.yaml                          linguist-generated=true -diff
+
+# The GUID index is 1.6 MB of machine-produced TSV that no human reads as a diff.
+# (It is also flagged in ASSET-PROVENANCE.md §4 to move to docs/private/ before the repo is
+# made public — it is a file listing of third-party pack trees.)
+docs/research/_guid_index.tsv           linguist-generated=true -diff
+
+# ── Language statistics ────────────────────────────────────────────────────────────────────
+# GitHub's language bar should describe the port, not the research corpus. Docs and extraction
+# tooling stay in the repo and stay reviewable; they just do not get to claim the repo's identity.
+docs/**        linguist-documentation=true
+tools/**       linguist-vendored=false
+*.md           linguist-detectable=false
+
+# ── Merge behaviour ────────────────────────────────────────────────────────────────────────
+# A lockfile merge conflict is resolved by re-running the package manager, never by hand-editing.
+pnpm-lock.yaml merge=binary

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "content/overrides/_override.schema.json",
+  "title": "A shipped-course override (DEV-538)",
+  "description": "HAND-AUTHORED. A patch over one generated mission in content/levels/, keyed by 2016's own fileIDs, applied by loadLevel (src/content/load-level.ts). The authority is validateOverride in src/content/level-override.ts; this file describes it for an editor and is held to its closed field list by tests/unit/level-overrides.test.ts. Positions are THREE space, world, like every number in content/levels/. Plan: docs/plan/SHIPPED-COURSE-EDITS.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "mission", "base"],
+  "$defs": {
+    "vec3": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "quat": {
+      "description": "xyzw, three.js order; stored normalised, w >= 0, to 1e-6.",
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "pose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pos", "quat"],
+      "properties": {
+        "pos": { "$ref": "#/$defs/vec3" },
+        "quat": { "$ref": "#/$defs/quat" }
+      }
+    },
+    "fileID": { "type": "string", "pattern": "^-?\\d+$" },
+    "entities": {
+      "description": "Move, remove or add entities of one kind. A move is RIGID (a ring's trigger keeps its offset and turn); an add is the mission's first live one, moved.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "move": {
+          "description": "fileID -> { pos, quat }. Keys and poses are checked by validateOverride; this subset of JSON Schema has no keyword for them.",
+          "type": "object"
+        },
+        "remove": { "type": "array", "items": { "$ref": "#/$defs/fileID" } },
+        "add": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "after", "pos", "quat"],
+            "properties": {
+              "key": { "type": "string", "pattern": "^ov:[1-9]\\d*$" },
+              "after": { "type": ["string", "null"] },
+              "pos": { "$ref": "#/$defs/vec3" },
+              "quat": { "$ref": "#/$defs/quat" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "v": { "const": 1 },
+    "mission": { "type": "string", "description": "The generated mission id; the file is content/overrides/<mission>.json." },
+    "base": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 of content/levels/<mission>.json as content/_generated.sha256 lists it. A re-extraction that moves it turns level-overrides.test.ts red."
+    },
+    "rings": { "$ref": "#/$defs/entities", "description": "By _meta.ringFileID." },
+    "turnIndicators": { "$ref": "#/$defs/entities", "description": "By _meta.fileID." },
+    "finish": { "$ref": "#/$defs/pose", "description": "The finish trigger's new pose; frame and studs move with it. A sphere-union gate only." },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["points"],
+      "properties": {
+        "points": {
+          "description": "The racing line's control points (the player course's bounds); resampled on load.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/vec3" }
+        }
+      }
+    },
+    "timer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeLimit": { "type": "integer" },
+        "bonusParTime": { "type": "integer" }
+      }
+    },
+    "medals": {
+      "description": "Optional. Absent, the medals re-derive from the ring count (playerCourseMedals).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bronze", "silver", "gold", "platinum"],
+      "properties": {
+        "bronze": { "type": "integer" },
+        "silver": { "type": "integer" },
+        "gold": { "type": "integer" },
+        "platinum": { "type": "integer" }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "what"],
+        "properties": {
+          "at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "what": { "type": "string" }
+        }
+      }
+    }
+  }
+}

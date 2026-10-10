@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>Classic and Anniversary · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="looks">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        The art direction notes for the anniversary edition open with one line: <em>a paper-cut
+        world, seen from a real seat, at speed.</em> The world is folded from colored paper: flat
+        faces, one color each, hard creases, no texture on anything. The cockpit is built to real
+        scale, and stereo makes it read as real, so the cockpit feels solid and the islands look like
+        paper.
+      </p>
+
+      <h2>Classic is a look</h2>
+      <p>
+        The game ships two looks. <strong>Classic</strong> is 2016 as faithfully as the port can
+        draw it, kept bugs and all. <strong>Anniversary</strong> is a set of deliberate departures,
+        each one written down with its reason and each one a switch in a preset file. Both looks
+        fly the same race by the same rules. Switching only changes what you see, so you can
+        compare them with one press.
+      </p>
+
+      <h2>A ramp for the light</h2>
+      <p>
+        One of those departures is how a facet answers the sun. Ordinary diffuse lighting gives a
+        face turned away from the light nothing at all, so on a faceted island every face on the
+        shadow side of a ridge is the same flat dark. Anniversary borrows a trick from Team
+        Fortress 2 and looks the light up on a ramp instead: cool in the shadow, warm right at the
+        edge where the light grazes, and bright on top. On smooth shapes that's a soft band. On
+        this terrain, where every face is one flat color over tens of square meters, it's a
+        per-face color, and it lets you tell two neighboring facets apart by more than brightness.
+      </p>
+      <div data-toy="response-curve"></div>
+      <p>
+        <strong>Try it:</strong> move the <em>sun</em> slider until most of the dome faces away.
+        Click <em>Classic (off)</em> and the back of the dome goes black. Click
+        <em>Anniversary</em> and it takes a cool fill, with a warm band where the faces are
+        edge-on to the sun. The dashed line is the plain response, and the three colored ones are
+        the ramp, per channel.
+      </p>
+      <pre data-snippet="src/render/illustrative.ts#illustrativeResponse" data-caption="the ramp, exactly as the shader runs it"></pre>
+
+      <h2>Too clean, or sludge</h2>
+      <p>
+        Every change to the look gets judged against two ways to fail. Too clean, and the world
+        turns into a pastel toy with no sense of size. Too far the other way, and it turns to
+        sludge: fog, bloom and soft creases until you can't count the faces on a cliff. The fog
+        has already been in that second ditch once. I thinned it by eye, and it's held below a
+        measured ceiling now.
+      </p>
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

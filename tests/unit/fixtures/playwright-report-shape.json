@@ -1,0 +1,170 @@
+{
+  "$comment": "Trimmed from a real Playwright 1.63 JSON report (--reporter=json, retries 1) of a six-test scratch spec, 2026-10-01: the shape tools/test/e2e-baseline.mjs reduces. Paths and timestamps dropped; statuses, retries, durations and error messages kept as the reporter wrote them, ANSI included.",
+  "config": {
+    "version": "1.63.0",
+    "metadata": {
+      "actualWorkers": 1
+    }
+  },
+  "suites": [
+    {
+      "title": "shape.spec.ts",
+      "file": "shape.spec.ts",
+      "line": 0,
+      "specs": [
+        {
+          "title": "passes",
+          "line": 2,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "expected",
+              "results": [
+                {
+                  "status": "passed",
+                  "duration": 6,
+                  "retry": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "fails",
+          "line": 3,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 5,
+                  "retry": 0,
+                  "error": {
+                    "message": "Error: one is two\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m2\u001b[39m\nReceived: \u001b[31m1\u001b[39m"
+                  }
+                },
+                {
+                  "status": "failed",
+                  "duration": 7,
+                  "retry": 1,
+                  "error": {
+                    "message": "Error: one is two\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m2\u001b[39m\nReceived: \u001b[31m1\u001b[39m"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "flakes",
+          "line": 4,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "flaky",
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 8,
+                  "retry": 0,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m"
+                  }
+                },
+                {
+                  "status": "passed",
+                  "duration": 6,
+                  "retry": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "skipped",
+          "line": 5,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "skipped",
+              "status": "skipped",
+              "results": [
+                {
+                  "status": "skipped",
+                  "duration": 0,
+                  "retry": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": [
+        {
+          "title": "@gpu group",
+          "file": "shape.spec.ts",
+          "line": 6,
+          "specs": [
+            {
+              "title": "same",
+              "line": 7,
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "status": "expected",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "duration": 2,
+                      "retry": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "suites": [
+            {
+              "title": "inner",
+              "file": "shape.spec.ts",
+              "line": 8,
+              "specs": [
+                {
+                  "title": "deep",
+                  "line": 8,
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "expected",
+                      "results": [
+                        {
+                          "status": "passed",
+                          "duration": 1,
+                          "retry": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "expected": 3,
+    "unexpected": 1,
+    "flaky": 1,
+    "skipped": 1
+  }
+}

@@ -1,0 +1,43 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      partyserver:
+        specifier: 0.5.10
+        version: 0.5.10(@cloudflare/workers-types@5.20260926.1)
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260926.1
+        version: 5.20260926.1
+
+packages:
+
+  '@cloudflare/workers-types@5.20260926.1':
+    resolution: {integrity: sha512-jLtwSjBFtXucrEIj584vNk/k9OwgW4ij7/nK40hnCw137/0ilqfkTlYIUTWlTEbUX2V/+XVBijzZha9spdQTUw==}
+
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+
+  partyserver@0.5.10:
+    resolution: {integrity: sha512-t2B3mhTL1IOxCsj8rZgn4TxTuub7oLhypjc1/fGPNsbgnn9OsHms6uR3QEd5bFJ/7xrFo771j3DdUlll8cxgBg==}
+    peerDependencies:
+      '@cloudflare/workers-types': ^4.20260424.1 || ^5.20260703.1
+
+snapshots:
+
+  '@cloudflare/workers-types@5.20260926.1': {}
+
+  nanoid@5.1.16: {}
+
+  partyserver@0.5.10(@cloudflare/workers-types@5.20260926.1):
+    dependencies:
+      '@cloudflare/workers-types': 5.20260926.1
+      nanoid: 5.1.16

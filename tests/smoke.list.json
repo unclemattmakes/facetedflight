@@ -1,0 +1,38 @@
+{
+  "$comment": "The SMOKE tier: `pnpm test:smoke`. Read docs/testing/TIERS.md before editing. Every file here must exist and reach at least `minWidth` distinct src/ modules through its imports — tests/unit/smoke-list.test.ts holds the list to that, so a narrow test cannot be added by accident. Width is measured by tools/test/import-graph.mjs; `node tools/test/tiered.mjs --list` prints it. `why` is for the reader; nothing parses it.",
+  "minWidth": 12,
+  "files": [
+    {
+      "file": "tests/unit/smoke-missions.test.ts",
+      "why": "All thirteen missions flown for 30 s of sim time under both presets through the same per-tick calls boot/app.ts makes: autopilot, flight model, scorer, levers, speed chain, boundary, medal arithmetic. No assets needed. The one that goes red first when a sim function breaks."
+    },
+    {
+      "file": "tests/unit/autopilot.test.ts",
+      "why": "int_01_hoverJet flown to COMPLETION — every gate, in order, inside the time limit. The claim the 30 s window above cannot make."
+    },
+    {
+      "file": "tests/unit/mission-run.test.ts",
+      "why": "The scoring loop end to end on a synthetic path: exact platinum, the time bonus, the finish gate, DEV-003/004's medal arithmetic."
+    },
+    {
+      "file": "tests/unit/ghost.test.ts",
+      "why": "Sampling a 2016 recording — the ghost pipeline from quantised JSON to a pose, and the yaw that flew backwards once. 50 modules wide through the render seam."
+    },
+    {
+      "file": "tests/unit/level-select.test.ts",
+      "why": "The holotables: the mission index, paging, the gaze pick and the confirm. The player's only route into a mission."
+    },
+    {
+      "file": "tests/unit/jumpseat-flight.test.ts",
+      "why": "The game/jumpseat-flight seam that reads the level — the pad table, the finish slab, the refuel spheres — for the second vehicle."
+    },
+    {
+      "file": "tests/unit/launch-reveal.test.ts",
+      "why": "The elevator ride and the reveal that gates the world draw: launch, hangar, shaft and the timing between them."
+    },
+    {
+      "file": "tests/unit/control-scheme.test.ts",
+      "why": "Every input device held against the constants sheet's control scheme — the DEV-069 lesson, cheap, and the only smoke entry that compares the port against something outside it."
+    }
+  ]
+}

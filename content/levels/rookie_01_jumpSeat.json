@@ -1,0 +1,4431 @@
+{
+  "$schema": "./_schema.json",
+  "id": "rookie_01_jumpSeat",
+  "title": "Rookie 1 - JumpSeat",
+  "vehicle": "jumpseat",
+  "environment": "alpine",
+  "environmentScene": "LevelArt_AlpineForest",
+  "difficulty": "beginner",
+  "difficultySource": "menu",
+  "mode": "targetPractice",
+  "forcedMode": null,
+  "forcedModeFf2": null,
+  "chainIndex": 6,
+  "inChain": true,
+  "worldOffset": [
+    -2048,
+    0,
+    2048
+  ],
+  "spawn": {
+    "pos": [
+      748.123971,
+      403.019334,
+      170.301663
+    ],
+    "quat": [
+      0,
+      -0.867201,
+      0,
+      -0.497958
+    ],
+    "yaw": 120.269991,
+    "launchKind": "direct",
+    "launch": null,
+    "startGrid": {
+      "slabs": [],
+      "lightBar": null,
+      "pads": [],
+      "art": [],
+      "artInShaft": []
+    },
+    "deadMoverLiftAmplitude": null,
+    "enableShipDelay": null,
+    "enableGravityOnLaunch": null,
+    "jumpStart": {
+      "pos": [
+        748.185829,
+        401.459314,
+        171.485218
+      ],
+      "triggerDelay": 3.5,
+      "countdownSteps": 4,
+      "seconds": 7.5,
+      "_meta": {
+        "fileID": "154541203:4000012148435444",
+        "path": "levelOffset/playerstart_jumpSeat/Position_adjustment/trigger_enableShip",
+        "prefab": "Assets/Faceted Flight/Prefabs/playerstart_jumpSeat.prefab",
+        "triggerDelaySource": "shipped prefab instance (NOT the C# initialiser, which agrees)",
+        "countdownStepsSource": "Trigger_EnableJumpShip.cs StartCoroutine(Countdown_JumpSeat(n)) — a code literal, nothing serialised",
+        "enables": [
+          "Input_Manager",
+          "HoverMotor",
+          "Thruster"
+        ],
+        "raw": {
+          "pos": [
+            748.185829,
+            401.459314,
+            -171.485218
+          ]
+        }
+      }
+    },
+    "launchTrace": {
+      "canStartElevator": false,
+      "starterScriptsInProject": [
+        "Input_Ship",
+        "Input_Ship_Glider",
+        "Input_Ship_unet"
+      ],
+      "starterScriptsOnShip": [],
+      "enableShipGuardComponent": "Ship_HoverShip",
+      "enableShipApplies": false
+    },
+    "marker": "SinglePlayerRespawnPosition (Level.respawning is 1 — the marker the shipped code reads)",
+    "seatTrace": null
+  },
+  "respawn": {
+    "pos": [
+      748.123971,
+      403.019334,
+      170.301663
+    ],
+    "quat": [
+      0,
+      -0.867201,
+      0,
+      -0.497958
+    ],
+    "yaw": 120.269991,
+    "aboveSpawn": 0,
+    "marker": "SinglePlayerRespawnPosition"
+  },
+  "markerUsedAtLoad": "respawn",
+  "routes": [],
+  "finish": {
+    "shape": "convexMesh",
+    "pos": [
+      -544.348275,
+      322.56799,
+      822.709197
+    ],
+    "quat": [
+      0,
+      0.856017,
+      0,
+      0.516948
+    ],
+    "radius": 21.128717,
+    "mesh": "Assets/Faceted Flight/Meshes/hexTile.fbx",
+    "convex": true,
+    "half": [
+      15.172628,
+      2.826342,
+      14.430032
+    ],
+    "hull": [
+      [
+        -9.377199,
+        -2.826342,
+        14.430032
+      ],
+      [
+        -15.172628,
+        -2.826342,
+        -3.406468
+      ],
+      [
+        -0.000001,
+        -2.826342,
+        -14.430032
+      ],
+      [
+        15.172628,
+        -2.826342,
+        -3.40647
+      ],
+      [
+        9.377199,
+        -2.826342,
+        14.430029
+      ],
+      [
+        -9.377199,
+        2.826342,
+        14.430032
+      ],
+      [
+        -15.172628,
+        2.826342,
+        -3.406468
+      ],
+      [
+        -0.000001,
+        2.826342,
+        -14.430032
+      ],
+      [
+        15.172628,
+        2.826342,
+        -3.40647
+      ],
+      [
+        9.377199,
+        2.826342,
+        14.430029
+      ]
+    ],
+    "_meta": {
+      "fileID": "1408483001:497370",
+      "path": "levelOffset/JumpSeat - Jump Pads/target_jumppad (4)/finale_jumpSeat (1)/trigger_finishLevel",
+      "scripts": [
+        "Trigger_Finish_JumpSeat",
+        "LevelFinaleManager",
+        "ScoreKeeper_JumpPads"
+      ],
+      "worldScale": [
+        15.953444,
+        11.305369,
+        15.953449
+      ],
+      "originPos": [
+        -543,
+        319.707935,
+        822
+      ],
+      "meshLocalSize": [
+        1.902113,
+        0.5,
+        1.809017
+      ],
+      "meshLocalCenter": [
+        0,
+        0.252982,
+        0.095491
+      ],
+      "meshImportScale": {
+        "scale": 0.1,
+        "globalScale": 10,
+        "useFileScale": true,
+        "fileScale": 0.01,
+        "unitScaleFactor": 1
+      },
+      "meshVertexCount": 10,
+      "raw": {
+        "pos": [
+          -544.348275,
+          322.56799,
+          -822.709197
+        ],
+        "quat": [
+          0,
+          -0.856017,
+          0,
+          0.516948
+        ]
+      },
+      "note": "Ends the run via Trigger_Finish_JumpSeat.OnTriggerEnter (tag Player) -> TriggerLevelEnd(). Lives inside target_jumppad.prefab, authored INACTIVE, and switched on by an m_IsActive override on exactly one pad instance per mission."
+    }
+  },
+  "route": null,
+  "orbs": [],
+  "pads": [
+    {
+      "i": 0,
+      "name": "target_jumppad",
+      "live": true,
+      "pos": [
+        344,
+        398.7,
+        449.3
+      ],
+      "quat": [
+        0,
+        0.856017,
+        0,
+        0.516948
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "landing": {
+        "role": "landing",
+        "kind": "capsule",
+        "name": "trigger_jumpPad",
+        "path": "trigger_jumpPad",
+        "live": true,
+        "pos": [
+          342.861353,
+          420.247682,
+          449.898989
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "axis": "y",
+        "radius": 28.36958,
+        "height": 56.739161,
+        "degenerateToSphere": true
+      },
+      "refuel": {
+        "role": "refuel",
+        "kind": "capsule",
+        "name": "trigger_refuel",
+        "path": "trigger_refuel",
+        "live": true,
+        "pos": [
+          343.631107,
+          399.743495,
+          449.494096
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "rate": 10,
+        "axis": "y",
+        "radius": 19.707202,
+        "height": 39.414404,
+        "degenerateToSphere": true
+      },
+      "zones": [
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "trigger_bullseye (1)",
+          "path": "jumpPad 1/trigger_bullseye (1)",
+          "live": true,
+          "pos": [
+            344.091587,
+            395.704702,
+            449.713484
+          ],
+          "quat": [
+            0,
+            0.054725,
+            0,
+            0.998501
+          ],
+          "points": 100,
+          "refuelMultiplier": 3,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.268338,
+            1.304334,
+            7.36122
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            345.281586,
+            399.591202,
+            464.741972
+          ],
+          "quat": [
+            0,
+            0.043329,
+            0,
+            0.999061
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216884,
+            0.159255,
+            3.065011
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            342.351676,
+            399.591202,
+            433.799119
+          ],
+          "quat": [
+            0,
+            0.050897,
+            0,
+            0.998704
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.026402,
+            0.159255,
+            3.195333
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            359.476553,
+            399.535681,
+            448.084163
+          ],
+          "quat": [
+            0,
+            -0.675883,
+            0,
+            0.737009
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.682661,
+            0.159255,
+            3.374741
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            328.594323,
+            399.591202,
+            450.73037
+          ],
+          "quat": [
+            0,
+            -0.672633,
+            0,
+            0.739977
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.258618,
+            0.159255,
+            3.375965
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            333.437485,
+            399.591202,
+            460.815515
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.285791,
+            0.159255,
+            6.284339
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            332.048385,
+            399.707797,
+            439.344592
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.266499,
+            0.159255,
+            7.048515
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            353.872366,
+            399.535681,
+            437.350095
+          ],
+          "quat": [
+            0,
+            0.430724,
+            0,
+            0.902484
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.321762,
+            0.159255,
+            7.9839
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            355.678174,
+            399.591202,
+            459.693022
+          ],
+          "quat": [
+            0,
+            -0.336604,
+            0,
+            0.941646
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.199173,
+            0.207407,
+            8.833882
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            343.568399,
+            398.203174,
+            459.809426
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216883,
+            0.657571,
+            3.420498
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            342.502565,
+            397.981081,
+            439.511546
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.21688,
+            0.504308,
+            3.06501
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            353.654909,
+            398.203174,
+            449.383619
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216886,
+            0.159255,
+            3.065012
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            333.922728,
+            398.203174,
+            450.487744
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216891,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            338.062986,
+            398.203174,
+            455.486647
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            337.50708,
+            398.203174,
+            443.817943
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            348.98047,
+            398.203174,
+            442.651195
+          ],
+          "quat": [
+            0,
+            0.459167,
+            0,
+            0.88835
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065015
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            350.091432,
+            398.203174,
+            455.455031
+          ],
+          "quat": [
+            0,
+            -0.347879,
+            0,
+            0.937539
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612086,
+            0.159255,
+            3.065016
+          ]
+        }
+      ],
+      "solid": {
+        "kind": "radialProfile",
+        "name": "jumpPad_04_collider",
+        "path": "jumpPad_04_collider",
+        "live": true,
+        "mesh": "Assets/Faceted Flight/Meshes/jumpPad_04_collider.fbx",
+        "pos": [
+          344,
+          396.204394,
+          449.3
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "symmetry": 8,
+        "profile": [
+          [
+            0,
+            0.711438
+          ],
+          [
+            7.058264,
+            0.711438
+          ],
+          [
+            7.063228,
+            0.883171
+          ],
+          [
+            7.236954,
+            1.138099
+          ],
+          [
+            7.495062,
+            1.138099
+          ],
+          [
+            8.170114,
+            2.145611
+          ],
+          [
+            12.781315,
+            2.145768
+          ],
+          [
+            12.786279,
+            2.519936
+          ],
+          [
+            12.890515,
+            2.673625
+          ],
+          [
+            13.262786,
+            2.673625
+          ],
+          [
+            13.793893,
+            3.465214
+          ],
+          [
+            19.780016,
+            3.465216
+          ],
+          [
+            20.306159,
+            2.68036
+          ]
+        ],
+        "outer": 20.306159,
+        "top": 3.465216,
+        "bottom": -0.706097,
+        "_meta": {
+          "worldScale": [
+            37.143903,
+            55.521442,
+            37.143895
+          ],
+          "meshLocalSize": [
+            1.09362,
+            0.07513,
+            1.09362
+          ],
+          "meshImportScale": {
+            "scale": 0.1,
+            "globalScale": 10,
+            "useFileScale": true,
+            "fileScale": 0.01,
+            "unitScaleFactor": 1
+          },
+          "meshVertexCount": 254,
+          "meshTriangleCount": 386,
+          "profileError": 0.004617,
+          "symmetryError": 0.000003,
+          "note": "The one live solid collider on target_jumppad.prefab (layer 0, non-trigger, non-convex). The HoverMotor ray hits it and the four Player-tagged leg capsules stand on it. Vertical walls survive as two profile points at one radius."
+        }
+      },
+      "_meta": {
+        "fileID": "519789016",
+        "path": "levelOffset/JumpSeat - Jump Pads/target_jumppad",
+        "prefab": "Assets/Faceted Flight/Prefabs/target_jumppad.prefab",
+        "selfActive": true,
+        "volumesFound": 19,
+        "raw": {
+          "pos": [
+            344,
+            398.7,
+            -449.3
+          ]
+        }
+      }
+    },
+    {
+      "i": 1,
+      "name": "target_jumppad (1)",
+      "live": true,
+      "pos": [
+        561,
+        459.1,
+        270.4
+      ],
+      "quat": [
+        0,
+        0.856017,
+        0,
+        0.516948
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "landing": {
+        "role": "landing",
+        "kind": "capsule",
+        "name": "trigger_jumpPad",
+        "path": "trigger_jumpPad",
+        "live": true,
+        "pos": [
+          559.861353,
+          480.647682,
+          270.998989
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "axis": "y",
+        "radius": 28.36958,
+        "height": 56.739161,
+        "degenerateToSphere": true
+      },
+      "refuel": {
+        "role": "refuel",
+        "kind": "capsule",
+        "name": "trigger_refuel",
+        "path": "trigger_refuel",
+        "live": true,
+        "pos": [
+          560.631107,
+          460.143495,
+          270.594096
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "rate": 10,
+        "axis": "y",
+        "radius": 19.707202,
+        "height": 39.414404,
+        "degenerateToSphere": true
+      },
+      "zones": [
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "trigger_bullseye (1)",
+          "path": "jumpPad 1/trigger_bullseye (1)",
+          "live": true,
+          "pos": [
+            561.091587,
+            456.104702,
+            270.813484
+          ],
+          "quat": [
+            0,
+            0.054725,
+            0,
+            0.998501
+          ],
+          "points": 100,
+          "refuelMultiplier": 3,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.268338,
+            1.304334,
+            7.36122
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            562.281586,
+            459.991202,
+            285.841972
+          ],
+          "quat": [
+            0,
+            0.043329,
+            0,
+            0.999061
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216884,
+            0.159255,
+            3.065011
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            559.351676,
+            459.991202,
+            254.899119
+          ],
+          "quat": [
+            0,
+            0.050897,
+            0,
+            0.998704
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.026402,
+            0.159255,
+            3.195333
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            576.476553,
+            459.935681,
+            269.184163
+          ],
+          "quat": [
+            0,
+            -0.675883,
+            0,
+            0.737009
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.682661,
+            0.159255,
+            3.374741
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            545.594323,
+            459.991202,
+            271.83037
+          ],
+          "quat": [
+            0,
+            -0.672633,
+            0,
+            0.739977
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.258618,
+            0.159255,
+            3.375965
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            550.437485,
+            459.991202,
+            281.915515
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.285791,
+            0.159255,
+            6.284339
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            549.048385,
+            460.107797,
+            260.444592
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.266499,
+            0.159255,
+            7.048515
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            570.872366,
+            459.935681,
+            258.450095
+          ],
+          "quat": [
+            0,
+            0.430724,
+            0,
+            0.902484
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.321762,
+            0.159255,
+            7.9839
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            572.678174,
+            459.991202,
+            280.793022
+          ],
+          "quat": [
+            0,
+            -0.336604,
+            0,
+            0.941646
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.199173,
+            0.207407,
+            8.833882
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            560.568399,
+            458.603174,
+            280.909426
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216883,
+            0.657571,
+            3.420498
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            559.502565,
+            458.381081,
+            260.611546
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.21688,
+            0.504308,
+            3.06501
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            570.654909,
+            458.603174,
+            270.483619
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216886,
+            0.159255,
+            3.065012
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            550.922728,
+            458.603174,
+            271.587744
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216891,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            555.062986,
+            458.603174,
+            276.586647
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            554.50708,
+            458.603174,
+            264.917943
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            565.98047,
+            458.603174,
+            263.751195
+          ],
+          "quat": [
+            0,
+            0.459167,
+            0,
+            0.88835
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065015
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            567.091432,
+            458.603174,
+            276.555031
+          ],
+          "quat": [
+            0,
+            -0.347879,
+            0,
+            0.937539
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612086,
+            0.159255,
+            3.065016
+          ]
+        }
+      ],
+      "solid": {
+        "kind": "radialProfile",
+        "name": "jumpPad_04_collider",
+        "path": "jumpPad_04_collider",
+        "live": true,
+        "mesh": "Assets/Faceted Flight/Meshes/jumpPad_04_collider.fbx",
+        "pos": [
+          561,
+          456.604395,
+          270.4
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "symmetry": 8,
+        "profile": [
+          [
+            0,
+            0.711438
+          ],
+          [
+            7.058264,
+            0.711438
+          ],
+          [
+            7.063228,
+            0.883171
+          ],
+          [
+            7.236954,
+            1.138099
+          ],
+          [
+            7.495062,
+            1.138099
+          ],
+          [
+            8.170114,
+            2.145611
+          ],
+          [
+            12.781315,
+            2.145768
+          ],
+          [
+            12.786279,
+            2.519936
+          ],
+          [
+            12.890515,
+            2.673625
+          ],
+          [
+            13.262786,
+            2.673625
+          ],
+          [
+            13.793893,
+            3.465214
+          ],
+          [
+            19.780016,
+            3.465216
+          ],
+          [
+            20.306159,
+            2.68036
+          ]
+        ],
+        "outer": 20.306159,
+        "top": 3.465216,
+        "bottom": -0.706097,
+        "_meta": {
+          "worldScale": [
+            37.143903,
+            55.521442,
+            37.143895
+          ],
+          "meshLocalSize": [
+            1.09362,
+            0.07513,
+            1.09362
+          ],
+          "meshImportScale": {
+            "scale": 0.1,
+            "globalScale": 10,
+            "useFileScale": true,
+            "fileScale": 0.01,
+            "unitScaleFactor": 1
+          },
+          "meshVertexCount": 254,
+          "meshTriangleCount": 386,
+          "profileError": 0.004617,
+          "symmetryError": 0.000003,
+          "note": "The one live solid collider on target_jumppad.prefab (layer 0, non-trigger, non-convex). The HoverMotor ray hits it and the four Player-tagged leg capsules stand on it. Vertical walls survive as two profile points at one radius."
+        }
+      },
+      "_meta": {
+        "fileID": "1412604247",
+        "path": "levelOffset/JumpSeat - Jump Pads/target_jumppad (1)",
+        "prefab": "Assets/Faceted Flight/Prefabs/target_jumppad.prefab",
+        "selfActive": true,
+        "volumesFound": 19,
+        "raw": {
+          "pos": [
+            561,
+            459.1,
+            -270.4
+          ]
+        }
+      }
+    },
+    {
+      "i": 2,
+      "name": "target_jumppad (2)",
+      "live": true,
+      "pos": [
+        137.8,
+        408.7,
+        843.1
+      ],
+      "quat": [
+        0,
+        0.856017,
+        0,
+        0.516948
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "landing": {
+        "role": "landing",
+        "kind": "capsule",
+        "name": "trigger_jumpPad",
+        "path": "trigger_jumpPad",
+        "live": true,
+        "pos": [
+          136.661353,
+          430.247682,
+          843.698989
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "axis": "y",
+        "radius": 28.36958,
+        "height": 56.739161,
+        "degenerateToSphere": true
+      },
+      "refuel": {
+        "role": "refuel",
+        "kind": "capsule",
+        "name": "trigger_refuel",
+        "path": "trigger_refuel",
+        "live": true,
+        "pos": [
+          137.431107,
+          409.743495,
+          843.294096
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "rate": 10,
+        "axis": "y",
+        "radius": 19.707202,
+        "height": 39.414404,
+        "degenerateToSphere": true
+      },
+      "zones": [
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "trigger_bullseye (1)",
+          "path": "jumpPad 1/trigger_bullseye (1)",
+          "live": true,
+          "pos": [
+            137.891587,
+            405.704702,
+            843.513484
+          ],
+          "quat": [
+            0,
+            0.054725,
+            0,
+            0.998501
+          ],
+          "points": 100,
+          "refuelMultiplier": 3,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.268338,
+            1.304334,
+            7.36122
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            139.081586,
+            409.591202,
+            858.541972
+          ],
+          "quat": [
+            0,
+            0.043329,
+            0,
+            0.999061
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216884,
+            0.159255,
+            3.065011
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            136.151676,
+            409.591202,
+            827.599119
+          ],
+          "quat": [
+            0,
+            0.050897,
+            0,
+            0.998704
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.026402,
+            0.159255,
+            3.195333
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            153.276553,
+            409.535681,
+            841.884163
+          ],
+          "quat": [
+            0,
+            -0.675883,
+            0,
+            0.737009
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.682661,
+            0.159255,
+            3.374741
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            122.394323,
+            409.591202,
+            844.53037
+          ],
+          "quat": [
+            0,
+            -0.672633,
+            0,
+            0.739977
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.258618,
+            0.159255,
+            3.375965
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            127.237485,
+            409.591202,
+            854.615515
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.285791,
+            0.159255,
+            6.284339
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            125.848385,
+            409.707797,
+            833.144592
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.266499,
+            0.159255,
+            7.048515
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            147.672366,
+            409.535681,
+            831.150095
+          ],
+          "quat": [
+            0,
+            0.430724,
+            0,
+            0.902484
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.321762,
+            0.159255,
+            7.9839
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            149.478174,
+            409.591202,
+            853.493022
+          ],
+          "quat": [
+            0,
+            -0.336604,
+            0,
+            0.941646
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.199173,
+            0.207407,
+            8.833882
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            137.368399,
+            408.203174,
+            853.609426
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216883,
+            0.657571,
+            3.420498
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            136.302565,
+            407.981081,
+            833.311546
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.21688,
+            0.504308,
+            3.06501
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            147.454909,
+            408.203174,
+            843.183619
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216886,
+            0.159255,
+            3.065012
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            127.722728,
+            408.203174,
+            844.287744
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216891,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            131.862986,
+            408.203174,
+            849.286647
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            131.30708,
+            408.203174,
+            837.617943
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            142.78047,
+            408.203174,
+            836.451195
+          ],
+          "quat": [
+            0,
+            0.459167,
+            0,
+            0.88835
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065015
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            143.891432,
+            408.203174,
+            849.255031
+          ],
+          "quat": [
+            0,
+            -0.347879,
+            0,
+            0.937539
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612086,
+            0.159255,
+            3.065016
+          ]
+        }
+      ],
+      "solid": {
+        "kind": "radialProfile",
+        "name": "jumpPad_04_collider",
+        "path": "jumpPad_04_collider",
+        "live": true,
+        "mesh": "Assets/Faceted Flight/Meshes/jumpPad_04_collider.fbx",
+        "pos": [
+          137.8,
+          406.204394,
+          843.1
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "symmetry": 8,
+        "profile": [
+          [
+            0,
+            0.711438
+          ],
+          [
+            7.058264,
+            0.711438
+          ],
+          [
+            7.063228,
+            0.883171
+          ],
+          [
+            7.236954,
+            1.138099
+          ],
+          [
+            7.495062,
+            1.138099
+          ],
+          [
+            8.170114,
+            2.145611
+          ],
+          [
+            12.781315,
+            2.145768
+          ],
+          [
+            12.786279,
+            2.519936
+          ],
+          [
+            12.890515,
+            2.673625
+          ],
+          [
+            13.262786,
+            2.673625
+          ],
+          [
+            13.793893,
+            3.465214
+          ],
+          [
+            19.780016,
+            3.465216
+          ],
+          [
+            20.306159,
+            2.68036
+          ]
+        ],
+        "outer": 20.306159,
+        "top": 3.465216,
+        "bottom": -0.706097,
+        "_meta": {
+          "worldScale": [
+            37.143903,
+            55.521442,
+            37.143895
+          ],
+          "meshLocalSize": [
+            1.09362,
+            0.07513,
+            1.09362
+          ],
+          "meshImportScale": {
+            "scale": 0.1,
+            "globalScale": 10,
+            "useFileScale": true,
+            "fileScale": 0.01,
+            "unitScaleFactor": 1
+          },
+          "meshVertexCount": 254,
+          "meshTriangleCount": 386,
+          "profileError": 0.004617,
+          "symmetryError": 0.000003,
+          "note": "The one live solid collider on target_jumppad.prefab (layer 0, non-trigger, non-convex). The HoverMotor ray hits it and the four Player-tagged leg capsules stand on it. Vertical walls survive as two profile points at one radius."
+        }
+      },
+      "_meta": {
+        "fileID": "311068080",
+        "path": "levelOffset/JumpSeat - Jump Pads/target_jumppad (2)",
+        "prefab": "Assets/Faceted Flight/Prefabs/target_jumppad.prefab",
+        "selfActive": true,
+        "volumesFound": 19,
+        "raw": {
+          "pos": [
+            137.8,
+            408.7,
+            -843.1
+          ]
+        }
+      }
+    },
+    {
+      "i": 3,
+      "name": "target_jumppad (3)",
+      "live": true,
+      "pos": [
+        -178,
+        577.9,
+        914.7
+      ],
+      "quat": [
+        0,
+        0.856017,
+        0,
+        0.516948
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "landing": {
+        "role": "landing",
+        "kind": "capsule",
+        "name": "trigger_jumpPad",
+        "path": "trigger_jumpPad",
+        "live": true,
+        "pos": [
+          -179.138647,
+          599.447682,
+          915.298989
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "axis": "y",
+        "radius": 28.36958,
+        "height": 56.739161,
+        "degenerateToSphere": true
+      },
+      "refuel": {
+        "role": "refuel",
+        "kind": "capsule",
+        "name": "trigger_refuel",
+        "path": "trigger_refuel",
+        "live": true,
+        "pos": [
+          -178.368893,
+          578.943495,
+          914.894096
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "rate": 10,
+        "axis": "y",
+        "radius": 19.707202,
+        "height": 39.414404,
+        "degenerateToSphere": true
+      },
+      "zones": [
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "trigger_bullseye (1)",
+          "path": "jumpPad 1/trigger_bullseye (1)",
+          "live": true,
+          "pos": [
+            -177.908413,
+            574.904702,
+            915.113484
+          ],
+          "quat": [
+            0,
+            0.054725,
+            0,
+            0.998501
+          ],
+          "points": 100,
+          "refuelMultiplier": 3,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.268338,
+            1.304334,
+            7.36122
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            -176.718414,
+            578.791202,
+            930.141972
+          ],
+          "quat": [
+            0,
+            0.043329,
+            0,
+            0.999061
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216884,
+            0.159255,
+            3.065011
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            -179.648324,
+            578.791202,
+            899.199119
+          ],
+          "quat": [
+            0,
+            0.050897,
+            0,
+            0.998704
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.026402,
+            0.159255,
+            3.195333
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            -162.523447,
+            578.735681,
+            913.484163
+          ],
+          "quat": [
+            0,
+            -0.675883,
+            0,
+            0.737009
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.682661,
+            0.159255,
+            3.374741
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            -193.405677,
+            578.791202,
+            916.13037
+          ],
+          "quat": [
+            0,
+            -0.672633,
+            0,
+            0.739977
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.258618,
+            0.159255,
+            3.375965
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            -188.562515,
+            578.791202,
+            926.215515
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.285791,
+            0.159255,
+            6.284339
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            -189.951615,
+            578.907797,
+            904.744592
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.266499,
+            0.159255,
+            7.048515
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            -168.127634,
+            578.735681,
+            902.750095
+          ],
+          "quat": [
+            0,
+            0.430724,
+            0,
+            0.902484
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.321762,
+            0.159255,
+            7.9839
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            -166.321826,
+            578.791202,
+            925.093022
+          ],
+          "quat": [
+            0,
+            -0.336604,
+            0,
+            0.941646
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.199173,
+            0.207407,
+            8.833882
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            -178.431601,
+            577.403174,
+            925.209426
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216883,
+            0.657571,
+            3.420498
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            -179.497435,
+            577.181081,
+            904.911546
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.21688,
+            0.504308,
+            3.06501
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            -168.345091,
+            577.403174,
+            914.783619
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216886,
+            0.159255,
+            3.065012
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            -188.077272,
+            577.403174,
+            915.887744
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216891,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            -183.937014,
+            577.403174,
+            920.886647
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            -184.49292,
+            577.403174,
+            909.217943
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            -173.01953,
+            577.403174,
+            908.051195
+          ],
+          "quat": [
+            0,
+            0.459167,
+            0,
+            0.88835
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065015
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            -171.908568,
+            577.403174,
+            920.855031
+          ],
+          "quat": [
+            0,
+            -0.347879,
+            0,
+            0.937539
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612086,
+            0.159255,
+            3.065016
+          ]
+        }
+      ],
+      "solid": {
+        "kind": "radialProfile",
+        "name": "jumpPad_04_collider",
+        "path": "jumpPad_04_collider",
+        "live": true,
+        "mesh": "Assets/Faceted Flight/Meshes/jumpPad_04_collider.fbx",
+        "pos": [
+          -178,
+          575.404394,
+          914.7
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "symmetry": 8,
+        "profile": [
+          [
+            0,
+            0.711438
+          ],
+          [
+            7.058264,
+            0.711438
+          ],
+          [
+            7.063228,
+            0.883171
+          ],
+          [
+            7.236954,
+            1.138099
+          ],
+          [
+            7.495062,
+            1.138099
+          ],
+          [
+            8.170114,
+            2.145611
+          ],
+          [
+            12.781315,
+            2.145768
+          ],
+          [
+            12.786279,
+            2.519936
+          ],
+          [
+            12.890515,
+            2.673625
+          ],
+          [
+            13.262786,
+            2.673625
+          ],
+          [
+            13.793893,
+            3.465214
+          ],
+          [
+            19.780016,
+            3.465216
+          ],
+          [
+            20.306159,
+            2.68036
+          ]
+        ],
+        "outer": 20.306159,
+        "top": 3.465216,
+        "bottom": -0.706097,
+        "_meta": {
+          "worldScale": [
+            37.143903,
+            55.521442,
+            37.143895
+          ],
+          "meshLocalSize": [
+            1.09362,
+            0.07513,
+            1.09362
+          ],
+          "meshImportScale": {
+            "scale": 0.1,
+            "globalScale": 10,
+            "useFileScale": true,
+            "fileScale": 0.01,
+            "unitScaleFactor": 1
+          },
+          "meshVertexCount": 254,
+          "meshTriangleCount": 386,
+          "profileError": 0.004617,
+          "symmetryError": 0.000003,
+          "note": "The one live solid collider on target_jumppad.prefab (layer 0, non-trigger, non-convex). The HoverMotor ray hits it and the four Player-tagged leg capsules stand on it. Vertical walls survive as two profile points at one radius."
+        }
+      },
+      "_meta": {
+        "fileID": "588008793",
+        "path": "levelOffset/JumpSeat - Jump Pads/target_jumppad (3)",
+        "prefab": "Assets/Faceted Flight/Prefabs/target_jumppad.prefab",
+        "selfActive": true,
+        "volumesFound": 19,
+        "raw": {
+          "pos": [
+            -178,
+            577.9,
+            -914.7
+          ]
+        }
+      }
+    },
+    {
+      "i": 4,
+      "name": "target_jumppad (4)",
+      "live": true,
+      "pos": [
+        -543,
+        320.2,
+        822
+      ],
+      "quat": [
+        0,
+        0.856017,
+        0,
+        0.516948
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "landing": {
+        "role": "landing",
+        "kind": "capsule",
+        "name": "trigger_jumpPad",
+        "path": "trigger_jumpPad",
+        "live": true,
+        "pos": [
+          -544.138647,
+          341.747682,
+          822.598989
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "axis": "y",
+        "radius": 28.36958,
+        "height": 56.739161,
+        "degenerateToSphere": true
+      },
+      "refuel": {
+        "role": "refuel",
+        "kind": "capsule",
+        "name": "trigger_refuel",
+        "path": "trigger_refuel",
+        "live": true,
+        "pos": [
+          -543.368893,
+          321.243495,
+          822.194096
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "rate": 10,
+        "axis": "y",
+        "radius": 19.707202,
+        "height": 39.414404,
+        "degenerateToSphere": true
+      },
+      "zones": [
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "trigger_bullseye (1)",
+          "path": "jumpPad 1/trigger_bullseye (1)",
+          "live": true,
+          "pos": [
+            -542.908413,
+            317.204702,
+            822.413484
+          ],
+          "quat": [
+            0,
+            0.054725,
+            0,
+            0.998501
+          ],
+          "points": 100,
+          "refuelMultiplier": 3,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.268338,
+            1.304334,
+            7.36122
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            -541.718414,
+            321.091202,
+            837.441972
+          ],
+          "quat": [
+            0,
+            0.043329,
+            0,
+            0.999061
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216884,
+            0.159255,
+            3.065011
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            -544.648324,
+            321.091202,
+            806.499119
+          ],
+          "quat": [
+            0,
+            0.050897,
+            0,
+            0.998704
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.026402,
+            0.159255,
+            3.195333
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            -527.523447,
+            321.035681,
+            820.784163
+          ],
+          "quat": [
+            0,
+            -0.675883,
+            0,
+            0.737009
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            7.682661,
+            0.159255,
+            3.374741
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            -558.405677,
+            321.091202,
+            823.43037
+          ],
+          "quat": [
+            0,
+            -0.672633,
+            0,
+            0.739977
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            8.258618,
+            0.159255,
+            3.375965
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            -553.562515,
+            321.091202,
+            833.515515
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.285791,
+            0.159255,
+            6.284339
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            -554.951615,
+            321.207797,
+            812.044592
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.266499,
+            0.159255,
+            7.048515
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            -533.127634,
+            321.035681,
+            810.050095
+          ],
+          "quat": [
+            0,
+            0.430724,
+            0,
+            0.902484
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.321762,
+            0.159255,
+            7.9839
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_large_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            -531.321826,
+            321.091202,
+            832.393022
+          ],
+          "quat": [
+            0,
+            -0.336604,
+            0,
+            0.941646
+          ],
+          "points": 25,
+          "refuelMultiplier": 1,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            3.199173,
+            0.207407,
+            8.833882
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (2)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (2)",
+          "live": true,
+          "pos": [
+            -543.431601,
+            319.703174,
+            832.509426
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216883,
+            0.657571,
+            3.420498
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (3)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (3)",
+          "live": true,
+          "pos": [
+            -544.497435,
+            319.481081,
+            812.211546
+          ],
+          "quat": [
+            0,
+            0.026131,
+            0,
+            0.999659
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.21688,
+            0.504308,
+            3.06501
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (4)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (4)",
+          "live": true,
+          "pos": [
+            -533.345091,
+            319.703174,
+            822.083619
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216886,
+            0.159255,
+            3.065012
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (5)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (5)",
+          "live": true,
+          "pos": [
+            -553.077272,
+            319.703174,
+            823.187744
+          ],
+          "quat": [
+            0,
+            -0.687262,
+            0,
+            0.72641
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            10.216891,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (6)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (6)",
+          "live": true,
+          "pos": [
+            -548.937014,
+            319.703174,
+            828.186647
+          ],
+          "quat": [
+            0,
+            -0.910324,
+            0,
+            0.413895
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (7)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (7)",
+          "live": true,
+          "pos": [
+            -549.49292,
+            319.703174,
+            816.517943
+          ],
+          "quat": [
+            0,
+            -0.942425,
+            0,
+            -0.334417
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065014
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (8)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (8)",
+          "live": true,
+          "pos": [
+            -538.01953,
+            319.703174,
+            815.351195
+          ],
+          "quat": [
+            0,
+            0.459167,
+            0,
+            0.88835
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612085,
+            0.159255,
+            3.065015
+          ]
+        },
+        {
+          "role": "score",
+          "kind": "box",
+          "name": "collider_ground (9)",
+          "path": "jumpPad 1/trigger_mid_section (1)/collider_ground (9)",
+          "live": true,
+          "pos": [
+            -536.908568,
+            319.703174,
+            828.155031
+          ],
+          "quat": [
+            0,
+            -0.347879,
+            0,
+            0.937539
+          ],
+          "points": 50,
+          "refuelMultiplier": 1.5,
+          "giveRefuelBonus": false,
+          "triggerOnce": true,
+          "half": [
+            1.612086,
+            0.159255,
+            3.065016
+          ]
+        }
+      ],
+      "solid": {
+        "kind": "radialProfile",
+        "name": "jumpPad_04_collider",
+        "path": "jumpPad_04_collider",
+        "live": true,
+        "mesh": "Assets/Faceted Flight/Meshes/jumpPad_04_collider.fbx",
+        "pos": [
+          -543,
+          317.704394,
+          822
+        ],
+        "quat": [
+          0,
+          0.856017,
+          0,
+          0.516948
+        ],
+        "symmetry": 8,
+        "profile": [
+          [
+            0,
+            0.711438
+          ],
+          [
+            7.058264,
+            0.711438
+          ],
+          [
+            7.063228,
+            0.883171
+          ],
+          [
+            7.236954,
+            1.138099
+          ],
+          [
+            7.495062,
+            1.138099
+          ],
+          [
+            8.170114,
+            2.145611
+          ],
+          [
+            12.781315,
+            2.145768
+          ],
+          [
+            12.786279,
+            2.519936
+          ],
+          [
+            12.890515,
+            2.673625
+          ],
+          [
+            13.262786,
+            2.673625
+          ],
+          [
+            13.793893,
+            3.465214
+          ],
+          [
+            19.780016,
+            3.465216
+          ],
+          [
+            20.306159,
+            2.68036
+          ]
+        ],
+        "outer": 20.306159,
+        "top": 3.465216,
+        "bottom": -0.706097,
+        "_meta": {
+          "worldScale": [
+            37.143903,
+            55.521442,
+            37.143895
+          ],
+          "meshLocalSize": [
+            1.09362,
+            0.07513,
+            1.09362
+          ],
+          "meshImportScale": {
+            "scale": 0.1,
+            "globalScale": 10,
+            "useFileScale": true,
+            "fileScale": 0.01,
+            "unitScaleFactor": 1
+          },
+          "meshVertexCount": 254,
+          "meshTriangleCount": 386,
+          "profileError": 0.004617,
+          "symmetryError": 0.000003,
+          "note": "The one live solid collider on target_jumppad.prefab (layer 0, non-trigger, non-convex). The HoverMotor ray hits it and the four Player-tagged leg capsules stand on it. Vertical walls survive as two profile points at one radius."
+        }
+      },
+      "_meta": {
+        "fileID": "1408483002",
+        "path": "levelOffset/JumpSeat - Jump Pads/target_jumppad (4)",
+        "prefab": "Assets/Faceted Flight/Prefabs/target_jumppad.prefab",
+        "selfActive": true,
+        "volumesFound": 19,
+        "raw": {
+          "pos": [
+            -543,
+            320.2,
+            -822
+          ]
+        }
+      }
+    }
+  ],
+  "turnIndicators": [],
+  "clouds": [
+    {
+      "i": 0,
+      "name": "GL-Cloud-02",
+      "pos": [
+        -2029,
+        1395,
+        -199
+      ],
+      "quat": [
+        0,
+        0.494818,
+        0,
+        0.868997
+      ],
+      "scale": [
+        597.705585,
+        215.73427,
+        597.705815
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "12138668",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_02/GL-Cloud-02",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            -2029,
+            1395,
+            199
+          ]
+        }
+      }
+    },
+    {
+      "i": 1,
+      "name": "GL-Cloud-02 (1)",
+      "pos": [
+        -1512,
+        1487,
+        -2990
+      ],
+      "quat": [
+        0,
+        -0.922944,
+        0,
+        -0.384935
+      ],
+      "scale": [
+        532.293776,
+        309.28818,
+        532.294176
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "1310716059",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_02/GL-Cloud-02 (1)",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            -1512,
+            1487,
+            2990
+          ]
+        }
+      }
+    },
+    {
+      "i": 2,
+      "name": "GL-Cloud-02 (2)",
+      "pos": [
+        -2756,
+        1311,
+        1861
+      ],
+      "quat": [
+        0,
+        -0.461672,
+        0,
+        0.887051
+      ],
+      "scale": [
+        609.370378,
+        199.34004,
+        464.175464
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "2082858396",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_01/GL-Cloud-02 (2)",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            -2756,
+            1311,
+            -1861
+          ]
+        }
+      }
+    },
+    {
+      "i": 3,
+      "name": "GL-Cloud-02 (3)",
+      "pos": [
+        894,
+        2128,
+        -2010
+      ],
+      "quat": [
+        0,
+        -0.91485,
+        0,
+        -0.403795
+      ],
+      "scale": [
+        981.369377,
+        235.17409,
+        860.912113
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "1508760958",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_01/GL-Cloud-02 (3)",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            894,
+            2128,
+            2010
+          ]
+        }
+      }
+    },
+    {
+      "i": 4,
+      "name": "GL-Cloud-02 (4)",
+      "pos": [
+        -4048,
+        1395,
+        -1397
+      ],
+      "quat": [
+        0,
+        -0.906317,
+        0,
+        -0.422599
+      ],
+      "scale": [
+        597.705861,
+        215.73427,
+        597.705991
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "602732310",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_01/GL-Cloud-02 (4)",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            -4048,
+            1395,
+            1397
+          ]
+        }
+      }
+    },
+    {
+      "i": 5,
+      "name": "GL-Cloud-04",
+      "pos": [
+        443,
+        1660,
+        1776
+      ],
+      "quat": [
+        0,
+        -0.908807,
+        0,
+        -0.417218
+      ],
+      "scale": [
+        546.766,
+        294.33667,
+        472.006092
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "1815797792",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_02/GL-Cloud-04",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            443,
+            1660,
+            -1776
+          ]
+        }
+      }
+    },
+    {
+      "i": 6,
+      "name": "GL-Cloud-04 (1)",
+      "pos": [
+        3094,
+        1660,
+        1283
+      ],
+      "quat": [
+        0,
+        -0.908807,
+        0,
+        -0.417218
+      ],
+      "scale": [
+        546.76618,
+        294.33667,
+        472.006272
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "418234736",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_01/GL-Cloud-04 (1)",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            3094,
+            1660,
+            -1283
+          ]
+        }
+      }
+    },
+    {
+      "i": 7,
+      "name": "GL-Cloud-05",
+      "pos": [
+        1959,
+        1599.2,
+        -90
+      ],
+      "quat": [
+        0,
+        -0.93665,
+        0,
+        -0.350266
+      ],
+      "scale": [
+        493.631411,
+        193.15442,
+        493.631591
+      ],
+      "shape": "02",
+      "_meta": {
+        "fileID": "1534281282",
+        "path": "levelOffset/LevelArt_AlpineForest/art/clouds/clouds_layer_02/GL-Cloud-05",
+        "prefab": null,
+        "source": "bakedIntoEnvironmentScene",
+        "raw": {
+          "pos": [
+            1959,
+            1599.2,
+            90
+          ]
+        }
+      }
+    }
+  ],
+  "props": [],
+  "ui": {
+    "briefing": "Fly through as many rings as you can before time runs out. Don't CRASH!!\n",
+    "strings": {
+      "fuelLabel": "Fuel :",
+      "fuelFull": "100%",
+      "launchPrompt": "Press A to launch",
+      "launching": "Powering On...",
+      "outOfBounds": "Warning!\nLeaving event airspace\nTurn back now!",
+      "outOfBoundsCountdown": "12",
+      "pauseTitle": "- PAUSE -",
+      "pauseResume": "Resume",
+      "pauseRestart": "Restart",
+      "pauseExit": "Exit",
+      "medalAwarded": "________ medal AwarDeD!"
+    },
+    "_meta": {
+      "prefab": "Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab",
+      "vehicle": "jumpseat",
+      "textComponents": 165,
+      "note": "UnityEngine.UI.Text is m_Script fileID 708705254 in the UnityEngine.UI assembly (guid f5f67c52d1564df4a8936ccd202a3bd8). Strings are read from the raw bytes by tools/extract/ui-text.mjs, which folds multi-line YAML scalars properly; the shared unity_yaml.js parser returns only the first line of one.",
+      "briefing": {
+        "select": "panel_mission/Text",
+        "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_mission/Text",
+        "fileID": "114000014204010616",
+        "line": 51477,
+        "hud": "firstPerson",
+        "prefab": "Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab",
+        "liveAtSpawn": false,
+        "matched": 2,
+        "note": "panel_mission carries its own disableAfterDelay: disableDelay 3.8, enabled, targeting itself, at JumpSeat_Photon.prefab:45182 and :48673, mechanism in disableAfterDelay.cs:8-16. disableDelay is a public float with NO initialiser, so 3.8 is shipped behaviour and not a code default. A panel live at spawn (see liveAtSpawn above) is therefore killed 3.8 s after spawn; one that is not does not start its countdown until something activates it, because Start() does not run on an inactive GameObject. What activates it, if anything, is NOT traced here. There is no second hide on this vehicle -- the JumpSeat HUD is HUD_Gameplay, which has no HideMissionUI. Ends in a newline, which is in the shipped bytes."
+      },
+      "strings": {
+        "fuelLabel": {
+          "select": "panel_jumpSeatUI/text_fuel",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_jumpSeatUI/text_fuel",
+          "fileID": "114000010841930590",
+          "line": 42865,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 2,
+          "ff2": "nothing yet — the JumpSeat HUD is unbuilt (NEXT.md)"
+        },
+        "fuelFull": {
+          "select": "panel_jumpSeatUI/val_fuel",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_jumpSeatUI/val_fuel",
+          "fileID": "114000012061380330",
+          "line": 46054,
+          "hud": "firstPerson",
+          "liveAtSpawn": true,
+          "matched": 2,
+          "ff2": "nothing yet — the JumpSeat HUD is unbuilt"
+        },
+        "launchPrompt": {
+          "select": "panel_preLaunch/text_poweringOn",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_preLaunch/text_poweringOn",
+          "fileID": "114000013608186452",
+          "line": 50053,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'Press A to launch'"
+        },
+        "launching": {
+          "select": "panel_Startup/text_poweringOn",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_Startup/text_poweringOn",
+          "fileID": "114000010146049930",
+          "line": 41178,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — literal 'Powering On...'"
+        },
+        "outOfBounds": {
+          "select": "panel_outofBounds/text_end",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_outofBounds/text_end",
+          "fileID": "114000011217133692",
+          "line": 43869,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts `launchBanner()` — literals 'OUT OF BOUNDS' and 'RETURN — <n>'",
+          "note": "THREE lines, not one: `Warning!` / `Leaving event airspace` / `Turn back now!`. The countdown is a separate label parented to this one."
+        },
+        "outOfBoundsCountdown": {
+          "select": "panel_outofBounds/text_end/text_warning_countdown",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_outofBounds/text_end/text_warning_countdown",
+          "fileID": "114000012420350622",
+          "line": 47125,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — the number in `RETURN — <n>`",
+          "note": "Authored as `12`, one less than the 13 s `PlayerBoundary.resetDelay` every scene ships."
+        },
+        "pauseTitle": {
+          "select": "lbl_pause",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/pauseHUD_firstPerson/panel_pause/lbl_pause",
+          "fileID": "114000012856125984",
+          "line": 47999,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/render/pause.ts — literal '- PAUSE -'"
+        },
+        "pauseResume": {
+          "select": "lbl_resume",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/pauseHUD_firstPerson/panel_pause/lbl_resume",
+          "fileID": "114000010456150898",
+          "line": 41954,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — label 'Resume'"
+        },
+        "pauseRestart": {
+          "select": "lbl_restart",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/pauseHUD_firstPerson/panel_pause/lbl_restart",
+          "fileID": "114000012932729058",
+          "line": 48196,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — label 'Restart'"
+        },
+        "pauseExit": {
+          "select": "lbl_exit",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/pauseHUD_firstPerson/panel_pause/lbl_exit",
+          "fileID": "114000013418276888",
+          "line": 49469,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "src/boot/app.ts — label 'Exit'"
+        },
+        "medalAwarded": {
+          "select": "panel_medalAwarded/text_end",
+          "path": "JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_medalAwarded/text_end",
+          "fileID": "114000010776010910",
+          "line": 42698,
+          "hud": "firstPerson",
+          "liveAtSpawn": false,
+          "matched": 2,
+          "ff2": "nothing — FF2 has no medal-award banner",
+          "note": "`_CORRECTIONS.md` quotes this as \"<medal> Medal AwarDeD!\". The bytes say `________ medal AwarDeD!` — eight underscores, lower-case `medal`."
+        }
+      }
+    }
+  },
+  "timer": {
+    "timeLimit": 180,
+    "bonusParTime": 180,
+    "shadowedParTime": null,
+    "countdown": {
+      "shipped": false,
+      "useCountdownFlag": false,
+      "startedByTrigger": false,
+      "triggerDelay": null,
+      "steps": 3,
+      "stepSeconds": 1,
+      "seconds": 4,
+      "_meta": {
+        "note": "No live Trigger_EnableShip wired to the live Timer_Race, and useCountdown is 0, so nothing in this mission calls StartCountdown()."
+      }
+    }
+  },
+  "medals": {
+    "bronze": null,
+    "silver": null,
+    "gold": null,
+    "platinum": null
+  },
+  "medalsFf2": null,
+  "medalsExp": {
+    "bronze": null,
+    "silver": null,
+    "gold": null,
+    "platinum": null
+  },
+  "scoring": {
+    "gateMultiplier": 100,
+    "levelDelay": null,
+    "timePenalty": null,
+    "timeBonusMultiplier": 11.5,
+    "fuelPenaltyEnabled": false,
+    "timeAffectsMedal": true
+  },
+  "boundary": {
+    "enabled": false,
+    "resetDelay": 13,
+    "present": true,
+    "volume": {
+      "shape": "sphere",
+      "centre": [
+        111,
+        223.35,
+        -179
+      ],
+      "radius": 1754.557151,
+      "isTrigger": true,
+      "gameObject": "trigger_playArea"
+    },
+    "resetFadeSeconds": 2.5
+  },
+  "fog": {
+    "height": 387,
+    "heightDensity": 0.03,
+    "startDistance": 256,
+    "distanceFog": true,
+    "heightFog": true,
+    "radial": true,
+    "excludeFarPixels": true,
+    "color": [
+      0.839216,
+      0.960784,
+      1,
+      1
+    ],
+    "density": 0.000175,
+    "mode": 3,
+    "linearStart": 100,
+    "linearEnd": 2500,
+    "sceneFogEnabled": true
+  },
+  "lighting": {
+    "sun": {
+      "name": "Directional light (1)",
+      "kind": "directional",
+      "colorLinear": [
+        0.550938,
+        0.429709,
+        0.044857
+      ],
+      "colorGamma": [
+        0.845588,
+        0.75597,
+        0.25492
+      ],
+      "intensity": 0.84,
+      "shadows": 2,
+      "direction": [
+        -0.001089,
+        -0.836384,
+        0.548142
+      ],
+      "elevationDeg": 56.760226,
+      "_meta": {
+        "fileID": "726072921",
+        "path": "levelOffset/Directional light (1)",
+        "rotationThree": [
+          0.000426,
+          -0.879813,
+          -0.475319,
+          -0.000849
+        ],
+        "rotationRaw": [
+          -0.000426,
+          0.879813,
+          -0.475319,
+          -0.000849
+        ],
+        "positionThree": [
+          735.9592,
+          489.09747,
+          131.9812
+        ]
+      }
+    },
+    "ambient": {
+      "mode": 0,
+      "modeName": "skybox",
+      "intensity": 0.451,
+      "skyColor": [
+        0.095612,
+        0.102377,
+        0.116809
+      ],
+      "equatorColor": [
+        0.051414,
+        0.056375,
+        0.059983
+      ],
+      "groundColor": [
+        0.021197,
+        0.019393,
+        0.015785
+      ]
+    },
+    "skyboxMaterial": "Assets/Faceted Flight/Cubemaps/ForestSky.mat",
+    "sky": {
+      "available": false,
+      "reason": "not a Skybox/6 Sided material",
+      "material": "Assets/Faceted Flight/Cubemaps/ForestSky.mat"
+    },
+    "liveLightCount": 1,
+    "environmentSceneLiveLights": 0,
+    "disabledLightCount": 0
+  },
+  "ghosts": [],
+  "ambientTraffic": null,
+  "generated": null,
+  "_meta": {
+    "generatedBy": "tools/extract/level.mjs",
+    "sourceSceneModified": "2016-12-28T01:24:08.868Z",
+    "sourceScene": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity",
+    "sourceSceneAbs": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity",
+    "environmentSceneAbs": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/environments/LevelArt_AlpineForest.unity",
+    "legacyProjectRoot": "$FF2_LEGACY",
+    "coordinateConvention": {
+      "rule": "Unity(x,y,z) -> three(x,y,-z); quat(x,y,z,w) -> (-x,-y,z,w); scale unchanged",
+      "handedness": "Unity left-handed +Z forward -> three.js right-handed -Z forward",
+      "determinant": -1,
+      "pairedWith": "triangle winding reversed and UV V-flipped on meshes (not emitted here)",
+      "validatedBy": "tools/prototype/axis_test.js -- see content/levels/_axis-validation.md",
+      "rawAlsoEmitted": "every element carries _meta.raw in untouched Unity coordinates"
+    },
+    "livenessRule": "TriggerCheckpoint.m_Enabled==1 && addScore!=0 && every ancestor m_IsActive==1, EXCEPT Level.ringAttackParent / Level.freeFlightParent which Level.cs toggles at runtime.",
+    "courseSelection": null,
+    "structural": {
+      "shipPrefab": "Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab",
+      "shipPrefabGuid": "64d1f5fbe80e75d47bbae0c403ade860",
+      "forceGameMode": 0,
+      "forcedGameMode": 0,
+      "liveRingCount": 0,
+      "ringClonesPlaced": 0,
+      "ringsLiveOffCourse": 0,
+      "routeCount": 0,
+      "orbCountLive": 0,
+      "orbCountPlaced": 0,
+      "padCountLive": 5,
+      "padCountPlaced": 5,
+      "padTriggerVolumes": 95,
+      "cloudCountLive": 8,
+      "cloudSource": "bakedIntoEnvironmentScene",
+      "uiStringCount": 11,
+      "uiStringDigest": "f4d9780c61587fde",
+      "countdownShipped": false,
+      "countdownUseFlag": false,
+      "countdownStartedByTrigger": false,
+      "finishShape": "convexMesh",
+      "launchKind": "direct",
+      "launchStarterScriptsOnShip": [],
+      "launchSeatMarker": "SinglePlayerRespawnPosition (Level.respawning is 1 — the marker the shipped code reads)",
+      "spawnFieldAgreesWithSeat": null,
+      "spawnFieldAboveSeat": null,
+      "jumpStartSeconds": 7.5,
+      "playerBoundaryEnabled": false,
+      "playerBoundaryResetDelay": 13,
+      "fogHeight": 387,
+      "fogHeightDensity": 0.03,
+      "levelComponentEnabled": true,
+      "respawningFlag": true,
+      "sceneDocumentCount": 260,
+      "gameObjectCount": 58
+    },
+    "route": null,
+    "ghosts": {
+      "candidatesInspected": 4,
+      "ranInThisMissionIn2016": 4,
+      "note": "Level.SinglePlayerGhosts is [] in all 13 scenes and is only read in the Multiplayer branch, so 2016 ran EVERY GhostRacer in the environment scene in EVERY mission that used it. FF2 filters on clip-name prefix -- a logged deviation. PlayRandomAnimation picks uniformly from the resolved animationClips pool; in every shipped ghost that pool collapses to one clip, so the randomiser is a no-op.",
+      "attribution": "mission-scene ghosts always claimed; environment-scene ghosts claimed only on a clip-stem match AND vehicle === hoverjet (all clips are HoverJet recordings).",
+      "rejected": [
+        {
+          "name": "GhostRacer_int_02_01",
+          "clips": [
+            "int_02_leftSpawn_slow_02",
+            "int_02_leftSpawn_slow_02"
+          ],
+          "origin": "environment",
+          "why": "environment ghost, non-HoverJet mission"
+        },
+        {
+          "name": "GhostRacer_int_02_02",
+          "clips": [
+            "int_02_rightSpawn_fast_01",
+            "int_02_rightSpawn_fast_01"
+          ],
+          "origin": "environment",
+          "why": "environment ghost, non-HoverJet mission"
+        },
+        {
+          "name": "GhostRacer_rookie01_01",
+          "clips": [
+            "rookie_01_leftSpawn_fast_01"
+          ],
+          "origin": "environment",
+          "why": "environment ghost, non-HoverJet mission"
+        },
+        {
+          "name": "GhostRacer_rookie_01_02",
+          "clips": [
+            "rookie_01_rightSpawn_fast_01"
+          ],
+          "origin": "environment",
+          "why": "environment ghost, non-HoverJet mission"
+        }
+      ]
+    },
+    "checks": [
+      {
+        "id": "platinum-reachable",
+        "ok": true,
+        "msg": "platinum null needs null rings x 100; 0 live ring(s) in 0 route(s) -> max 0"
+      },
+      {
+        "id": "boundary-present",
+        "ok": true,
+        "msg": "PlayerBoundary enabled=false resetDelay=13"
+      },
+      {
+        "id": "spawn-present",
+        "ok": true,
+        "msg": "spawn marker resolved (SinglePlayerRespawnPosition (Level.respawning is 1 — the marker the shipped code reads)); code path uses the respawn marker"
+      },
+      {
+        "id": "orbs-all-live",
+        "ok": true,
+        "msg": "0 live of 0 placed orb(s)"
+      },
+      {
+        "id": "pads-all-live",
+        "ok": true,
+        "msg": "5 live of 5 placed pad(s)"
+      },
+      {
+        "id": "respawn-present",
+        "ok": true,
+        "msg": "Level.SinglePlayerRespawnPosition resolved"
+      },
+      {
+        "id": "seat-brackets-the-ride",
+        "ok": true,
+        "msg": "no elevator seat on this mission"
+      },
+      {
+        "id": "route-space-resolved",
+        "ok": true,
+        "msg": "no spline in scene"
+      },
+      {
+        "id": "pads-have-triggers",
+        "ok": true,
+        "msg": "5/5 pad(s) with trigger volumes (19 each)"
+      },
+      {
+        "id": "pads-have-solid",
+        "ok": true,
+        "msg": "5/5 pad(s) with a landing surface (13 profile points; outer 20.306159 m)"
+      },
+      {
+        "id": "clouds-present",
+        "ok": true,
+        "msg": "8 live cloud(s) from bakedIntoEnvironmentScene"
+      },
+      {
+        "id": "finish-present",
+        "ok": true,
+        "msg": "finish gate: convexMesh at [-544.348275,322.56799,822.709197]"
+      },
+      {
+        "id": "start-sequence-present",
+        "ok": true,
+        "msg": "direct start, 7.5s from Trigger_EnableJumpShip"
+      },
+      {
+        "id": "ui-strings-read",
+        "ok": true,
+        "msg": "11 string(s) + briefing from Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab"
+      }
+    ],
+    "provenance": [
+      {
+        "field": "vehicle",
+        "value": "jumpseat",
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1894032047 Level.ShipPrefab",
+        "detail": "Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab"
+      },
+      {
+        "field": "chainIndex",
+        "value": 6,
+        "source": "Assets/Faceted Flight/Scripts/Button_Next.cs Button_Next.SetNextLevel()",
+        "detail": "position 6 of 13"
+      },
+      {
+        "field": "difficulty",
+        "value": "beginner",
+        "source": "Assets/Faceted Flight/Scenes/setGameplayOptions.unity",
+        "detail": "Assets/Faceted Flight/Scenes/setGameplayOptions.unity missionSel_jumpSeat_beg (the id agrees)"
+      },
+      {
+        "field": "forcedMode",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1894032047 Level.ForceGameMode/ForcedGameMode",
+        "detail": "ForceGameMode=0 ForcedGameMode=0"
+      },
+      {
+        "field": "forcedModeFf2",
+        "value": null,
+        "source": "no deviation; `forcedMode` stands"
+      },
+      {
+        "field": "environment",
+        "value": "alpine",
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1894032049 LoadLevelArt.levelName",
+        "detail": "LevelArt_AlpineForest"
+      },
+      {
+        "field": "worldOffset",
+        "value": [
+          -2048,
+          0,
+          2048
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#64971563 levelOffset Transform",
+        "detail": "raw Unity [-2048,0,-2048]"
+      },
+      {
+        "field": "props",
+        "value": 0,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity stripped prefab instances, expandPrefabs:true",
+        "detail": "0 authored, 0 live"
+      },
+      {
+        "field": "spawn.pos",
+        "value": [
+          748.123971,
+          403.019334,
+          170.301663
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#154541204 Level.SinglePlayerRespawnPosition",
+        "detail": "levelOffset/playerstart_jumpSeat/respawn_position"
+      },
+      {
+        "field": "respawn.pos",
+        "value": [
+          748.123971,
+          403.019334,
+          170.301663
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#154541204 Level.SinglePlayerRespawnPosition",
+        "detail": "levelOffset/playerstart_jumpSeat/respawn_position"
+      },
+      {
+        "field": "markerUsedAtLoad",
+        "value": "respawn",
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1894032047 Level.respawning",
+        "detail": "serialised respawning=1; Level.cs:287-294 selects the respawn marker. The C# initialiser says false; the scene says 1."
+      },
+      {
+        "field": "ui.briefing",
+        "value": "\"Fly through as many rings as you can before time runs out. Don't CRASH!!\\n\"",
+        "source": "Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab#114000014204010616 UnityEngine.UI.Text.m_Text",
+        "detail": "Assets/Faceted Flight/Resources/JumpSeat_Photon.prefab:51477 (JumpSeat_Photon/offset/art_pivot (1)/art_firstPerson/Ship_HUD/panel_mission/Text)"
+      },
+      {
+        "field": "routes",
+        "value": "0 route(s), 0 live rings",
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity TriggerCheckpoint liveness walk",
+        "detail": "m_Enabled==1 && addScore!=0 && parent chain m_IsActive==1 (mode parents excepted)"
+      },
+      {
+        "field": "orbs.posFf2",
+        "value": null,
+        "source": "DEVIATION DEV-067 (Matt, 2026-09-13)",
+        "detail": "no orb of this mission is inside its own terrain, or its mode does not collect orbs"
+      },
+      {
+        "field": "medals.bronze",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.bronzeMin",
+        "detail": "missing"
+      },
+      {
+        "field": "medals.silver",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.silverMin",
+        "detail": "missing"
+      },
+      {
+        "field": "medals.gold",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.goldMin",
+        "detail": "missing"
+      },
+      {
+        "field": "medals.platinum",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.platinumMin",
+        "detail": "missing"
+      },
+      {
+        "field": "medalsExp.bronze",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.bronzeMinExp",
+        "detail": "missing"
+      },
+      {
+        "field": "medalsExp.silver",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.silverMinExp",
+        "detail": "missing"
+      },
+      {
+        "field": "medalsExp.gold",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.goldMinExp",
+        "detail": "missing"
+      },
+      {
+        "field": "medalsExp.platinum",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.platMinExp",
+        "detail": "missing"
+      },
+      {
+        "field": "timer.timeLimit",
+        "value": 180,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1432703964 Timer_Race.maxRaceTime",
+        "detail": "sceneSerialized"
+      },
+      {
+        "field": "timer.shadowedParTime",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? RaceTimer.timeAttack_maxTime",
+        "detail": "overwritten by LevelEnd.cs:298 SetInt -- see _verify-v-modes E13"
+      },
+      {
+        "field": "scoring.gateMultiplier",
+        "value": 100,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.gateMultiplier",
+        "detail": "missing"
+      },
+      {
+        "field": "scoring.levelDelay",
+        "value": null,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#? LevelEnd.levelDelay",
+        "detail": "missing"
+      },
+      {
+        "field": "scoring.timeBonusMultiplier",
+        "value": 11.5,
+        "source": "Scoreboard.cs:14",
+        "detail": "private double = 11.5, not serialised: code default IS shipped behaviour"
+      },
+      {
+        "field": "scoring.timeAffectsMedal",
+        "value": true,
+        "source": "DEVIATION DEV-004 (Matt, 2026-09-09)",
+        "detail": "2016 ignored time for medals; FF2 pays the time bonus into the score, and only on a run that took every ring (DEV-393). With platinum at every ring it orders clean runs and moves no medal (DEV-393 follow-up)."
+      },
+      {
+        "field": "boundary.enabled",
+        "value": false,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#596678727 PlayerBoundary.m_Enabled + GameObject.m_IsActive",
+        "detail": "component enabled flag = 1, GameObject \"trigger_playArea\" activeInHierarchy = false -- DEACTIVATED, so the trigger fires nothing"
+      },
+      {
+        "field": "boundary.resetDelay",
+        "value": 13,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#596678727 PlayerBoundary.resetDelay",
+        "detail": "the C# initialiser says 10; the shipped scenes say 13. The scene wins."
+      },
+      {
+        "field": "medalsFf2.platinum",
+        "value": null,
+        "source": "DEVIATION DEV-393 follow-up (Matt, 2026-09-25)",
+        "detail": "no live scoring rings"
+      },
+      {
+        "field": "fog.height",
+        "value": 387,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1894032050 LevelEffects_GlobalFog.height",
+        "detail": "sceneSerialized"
+      },
+      {
+        "field": "fog.heightDensity",
+        "value": 0.03,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#1894032050 LevelEffects_GlobalFog.heightDensity",
+        "detail": "sceneSerialized"
+      },
+      {
+        "field": "fog.color",
+        "value": [
+          0.839216,
+          0.960784,
+          1,
+          1
+        ],
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity RenderSettings.m_FogColor",
+        "detail": "scene RenderSettings document"
+      },
+      {
+        "field": "lighting.sun",
+        "value": "directional I=0.84",
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity#726072921 Light",
+        "detail": "the ONLY light with m_Enabled=1 and an active parent chain. The LevelArt prefab’s own \"Directional light\" is m_IsActive: 0 — disabled — so the mission scene’s copy is what ships."
+      },
+      {
+        "field": "lighting.ambient.mode",
+        "value": 0,
+        "source": "Assets/Faceted Flight/Scenes/missions/JumpSeat/rookie_01_jumpSeat.unity RenderSettings.m_AmbientMode",
+        "detail": "0 = from skybox, 1 = gradient, 3 = flat colour"
+      },
+      {
+        "field": "ghosts",
+        "value": [],
+        "source": "$FF2_LEGACY/Assets/Faceted Flight/Scenes/environments/LevelArt_AlpineForest.unity",
+        "detail": "Level.SinglePlayerGhosts is [] in all 13 scenes and is only read in the Multiplayer branch, so 2016 ran EVERY GhostRacer in the environment scene in EVERY mission that used it. FF2 filters on clip-name prefix -- a logged deviation. PlayRandomAnimation picks uniformly from the resolved animationClips pool; in every shipped ghost that pool collapses to one clip, so the randomiser is a no-op."
+      }
+    ],
+    "sceneStats": {
+      "documents": 260,
+      "gameObjects": 58,
+      "prefabInstances": 8
+    }
+  }
+}

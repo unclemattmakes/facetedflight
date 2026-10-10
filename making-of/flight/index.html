@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>The flight model · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="flight">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        Most of how the HoverJet feels comes from a few numbers on the ship and one decision about
+        gravity.
+      </p>
+
+      <h2>Gravity, and when it switches off</h2>
+      <p>
+        The world's gravity is
+        <span data-const="world.gravity.y" data-digits="0" data-unit="m/s²"></span>, not Earth's.
+        Every mass, drag and thrust in the game was tuned against it. The HoverJet's prefab even
+        says it uses gravity. But once the launch elevator finishes, the game switches gravity off
+        for the rest of the flight, so a HoverJet in the air is just thrust against drag. A jet
+        that hasn't launched yet still falls.
+      </p>
+
+      <h2>Thrust against drag</h2>
+      <p>
+        The jet's thrust is
+        <span data-const="hoverjet.ship.maxSpeed" data-unit="N"></span>, its drag is
+        <span data-const="hoverjet.rigidbody.drag" data-unit="1/s"></span>, and Unity's drag takes
+        a fixed share of the velocity every tick. Balance the two and the speed settles at one
+        number. That number depends on the tick length too, which is why the port runs on the
+        game's own fixed step. On the shipped numbers the answer is
+        <span data-const="derived.hoverjet.terminalSpeedCruise" data-digits="1" data-unit="m/s"></span>,
+        and with boost on,
+        <span data-const="derived.hoverjet.terminalSpeedBoost" data-digits="1" data-unit="m/s"></span>.
+        Boost was free in 2016. The anniversary edition makes it spend from a tank that refills, and
+        this bench has no tank, so it shows 2016's free boost.
+      </p>
+      <div data-toy="flight-bench"></div>
+      <p>
+        <strong>Try it:</strong> the <em>throttle</em> starts at full. Watch the yellow trace climb
+        until it meets the dashed line. The same function the game's racers use to plan their speed
+        computes that line. Tick <em>boost</em> and it climbs again. Then click
+        <em>chain a gate</em> a few times. Each gate raises the ceiling by
+        <span data-const="hoverjet.speedChain.speedIncreaseAmt"></span>, and after
+        <span data-const="hoverjet.energy.maxCooldownTime" data-unit="s"></span> without another one
+        the ceiling falls back. Last, untick <em>launched</em> and watch it fall; tick it again to fly.
+      </p>
+      <pre data-snippet="src/sim/speed-chain.ts#tickTerminalSpeed" data-caption="where the dashed line comes from"></pre>
+
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

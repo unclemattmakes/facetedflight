@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Relative on purpose: Vite rewrites it to the hashed emission, and
+         `publicDir` is off on every deploy that fetches content off-origin.
+         See the comment inside icon.svg. -->
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <!-- DEV-595: a phone's way to play without the browser's bars. Android
+         Chrome goes fullscreen on the first tap (`src/input/turn-phone.ts`);
+         an iPhone has no fullscreen for a page at all, so its route is Add to
+         Home Screen, which these make launch with no Safari chrome. The
+         manifest is relative for the icon's reason (Vite emits it). -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Faceted Flight" />
+    <title>Faceted Flight: 10th Anniversary Edition</title>
+    <meta
+      name="description"
+      content="Arcade stunt flight in your headset and your browser. Race friends in a room, or build a course of your own. Faceted Flight (2016), rebuilt for the web ten years on."
+    />
+    <!-- DEV-602: the card a link makes when it is pasted into a chat or a post.
+         Absolute URLs, because a crawler reads them out of context; the
+         production domain on every build, so a preview's link previews like
+         the real one. The image is drawn from icon.svg at build time
+         (tools/dev/app-icon.mjs, SHARE_CARD), so no binary is committed. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Faceted Flight" />
+    <meta property="og:title" content="Faceted Flight: 10th Anniversary Edition" />
+    <meta
+      property="og:description"
+      content="Arcade stunt flight in your headset and your browser. Race friends in a room, or build a course of your own. Faceted Flight (2016), rebuilt for the web ten years on."
+    />
+    <meta property="og:url" content="https://facetedflight.net/" />
+    <meta property="og:image" content="https://facetedflight.net/share-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Faceted Flight emblem: a gold wing over silver chevrons." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Faceted Flight: 10th Anniversary Edition" />
+    <meta
+      name="twitter:description"
+      content="Arcade stunt flight in your headset and your browser. Race friends in a room, or build a course of your own."
+    />
+    <meta name="twitter:image" content="https://facetedflight.net/share-card.png" />
+    <style>
+      :root {
+        color-scheme: dark;
+        /* The UI tokens (DEV-647), mirrored from src/render/ui-tokens.ts: the page
+           cannot import a module, so tests/unit/ui-token-guard.test.ts reads this
+           block and fails if a value here drifts from the TypeScript source. */
+        --ink: #f2f7fb;
+        --ink-dim: #9fb4c4;
+        --ground: #070b12;
+        --edge: rgba(242, 247, 251, 0.16);
+        --accent: #ffcf7a;
+        --plate: rgba(10, 22, 30, 0.94);
+        --ui-font: "FF2 CRYSTAL", "Arial Narrow", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--ground);
+        color: var(--ink);
+        font: 500 15px/1.55 var(--ui-font);
+        overflow: hidden;
+      }
+      #viewport { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+      /* ── No curtain (DEV-557) ────────────────────────────────────────
+         There used to be a landing card here: Start, Enter VR, a status line
+         and a footer, over a title screen that had been live behind it since
+         DEV-278/279. Matt, 2026-10-01: "let's get rid of the html curtain.
+         it's confusing that the game can be fully functional, yet the curtain
+         is still up." The title screen is the page now: its rows, its ENTER VR
+         plate (`render/title-vr.ts`) and its first press are the game's own.
+
+         One piece of DOM is left, and it does not stand over the game:
+         `#boot-failure`, shown ONLY when the page cannot boot: no content
+         base URL, no WebGL, a world that failed to load (`src/main.ts`). An
+         error you can only read in devtools is not a loud failure.
+
+         The card's footer (the version, "by Uncle Matt Makes", the music
+         credit and the copyright) stayed on the title as a line
+         at its foot until DEV-614. Matt, 2026-10-03: "add a "credits" panel
+         to the options screen. that's where credits should live (not the
+         footer of the title)". It is the pause plate's CREDITS page now
+         (`src/render/credits-menu.ts`), and the version is `body[data-build]`
+         as well (`src/main.ts`). What stayed at the foot is one line, the
+         version and the copyright (`#title-line`, below). */
+      #boot-failure {
+        text-transform: uppercase; /* CRYSTAL is a capitals face (DEV-848) */
+        position: fixed;
+        z-index: 20;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        width: min(560px, calc(100% - 32px));
+        margin: 0;
+        padding: 12px 16px;
+        border: 1px solid var(--edge);
+        border-left: 6px solid var(--accent);
+        background: var(--plate);
+        color: var(--ink);
+        font-size: 14px;
+      }
+      #boot-failure[hidden] { display: none; }
+      /* ── The title's one line: the version and the copyright ───────────
+         DEV-614 follow-up. Matt, 2026-10-03: "show version number on the
+         title screen, same line as copyright". One line, centred along the
+         bottom inside the safe areas (`src/main.ts` writes it), while the
+         title is up (`data-title-up`, which `boot/app.ts` sets). Nothing
+         else stands at the foot of a phone's title since DEV-619 took the
+         START chip off it. The full credits are the CREDITS page and the
+         hangar's CREDITS table (DEV-614, DEV-620). */
+      #title-line {
+        text-transform: uppercase; /* CRYSTAL is a capitals face (DEV-848) */
+        position: fixed;
+        z-index: 2;
+        left: calc(12px + env(safe-area-inset-left, 0px));
+        right: calc(12px + env(safe-area-inset-right, 0px));
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--ink);
+        opacity: 0.92;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        line-height: 1.45;
+        /* Two shadows: it sits on bright snow, and one soft shadow washed out. */
+        text-shadow:
+          0 1px 2px rgba(7, 11, 18, 0.95),
+          0 0 8px rgba(7, 11, 18, 0.85);
+        pointer-events: none;
+      }
+      body:not([data-title-up]) #title-line { display: none; }
+      /* ── The Uncle Matt Makes portrait (DEV-803) ───────────────────────
+         Matt, 2026-10-07: "add the 'uncle matt makes' portrait a clickable
+         button anchored to the bottom left of the screen". A link to
+         unclemattmakes.com, the splash's round mascot, shown while the title
+         is up (`data-title-up`: flat and phone, never in a headset). It sits
+         16px in from the corner, and above #title-line on a narrow screen,
+         where that centred line can run the whole width.
+         The button itself (its size, shape, border and hover) and the link's
+         address, label and image are `src/render/uncle-matt-link.{ts,css}`,
+         shared with the making-of site's header. Only its PLACE is here. */
+      #uncle-matt-link {
+        position: fixed;
+        z-index: 2;
+        left: calc(16px + env(safe-area-inset-left, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      }
+      @media (max-width: 639px) {
+        #uncle-matt-link { bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+      }
+      body:not([data-title-up]) #uncle-matt-link { display: none; }
+      /* ── The developer splash (DEV-611) ───────────────────────────────
+         "Uncle Matt Makes: ___" in unclemattmakes.com's own colours (its
+         cream paper, walnut ink, ember amber) and its word roll, over a load
+         bar. `src/boot/dev-splash.ts` drives it and says when it goes: every
+         load (DEV-872), gone when the scene is loaded and the last word has
+         held. Visible from the first paint, so there is no flash of the game
+         before the module runs. Under `#boot-failure`, and
+         gone outright when the page cannot boot. */
+      #dev-splash {
+        --paper: #f2e9d8;
+        --walnut: #2a1d12;
+        --ember: #e8923a;
+        --rh: 1.2em;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: var(--paper);
+        color: var(--walnut);
+        color-scheme: light;
+      }
+      body[data-boot-failed] #dev-splash { display: none; }
+      /* The site header's lockup, at splash size: the round mascot on the
+         left, the wordmark beside it, the blank under "Uncle Matt Makes:". */
+      .dev-splash__lockup {
+        display: flex;
+        align-items: center;
+        gap: 0.42em;
+        max-width: 100%;
+        font: 700 clamp(30px, 6.2vw, 84px) / 1.05 Bitter, Georgia, "Times New Roman", serif;
+        letter-spacing: -0.02em;
+        opacity: 0;
+      }
+      /* Shown once Bitter and the portrait are in, or the module stops
+         waiting for them (600 ms): both arrive after this paint. */
+      #dev-splash.is-faced .dev-splash__lockup { animation: dev-splash-in 450ms ease forwards; }
+      .dev-splash__portrait {
+        flex: none;
+        width: 2.35em;
+        height: 2.35em;
+        border-radius: 50%;
+        border: 3px solid rgba(42, 29, 18, 0.28);
+        background: #ece1cb;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 300ms ease;
+      }
+      .dev-splash__portrait.is-loaded { opacity: 1; }
+      .dev-splash__mark {
+        margin: 0;
+        font: inherit;
+        text-align: left;
+      }
+      /* On its own line under the wordmark, at its left edge, where a word is
+         typed in (DEV-624). One grid cell holds every word, invisible, so the
+         slot is as wide as the widest and the underline never moves, and the
+         typed line over them. */
+      .dev-splash__blank {
+        display: grid;
+        width: fit-content;
+        height: var(--rh);
+        margin-top: 0.08em;
+        line-height: var(--rh);
+        border-bottom: 0.09em solid var(--ember);
+      }
+      .dev-splash__blank > * {
+        grid-area: 1 / 1;
+        white-space: nowrap;
+      }
+      .dev-splash__sizer { visibility: hidden; }
+      .dev-splash__line { color: var(--ember); }
+      .dev-splash__caret {
+        display: inline-block;
+        width: 0.07em;
+        height: 0.9em;
+        margin-left: 0.05em;
+        /* Its own width back, so the caret after the widest word does not
+           widen the slot and stretch the underline. */
+        margin-right: -0.12em;
+        vertical-align: -0.1em;
+        background: var(--ember);
+        animation: dev-splash-caret 1s steps(2, jump-none) infinite;
+      }
+      @keyframes dev-splash-caret { 50% { opacity: 0; } }
+      .dev-splash__bar {
+        position: absolute;
+        left: 50%;
+        bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+        width: min(480px, calc(100% - 64px));
+        height: 4px;
+        transform: translateX(-50%);
+        border-radius: 2px;
+        background: rgba(42, 29, 18, 0.12);
+        overflow: hidden;
+      }
+      .dev-splash__fill {
+        height: 100%;
+        background: var(--ember);
+        transform: scaleX(0);
+        transform-origin: left center;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      @keyframes dev-splash-in { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        #dev-splash.is-faced .dev-splash__lockup { animation: none; opacity: 1; }
+        .dev-splash__caret { animation: none; }
+      }
+    </style>
+    <noscript><style>#dev-splash { display: none; }</style></noscript>
+  </head>
+  <body>
+    <!-- DEV-602: a page with scripting off was a blank dark screen. -->
+    <noscript>
+      <p style="margin: 0; padding: 24px 16px; max-width: 40rem">
+        <strong>Faceted Flight: 10th Anniversary Edition</strong> is a 3D flying game that runs in
+        your browser and in a VR headset. It needs JavaScript and WebGL 2: turn JavaScript on, or
+        open this page in a current Chrome, Edge or Safari.
+      </p>
+    </noscript>
+    <canvas id="viewport"></canvas>
+
+    <p id="boot-failure" role="alert" hidden></p>
+
+    <p id="title-line"></p>
+    <!-- Filled by `src/render/uncle-matt-link.ts` (DEV-803), the same code as the making-of header. -->
+    <a id="uncle-matt-link" href="https://unclemattmakes.com" aria-label="Uncle Matt Makes"></a>
+    <div id="dev-splash" role="status" aria-label="Uncle Matt Makes: Faceted Flight. Loading.">
+      <div class="dev-splash__lockup">
+        <img class="dev-splash__portrait" alt="" width="384" height="384" decoding="async" />
+        <h1 class="dev-splash__mark">
+          Uncle Matt Makes:
+          <span class="dev-splash__blank" aria-hidden="true">
+            <span class="dev-splash__sizer">stuff</span>
+            <span class="dev-splash__sizer">simulations</span>
+            <span class="dev-splash__sizer">automata</span>
+            <span class="dev-splash__sizer">critter cams</span>
+            <span class="dev-splash__sizer">3d prints</span>
+            <span class="dev-splash__sizer">doughnuts</span>
+            <span class="dev-splash__sizer">mistakes</span>
+            <span class="dev-splash__sizer">games</span>
+            <span class="dev-splash__sizer">Faceted Flight</span>
+            <span class="dev-splash__line"><span class="dev-splash__typed"></span><span class="dev-splash__caret"></span></span>
+          </span>
+          <span class="visually-hidden">Faceted Flight</span>
+        </h1>
+      </div>
+      <div
+        class="dev-splash__bar"
+        role="progressbar"
+        aria-label="Loading"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      >
+        <div class="dev-splash__fill"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

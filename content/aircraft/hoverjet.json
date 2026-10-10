@@ -1,0 +1,45 @@
+{
+  "$schema": "./_schema.json",
+  "vehicle": "hoverjet",
+  "note": "Anniversary variants over 2016's shipped PlayerShip_SR14_Photon. Every number in a variant's `scale` is a MULTIPLIER on the generated sheet's value at that key: the sheet stays 2016's, and `standard` is the sheet because its block is empty. File order is slot order in the hangar: nimble left, standard in the middle under the resting pointer, fast right. DEV-380 (the layer), DEV-381 (acrobat and speed).",
+  "variants": [
+    {
+      "id": "acrobat",
+      "name": "Acrobat",
+      "blurb": "More nimble",
+      "scale": {
+        "ship.rollRate": 1.8,
+        "ship.pitchRate": 1.6,
+        "ship.yawRate": 1.5,
+        "rigidbody.angularDrag": 1.3,
+        "ship.driftMultiplier": 1.3,
+        "ship.liftMultiplier": 1.3,
+        "ship.acceleration": 1.25,
+        "ship.maxSpeed": 0.9
+      },
+      "note": "Matt: \"more nimble\". Nimble is two things on the sheet and this scales both: the ROTATION (torque x1.8 / 1.6 / 1.5 with angularDrag x1.3, so it rolls 38 % faster and gets there 24 % sooner: 118 against 86 deg/s, 63 % in 0.39 s against 0.51) and the PATH following the nose (drift and lift bleed x1.3: a cruise loop of 75 m against 104). It pays a tenth of its thrust (maxSpeed x0.9: cruise 81 m/s against 90, boosted 162 against 180). The plan's first guess was x0.92; DEV-381 measured it 8.6-9.4 % QUICKER than standard on the two int courses with the Anniversary tank, an upgrade there, and x0.9 centres it (mean -1.1 % over the six Ring Attack courses, worst 7.6 %). tests/unit/variant-fairness.test.ts holds the band; variant-hoverjet.test.ts holds the feel."
+    },
+    {
+      "id": "standard",
+      "name": "Standard",
+      "blurb": "2016's HoverJet",
+      "scale": {},
+      "note": "The shipped prefab, untouched. tests/unit/variant-standard.test.ts holds it to a flight recorded before the variant layer existed, bit for bit."
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "blurb": "Faster top speed. Insane boost",
+      "scale": {
+        "ship.maxSpeed": 1.2,
+        "ship.boostMultiplier": 1.5,
+        "energy.BoostBurnrate": 1.5,
+        "ship.rollRate": 0.9,
+        "ship.pitchRate": 0.9,
+        "ship.driftMultiplier": 0.85,
+        "ship.liftMultiplier": 0.85
+      },
+      "note": "Matt: \"faster top speed. insane boost\", and his call on how insane (2026-09-24): boost x1.5, 323 m/s unchained against 180. Cruise is 108 m/s against 90. It pays in three places: a tenth of its roll and pitch torque (77 against 86 deg/s), 15 % of its drift and lift bleed (a cruise loop of 137 m against 104, a boosted one of 411 against 208), and a hungrier boost (48/s against 32, so on the Anniversary tank's 16/s recharge a full tank lasts 3.1 s against 6.25). As first guessed in the plan; DEV-381 measured it inside the fairness band as it stood (-11.1 % to +9.0 % over the six Ring Attack courses, mean -1.4 %): quicker on the flowing int courses, slower on the tight adv_02. The racers' route-following controller cannot yet fly it without missing rings: see DEV-381's row."
+    }
+  ]
+}

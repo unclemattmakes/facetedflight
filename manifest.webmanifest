@@ -1,0 +1,10 @@
+{
+  "name": "Faceted Flight: 10th Anniversary Edition",
+  "short_name": "Faceted Flight",
+  "description": "Arcade stunt flight in your headset and your browser.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "background_color": "#070b12",
+  "theme_color": "#070b12"
+}

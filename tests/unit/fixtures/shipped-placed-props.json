@@ -1,0 +1,110 @@
+{
+  "adv_01_hoverJet#0": {
+    "placed": 5943,
+    "digest": "fa1882bf6338b518"
+  },
+  "adv_01_jumpSeat#0": {
+    "placed": 5942,
+    "digest": "bab16f4d9e8fe0aa"
+  },
+  "adv_02_hoverJet#0": {
+    "placed": 1240,
+    "digest": "ef1e09dcf0bdbea2"
+  },
+  "adv_02_jumpSeat#0": {
+    "placed": 1238,
+    "digest": "8c56be1060508b9c"
+  },
+  "hoverJet_kauai_beg#0": {
+    "placed": 1240,
+    "digest": "e1b7aa7172742232"
+  },
+  "int_01_hoverJet#0": {
+    "placed": 1240,
+    "digest": "ef1e09dcf0bdbea2"
+  },
+  "int_01_jumpSeat#0": {
+    "placed": 1238,
+    "digest": "544484ff78aef274"
+  },
+  "int_02_hoverJet#0": {
+    "placed": 6035,
+    "digest": "b5eb5956472bfcf5"
+  },
+  "int_02_hoverJet#1": {
+    "placed": 6050,
+    "digest": "2b7a950ede0bbe7f"
+  },
+  "int_02_jumpSeat#0": {
+    "placed": 6023,
+    "digest": "5a7c71fed88ccf85"
+  },
+  "int_02_jumpSeat#1": {
+    "placed": 6038,
+    "digest": "41eac738f5f041aa"
+  },
+  "rookie_01_hoverJet#0": {
+    "placed": 5981,
+    "digest": "2bc304e75881636b"
+  },
+  "rookie_01_hoverJet#1": {
+    "placed": 6001,
+    "digest": "e12614bafe47d295"
+  },
+  "rookie_01_jumpSeat#0": {
+    "placed": 6023,
+    "digest": "b5368538e673e4fc"
+  },
+  "rookie_01_jumpSeat#1": {
+    "placed": 6043,
+    "digest": "cdacfc529ba3fdc7"
+  },
+  "rookie_02_hoverJet#0": {
+    "placed": 5943,
+    "digest": "fa1882bf6338b518"
+  },
+  "rookie_02_jumpSeat#0": {
+    "placed": 5937,
+    "digest": "6f1feeccc7f70ec1"
+  },
+  "anniv_01_glider#0": {
+    "placed": 1240,
+    "digest": "ef1e09dcf0bdbea2"
+  },
+  "dev230_adv02_hoverJet#0": {
+    "placed": 1238,
+    "digest": "8c56be1060508b9c"
+  },
+  "dev230_int01_jumpSeat#0": {
+    "placed": 1240,
+    "digest": "ef1e09dcf0bdbea2"
+  },
+  "dev377_lesson_fixture#0": {
+    "placed": 1240,
+    "digest": "ef1e09dcf0bdbea2"
+  },
+  "freeFlight_alpine#0": {
+    "placed": 5999,
+    "digest": "f66c8038a1100d72"
+  },
+  "freeFlight_alpine#1": {
+    "placed": 6014,
+    "digest": "0d2d0afc624bd720"
+  },
+  "freeFlight_desert#0": {
+    "placed": 5943,
+    "digest": "fa1882bf6338b518"
+  },
+  "freeFlight_simonet#0": {
+    "placed": 1240,
+    "digest": "ef1e09dcf0bdbea2"
+  },
+  "lesson_01_canyon#0": {
+    "placed": 5943,
+    "digest": "fa1882bf6338b518"
+  },
+  "lesson_02_canyon_run#0": {
+    "placed": 5943,
+    "digest": "fa1882bf6338b518"
+  }
+}

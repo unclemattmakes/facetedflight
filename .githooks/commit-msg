@@ -1,0 +1,13 @@
+#!/bin/sh
+# commit-msg: no em-dash in a commit message (Matt, 2026-09-30). The staged
+# files are checked by pre-commit; this checks the words around them.
+set -u
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+if ! command -v node >/dev/null 2>&1; then
+  printf '%s\n' 'commit-msg: `node` not found on PATH, so the em-dash check cannot run.' >&2
+  exit 1
+fi
+# The checker sits beside this hook (core.hooksPath is shared; an older
+# branch's worktree has no copy of its own).
+here=$(cd "$(dirname "$0")" && pwd)
+node "$here/check-em-dash.mjs" --message "$1"

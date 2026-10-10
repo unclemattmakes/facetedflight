@@ -1,0 +1,136 @@
+{
+  "int_01_hoverJet/anniversary@20": {
+    "mission": "int_01_hoverJet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3644,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 249,
+    "totalCalls": 267,
+    "triangles": 849012,
+    "groups": {
+      "world-ocean": {
+        "calls": 4,
+        "triangles": 454272
+      },
+      "world-terrain/chunks": {
+        "calls": 186,
+        "triangles": 187856
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 3,
+        "triangles": 87448
+      },
+      "world-terrain/props:simonet": {
+        "calls": 25,
+        "triangles": 46152
+      },
+      "rings": {
+        "calls": 7,
+        "triangles": 26540
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "racers": {
+        "calls": 12,
+        "triangles": 10990
+      },
+      "clouds": {
+        "calls": 6,
+        "triangles": 7680
+      },
+      "hoverjet": {
+        "calls": 7,
+        "triangles": 4839
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 864
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 684
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 11,
+        "triangles": 22
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      }
+    },
+    "build": "v0.10.0",
+    "date": "2026-09-26"
+  },
+  "rookie_01_hoverJet/anniversary@20": {
+    "mission": "rookie_01_hoverJet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3557,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 136,
+    "totalCalls": 148,
+    "triangles": 1057868,
+    "groups": {
+      "world-terrain/props:alpine": {
+        "calls": 60,
+        "triangles": 487954
+      },
+      "world-terrain/dressing:alpine": {
+        "calls": 4,
+        "triangles": 297588
+      },
+      "world-terrain/chunks": {
+        "calls": 43,
+        "triangles": 214104
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "rings": {
+        "calls": 7,
+        "triangles": 20620
+      },
+      "racers": {
+        "calls": 10,
+        "triangles": 9294
+      },
+      "hoverjet": {
+        "calls": 7,
+        "triangles": 4829
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 912
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 880
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 11,
+        "triangles": 22
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      }
+    },
+    "build": "v0.10.0",
+    "date": "2026-09-26"
+  }
+}

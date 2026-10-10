@@ -1,0 +1,330 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# ── Assets are NOT in git. ────────────────────────────────────────────────
+# PORT_PLAN §2.5 / DECISIONS D12: this is a LICENSING requirement, not a size
+# convenience. Several third-party packs in the 2016 project ship no licence,
+# no readme and no credits; `MM_*` and `Materialized Mesh/` are derivative
+# works of bought geometry. Nothing binary and nothing bought goes in this
+# repo. Compiled runtime assets live on Cloudflare R2 behind a content hash;
+# hydrate a clone with `pnpm assets:pull`.
+/public/assets/
+/public/audio/
+*.glb
+*.gltf
+*.fbx
+*.blend
+*.blend1
+*.exr
+*.hdr
+*.png
+*.jpg
+*.jpeg
+*.tga
+*.psd
+*.wav
+*.mp3
+*.ogg
+*.opus
+*.mp4
+*.webm
+# Exceptions: tiny UI chrome that must ship with the source build. Add here
+# explicitly and deliberately — one file at a time, never a whole directory.
+!/public/favicon.png
+
+# Four matplotlib plots that carry VR-PERF-TAIL.md's argument. They are drawn
+# from this repo's OWN timing CSVs (`perf-out/truesize/*.trace.csv`) by
+# `tools/perf/tail.py` — no bought geometry, no Unity content, nothing
+# extractable (hard rule 7 is about REDISTRIBUTION, and a scatter plot of our
+# own millisecond columns redistributes nothing). One line each, deliberately;
+# the other 30 plots that run produces stay out of git.
+!/docs/plan/tail/int_02_hoverJet-timeline.png
+!/docs/plan/tail/runlengths.png
+!/docs/plan/tail/rookie_01_hoverJet-map.png
+!/docs/plan/tail/regime.png
+!/docs/plan/tail/arms-residual.png
+
+# UX-PASS-2026-10-08.md's inventory screenshots (DEV-859): our own menus,
+# 800x450, under 110 KB each. Matt, 2026-10-08: "screenshots are fair game for
+# our licensed assets." Mirrors the PATH_ALLOW glob in .githooks/check-denylist.mjs.
+!/docs/plan/ux-pass/*.png
+
+# EDITOR-UX-2026-10-08.md (DEV-878): before and after screenshots of our own
+# editor at 1280x800, under 150 KB each. Same ruling (Matt, 2026-10-08). Mirrors
+# the PATH_ALLOW glob in .githooks/check-denylist.mjs.
+!/docs/plan/editor-ux/*.png
+
+# Extractor scratch output. `tools/prototype/out/` holds meshes and images
+# derived from the read-only Unity project — derivative works of bought
+# geometry (PORT_PLAN §2.5). Never commit it.
+/tools/prototype/out/
+/tools/**/out/
+
+# Generated data lives in git (it is small, textual, and CI diffs it), but the
+# extractor's intermediates do not.
+/data/**/*.tmp
+/data/**/.cache/
+
+# The read-only legacy Unity project must never be copied into this tree.
+/legacy/
+/FF Backup*/
+
+# Private licence evidence (PORT_PLAN §8): the conclusions are public, the
+# per-vendor evidence is what creates exposure.
+/docs/private/
+
+# tests
+test-results/
+playwright-report/
+playwright/.cache/
+coverage/
+artifacts/
+
+# editor
+.vscode/
+.idea/
+.claude/
+
+# python bytecode (extractor / Blender headless scripts)
+__pycache__/
+*.pyc
+
+# ══════════════════════════════════════════════════════════════════════════════════════════
+# BELT AND BRACES (added with the D26 pre-git safety mechanism)
+#
+# Everything above is the policy. This block is the rest of the denylist, and
+# `.githooks/check-denylist.mjs` is the mechanism that catches what BOTH miss — a `git add -f`,
+# or an extension nobody thought of. The three are meant to agree; if you change one, change
+# the others. The full ruling on what may live in git is ASSET-PROVENANCE.md.
+#
+#   git config core.hooksPath .githooks     <- one command per clone; `pnpm install` does it
+#
+# ══════════════════════════════════════════════════════════════════════════════════════════
+
+# ── Meshes and authoring sources (bought geometry, or baked from bought geometry) ─────────
+*.obj
+*.mtl
+*.dae
+*.3ds
+*.stl
+*.ply
+*.abc
+*.usd
+*.usda
+*.usdc
+*.usdz
+*.drc
+*.bin
+*.max
+*.ma
+*.mb
+*.blend2
+
+# `Materialized Mesh/MM_*` — Matt's own bakes of BOUGHT geometry. They look first-party and
+# they are not (docs/research/08-third-party-audit.md §7, "the one real trap"). Blocked by
+# NAME as well as by extension, because a rename is not a relicensing.
+MM_*
+*Materialized?Mesh*
+*pilot_scifi_rigged*
+*SoundBible*
+
+# ── Textures, skies and terrain bakes ─────────────────────────────────────────────────────
+*.gif
+*.bmp
+*.tif
+*.tiff
+*.webp
+*.ico
+*.icns
+*.dds
+*.ktx
+*.ktx2
+*.basis
+*.pvr
+*.astc
+*.cubemap
+*.r16
+*.raw
+
+# ── Audio (every shipped clip is licensed for use in a product, not for redistribution) ───
+*.aif
+*.aiff
+*.flac
+*.m4a
+*.aac
+*.wma
+*.mid
+*.midi
+
+# ── Video ─────────────────────────────────────────────────────────────────────────────────
+*.mov
+*.avi
+*.mkv
+*.wmv
+*.m4v
+
+# ── Fonts (separately licensed; at least one shipped face is CC-BY-SA) ────────────────────
+*.ttf
+*.otf
+*.woff
+*.woff2
+*.eot
+*.ttc
+*.fnt
+
+# ── Unity project files: these serialise third-party content and GUIDs verbatim ───────────
+# FF2 is TypeScript. Nothing in this list has any business in this tree — including `.cs`,
+# because the only way a `.cs` gets here is by being copied out of the 2016 project.
+*.unity
+*.prefab
+*.asset
+*.mat
+*.anim
+*.controller
+*.overrideController
+*.mask
+*.physicMaterial
+*.mixer
+*.fontsettings
+*.guiskin
+*.terrainlayer
+*.unitypackage
+*.meta
+*.cs
+*.shader
+*.cginc
+*.shadergraph
+*.compute
+
+# ── Opaque binaries and archives (a human cannot licence-review these in a diff) ──────────
+*.dll
+*.so
+*.dylib
+*.exe
+*.pdb
+*.lib
+*.a
+*.jar
+*.aar
+*.bundle
+*.wasm
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.tgz
+*.bz2
+*.xz
+*.pak
+*.bytes
+*.f32
+*.npy
+*.tmd
+*.pdf
+*.rtf
+*.doc
+*.docx
+*.xls
+*.xlsx
+
+# ── Adding an exception ───────────────────────────────────────────────────────────────────
+# A `!` line here is not enough on its own: the pre-commit hook and the CI job read their own
+# allowlist. To genuinely permit a file you must do all three, deliberately:
+#   1. add the `!` line here,
+#   2. add it to PATH_ALLOW (or SIZE_ALLOW) in .githooks/check-denylist.mjs, WITH A REASON,
+#   3. record the ruling and its evidence in ASSET-PROVENANCE.md.
+# One file at a time. Never a whole directory.
+
+# Oracle sweeps: per-chunk statistics decoded from the 2016 baked terrain.
+# Derived from World Machine output whose licence question is still open
+# (content/MANIFEST.md, D26), so they stay local. Regenerate with
+# `pnpm oracle:sweep` — it needs the legacy Unity project mounted.
+tools/terrain/.oracle/
+test-results/
+route-sweep-out/
+
+# `tests/e2e/perf-trace.spec.ts`'s output (VR-PERF §5.9 H3): a summary and a
+# per-frame CSV, a few hundred kB a run. It is deliberately NOT under
+# `test-results/`, which Playwright wipes at the start of every run — a trace
+# you wanted to compare against the next one would lose its first half.
+# Overridable with PERF_TRACE_DIR; the default is ignored here.
+perf-out/
+
+# `tests/e2e/title-foreground.spec.ts`'s census (DEV-287): every prop in the
+# title frame, ranked by the pixels it covers, with the mesh-space coordinate
+# to paste into `content/no-prop-volumes.json`. A MEASUREMENT of one build on
+# one viewport, so committing it would be committing a number that is stale the
+# next time the scatter or the camera moves. Overridable with
+# TITLE_CENSUS_OUT; the default is ignored here.
+/title-foreground-census.json
+
+# Throwaway diagnostic specs. A probe reads the session scratchpad by absolute
+# path and dies with the session, so committing one leaves a permanently broken
+# test that also names a home directory (PUBLIC-CHECKLIST Gate 4). Name a
+# scratch spec with a LEADING UNDERSCORE and it cannot be committed by accident
+# — `tests/unit/legacy-root.test.ts`'s gate skips it for the same reason.
+#
+# The pattern is the whole `_` prefix rather than `_probe*` because three
+# different names turned up in one day (`_probe2`, `zz-probe`, `_measure-orbs`)
+# and the narrow rule missed them one at a time. FOUR spellings turned up in two
+# days -- `_probe2.test.ts`, `zz-probe.spec.ts`, `_measure-orbs.test.ts`,
+# `zz-probe-dev061.test.ts` -- and each time the rule was widened to the one
+# just seen rather than to the CLASS, so it missed the next one. Both prefixes,
+# both extensions, done. No tracked test in this repo starts with `_` or `zz-`;
+# checked, 118 files.
+tests/**/_*.test.ts
+tests/**/_*.spec.ts
+tests/**/zz-*.test.ts
+tests/**/zz-*.spec.ts
+
+# Manifest fragment from tools/assets/extract-props.mjs. A merge aid, not source.
+tools/assets/props-rows.json
+
+# World Machine density maps. Regenerable from $FF2_LEGACY, never published:
+# the scatter is baked into content/environments/*.json (O13 / C-6).
+tools/assets/.density/
+
+# ── CARRIED, NEVER COMMITTED ─────────────────────────────────────────
+#
+# Written by `tools/release/copy-list.mjs`. These files are ON DISK because the
+# work needs them — `pnpm extract` cannot run without the guid index — and OUT
+# of git because this repository will one day be made public, and flipping a
+# repo flips its whole history.
+#
+# Tracking one of these with a promise to remove it later is the promise that
+# made a fresh repository necessary in the first place (D33).
+
+/PUBLIC-CHECKLIST.md
+/docs/research/08-third-party-audit.md
+/docs/research/_guid_index.tsv
+/docs/research/_script_guids_topic03.tsv
+/docs/research/_verify-v-meta-3p.md
+
+# The GPU lease (tools/agent/gpu.sh) is a directory made with mkdir, held for
+# minutes at a time; it is state, never content.
+tools/agent/gpu.lock/
+tools/agent/gpu.queue/
+
+# Local Cloudflare Pages Functions secrets (wrangler pages dev). Never committed:
+# production values live only in Cloudflare (PLAYER-GHOSTS.md, DEV-372).
+.dev.vars
+.dev.vars.*
+
+# Wrangler's local state (`wrangler pages dev`, `wrangler d1 ... --local`): the LOCAL D1
+# SQLite files and caches. Machine state, never content (docs/lap-server.md, DEV-372).
+.wrangler/
+
+# Content pack output (pnpm content:pack). Never committed.
+/content-pack/
+# A dry-run export of the public facetedflight tree (tools/release/export-public.mjs).
+/.export-dry*

@@ -1,0 +1,40 @@
+/* src/render/uncle-matt-link.css: the Uncle Matt Makes portrait button (DEV-803).
+   Its look only: the round 48px portrait (56 on touch), the title screen's
+   border and plate colours, and the hover. Where it SITS is each page's own:
+   the title pins it bottom-left (index.html, #uncle-matt-link) and the
+   making-of site puts it in the header. Imported by uncle-matt-link.ts. */
+.uncle-matt-link {
+  display: block;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(242, 247, 251, 0.16);
+  background: rgba(10, 22, 30, 0.94);
+  overflow: hidden;
+  opacity: 0.85;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+.uncle-matt-link img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.uncle-matt-link:hover,
+.uncle-matt-link:focus-visible {
+  opacity: 1;
+  transform: scale(1.08);
+}
+.uncle-matt-link:focus-visible {
+  outline: 2px solid #6fb4ff;
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .uncle-matt-link {
+    width: 56px;
+    height: 56px;
+  }
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>AI racers and 2016 ghosts · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="opposition">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        In 2016 you raced recordings. They were ghosts: the same line every time,
+        flown once and replayed. The anniversary edition races five autopilots that fly the
+        course for real, with the same physics you have, and each one is a little different, and
+        none of them is meant to be clever.
+      </p>
+
+      <h2>What a ghost was</h2>
+      <p>
+        A 2016 ghost is a recording and nothing else: a long list of poses, one every so often, and
+        the game draws the ship wherever the clock says it was, blending between the two nearest.
+        There's no physics in it and it can't react. It flies the same line at the same speed every
+        time, so the port races autopilots instead and keeps the recordings only as a
+        fallback.
+      </p>
+      <div data-toy="ghost-scrubber"></div>
+      <p>
+        <strong>Try it:</strong> press <em>play</em>, then drag <em>clock</em> back and forth. Tick
+        <em>show the recorded keys</em>: every dot is one recorded pose, and everything between
+        them is the game's interpolation.
+      </p>
+
+      <h2>A line through the gates</h2>
+      <p>
+        An autopilot needs somewhere to go. The racers follow a line drawn through the course's
+        gates, a polyline of a few hundred points, and they steer toward a spot a little way ahead
+        along it. How far ahead matters a lot: too far and they cut corners, too near and they
+        wobble.
+      </p>
+      <p>
+        Tuning that distance went wrong. A figure was measured, "the gates sit up to 24 meters off
+        the racing line", and a constant was built on it. The figure was the distance from each
+        gate to the nearest <em>corner</em> of the line, and the corners are about 27 meters apart.
+        A gate can sit in the middle of a long straight segment and be a long way from either end
+        while being almost exactly on the line. The distance to the line itself was about a meter,
+        and the constant cost seven seconds a lap.
+      </p>
+      <div data-toy="route-ruler"></div>
+      <p>
+        <strong>Try it:</strong> drag <em>gate</em> to step through the gates. The blue circle, the
+        distance to the line, is small and steady. The red one, the distance to the nearest corner,
+        swings about. Raise <em>thin the line</em> (it reads <em>as shipped</em> at 1) and the
+        corners spread out, so the red number balloons while the blue one moves far less. A line
+        with fewer points cuts the bends, so it does move. <em>zoom to the gate</em> gets you closer.
+      </p>
+      <pre data-snippet="src/sim/route.ts#routeDistance" data-caption="the right ruler"></pre>
+
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

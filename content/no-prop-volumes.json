@@ -1,0 +1,28 @@
+{
+  "note": "DEV-287 — ground the prop scatter is told to leave alone. HAND-AUTHORED: this file is art direction and is NOT under `pnpm extract`, not in `content/_generated.sha256`, and must never be rewritten by a tool. Coordinates are the TERRAIN'S OWN MESH SPACE (0..terrainSize, Unity +z) — the frame `content/environments/*.json`'s `spawnClearing` records its cylinders in and the frame `src/render/title.ts`'s `TITLE_2016.cameraMesh` is written in. An end may instead be the string `spawn` or `gate:N`, which resolve per MISSION; see `src/content/no-prop-volumes.ts`. Every volume is a capsule in x/z, unbounded in y, because a prop stands on the ground whatever the ship's altitude. Applied on BOTH presets, like DEV-100's spawn clearing: this is playability, not a look.",
+  "environments": {
+    "menu": [
+      {
+        "id": "title-foreground-tree",
+        "why": "Matt, 2026-09-21: 'in the titlescreen ... remove the nearest large foreground tree'. MEASURED, not guessed: a Playwright probe projected every drawn instance through the live title camera and ranked them by the pixels they cover. The winner is this one — a `menu` pass-0 MM_Tree8 standing 20.0 m from 2016's own title eye (TITLE_2016.cameraMesh = 2674.83, 98.53, 2723.05), covering 420x720 px of a 1280x720 frame, i.e. a third of the screen, across the right half of the FACETED FLIGHT emblem. The placement was recovered from its instance matrix by inverting `childMatrixOf`, and the recovery is validated rather than asserted: all 40 recovered placements land on the scatter's own 4 m texel grid to 0.000 m. A 3 m radius on a 4 m grid takes this texel and no neighbour.",
+        "radius": 3,
+        "ends": [[2688, 2708]]
+      }
+    ],
+    "alpine": [
+      {
+        "id": "launch-corridor",
+        "why": "Matt, 2026-09-21: 'alpine is a main offender with giant trees between the launch pad and first gate'. PHOTOGRAPHED from `rookie_01_hoverJet`'s release point looking at gate 0: the gate is all but hidden behind a wall of 6..20x Tree Pack trees, one of them dead centre in front of it. Anchored rather than written out, so it is each mission's own pad and each mission's own first gate — alpine hosts two HoverJet courses and their spawns are 2.4 km apart. This is the SHORT corridor the wishlist argued for and not a route clearance: DEV-089 measures to the racing line in three dimensions precisely so a course does not get a bald lane down its whole length, and one capsule at the start has the spawn clearing's property (one place, occlusion rather than collision) without the route's. Radius 60 m is a taste number, chosen against a measurement: over alpine's 12,085 placements the corridor takes 19 at 30 m, 43 at 50 m, 72 at 60 m, 97 at 70 m and 165 at 100 m, and 60 m is the first that is wider than the launch deck it starts on (the spawn clearing's own 51.97 m) with margin. `int_02_hoverJet` resolves the same volume and removes nothing — its corridor has no trees in it at any radius, which is the check that this is one mission's problem and not a rule invented for all of them.",
+        "radius": 60,
+        "ends": ["spawn", "gate:0"]
+      },
+      {
+        "id": "rookie-01-climb-out",
+        "why": "DEV-364 follow-up. Matt, 2026-09-25 (call 8): 'rookie_01: a no-prop volume' clears the trees by steady's lane. DEV-364 found steady clipping three trees beside the launch corridor just after GO. MEASURED, headless, on the Anniversary grid (fast, steady, cutter, each in its DEV-364 lane) with a player autopilot in the air, four starts nudged 0 / 0.5 / 1 / 1.5 m, and alpine's forest built as the game builds it (the launch corridor, the slope limit, the ground snap): past gate 0 the pack climbs out low over a cluster of three trees at mesh (2524-2528, 2784-2788), whose crowns stand at 133-144 m while steady flies at 148-150 m, and its hull passes 2.8 m over the tallest at 4.4 s after GO; cutter passes 7.7 m from a fourth at (2484, 2784). That is inside avoidClearance (8 m), the air a racer keeps round its own track, so a lane moved by a push or a dodge meets a crown. The capsule runs from gate 0 along the centre lane to where it has climbed 20 m clear of the canopy (5.2 s after GO). Radius 40 m covers five lanes (+/-12 m) plus a full avoidGain swing (16 m), the hull (2.2 m) and the widest crown there (5.7 m). At 40 m it takes 59 placements across both passes, 31 of them colliders once the slope limit has had its share. Swept: 11 / 19 / 31 / 46 / 58 colliders at 20 / 30 / 40 / 50 / 60 m, and every one of them lifts the pack's closest pass to 11.6 m, which is then a tree 18 m under steady at 9 s, far outside any climb-out. EXPLICIT at its far end, so it is rookie_01's alone: `missions` scopes it.",
+        "radius": 40,
+        "ends": ["gate:0", [2460, 2802]],
+        "missions": ["rookie_01_hoverJet"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,490 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ff2.unclemattmakes.com/schema/aircraft.json",
+  "title": "Faceted Flight aircraft variants",
+  "description": "One aircraft's variants, as data (docs/plan/AIRCRAFT-VARIANTS.md section 2, DEV-380). Every number under a variant's scale is a dimensionless MULTIPLIER on the generated constants sheet's value at that key: the sheet stays 2016's, sim/variant.ts applies the factors at the vehicle's construction seam, and standard is 2016 by construction because its scale is empty. File order is slot order in the hangar. Anniversary only: an edition's gameplay.variants.enabled decides whether the step exists, and Classic always flies standard. THIS SCHEMA IS A GATE: additionalProperties is false at every level. The rules it cannot express (exactly one standard, standard scales nothing, no duplicate ids, a bleed kept below 1, every key a finite number on the real sheet) are validateAircraft's, run at load.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/hoverjetFile"
+    },
+    {
+      "$ref": "#/$defs/jumpseatFile"
+    },
+    {
+      "$ref": "#/$defs/gliderFile"
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Lower-case letters, digits and dashes: it is a storage-key and URL segment (ff2.best.<mission>.<mode>.<variant>.v1, ?variant=)."
+    },
+    "factor": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "A multiplier. 1 is 2016; it may not be zero or negative."
+    },
+    "hoverjetFile": {
+      "type": "object",
+      "required": [
+        "vehicle",
+        "variants"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "vehicle": {
+          "const": "hoverjet"
+        },
+        "note": {
+          "type": "string"
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/hoverjetVariant"
+          }
+        }
+      }
+    },
+    "hoverjetVariant": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "blurb",
+        "scale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "blurb": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "listed": {
+          "type": "boolean",
+          "description": "false: NOT READY TO SHIP. The hangar does not offer it, and a remembered choice of it flies standard. ?variant=<id> still flies it: a development switch, as ?mission= is for an unlisted course. Absent is listed, and standard is always listed."
+        },
+        "note": {
+          "type": "string"
+        },
+        "scale": {
+          "$ref": "#/$defs/hoverjetScale"
+        },
+        "mechanics": {
+          "$ref": "#/$defs/hoverjetMechanics"
+        }
+      }
+    },
+    "hoverjetScale": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Sheet key -> MULTIPLIER on the generated sheet value at that key. Exactly src/content/aircraft-schema.ts VARIANT_SCALE_KEYS.hoverjet (tests/unit/aircraft-content.test.ts holds the two lists equal). A per-tick bleed scaled to 1 or above, and a key that is not a finite number on the real sheet, are refused at load by validateAircraft.",
+      "properties": {
+        "ship.maxSpeed": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.boostMultiplier": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.acceleration": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.driftMultiplier": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.liftMultiplier": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.rollRate": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.pitchRate": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.yawRate": {
+          "$ref": "#/$defs/factor"
+        },
+        "ship.airbrakeSpeed": {
+          "$ref": "#/$defs/factor"
+        },
+        "rigidbody.drag": {
+          "$ref": "#/$defs/factor"
+        },
+        "rigidbody.angularDrag": {
+          "$ref": "#/$defs/factor"
+        },
+        "energy.engineBurnrate": {
+          "$ref": "#/$defs/factor"
+        },
+        "energy.BoostBurnrate": {
+          "$ref": "#/$defs/factor"
+        }
+      }
+    },
+    "hoverjetMechanics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Absolute numbers for a mechanic 2016 never had, so there is nothing on the sheet to scale. None is implemented for the hoverjet yet: DEV-383 adds the JumpSeat's jump and DEV-384 its gravityScale, each with its own schema here. VARIANT_MECHANICS in src/content/aircraft-schema.ts is the runtime list.",
+      "properties": {}
+    },
+    "jumpseatFile": {
+      "type": "object",
+      "required": [
+        "vehicle",
+        "variants"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "vehicle": {
+          "const": "jumpseat"
+        },
+        "note": {
+          "type": "string"
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/jumpseatVariant"
+          }
+        }
+      }
+    },
+    "jumpseatVariant": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "blurb",
+        "scale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "blurb": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "listed": {
+          "type": "boolean",
+          "description": "false: NOT READY TO SHIP. The hangar does not offer it, and a remembered choice of it flies standard. ?variant=<id> still flies it: a development switch, as ?mission= is for an unlisted course. Absent is listed, and standard is always listed."
+        },
+        "note": {
+          "type": "string"
+        },
+        "scale": {
+          "$ref": "#/$defs/jumpseatScale"
+        },
+        "mechanics": {
+          "$ref": "#/$defs/jumpseatMechanics"
+        }
+      }
+    },
+    "jumpseatScale": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Sheet key -> MULTIPLIER on the generated sheet value at that key. Exactly src/content/aircraft-schema.ts VARIANT_SCALE_KEYS.jumpseat (tests/unit/aircraft-content.test.ts holds the two lists equal). A per-tick bleed scaled to 1 or above, and a key that is not a finite number on the real sheet, are refused at load by validateAircraft.",
+      "properties": {
+        "thruster.thrustForce": {
+          "$ref": "#/$defs/factor"
+        },
+        "thruster.boostMultiplier": {
+          "$ref": "#/$defs/factor"
+        },
+        "thruster.accelTime": {
+          "$ref": "#/$defs/factor"
+        },
+        "rigidbody.drag": {
+          "$ref": "#/$defs/factor"
+        },
+        "rigidbody.angularDrag": {
+          "$ref": "#/$defs/factor"
+        },
+        "dragHack.drag_freefall": {
+          "$ref": "#/$defs/factor"
+        },
+        "hoverMotor.hoverForce": {
+          "$ref": "#/$defs/factor"
+        },
+        "hoverMotor.hoverHeight": {
+          "$ref": "#/$defs/factor"
+        },
+        "fuel.maxFuel": {
+          "$ref": "#/$defs/factor"
+        },
+        "fuel.burnRate": {
+          "$ref": "#/$defs/factor"
+        },
+        "fuel.boostBurnRateMultiplier": {
+          "$ref": "#/$defs/factor"
+        },
+        "orientation.rollRate": {
+          "$ref": "#/$defs/factor"
+        },
+        "orientation.pitchRate": {
+          "$ref": "#/$defs/factor"
+        },
+        "orientation.yawRate": {
+          "$ref": "#/$defs/factor"
+        }
+      }
+    },
+    "jumpseatMechanics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Numbers for a mechanic 2016 never had, so there is nothing on the sheet to scale: DEV-384's gravityScale and DEV-383's jump. VARIANT_MECHANICS in src/content/aircraft-schema.ts is the runtime list.",
+      "properties": {
+        "gravityScale": {
+          "$ref": "#/$defs/factor",
+          "description": "DEV-384. A MULTIPLIER on the world's gravity for this seat alone (sim/jumpseat.ts JumpSeatMechanics); the world stays (0, -32, 0). Scale hoverMotor.hoverForce by the same factor or the cushion sinks: tests/unit/variant-overclocked.test.ts holds every variant carrying one at 2016's hover equilibrium."
+        },
+        "jump": {
+          "$ref": "#/$defs/jumpseatJump"
+        }
+      }
+    },
+    "jumpseatJump": {
+      "type": "object",
+      "required": [
+        "chargeSeconds",
+        "minChargeSeconds",
+        "impulseMin",
+        "impulseMax",
+        "curve",
+        "burstSeconds",
+        "graceSeconds"
+      ],
+      "additionalProperties": false,
+      "description": "DEV-383, the jumping spider (sim/jumpseat-jump.ts JumpSpec). Hold both triggers on a surface to charge; release to launch along the seat's own up. ABSOLUTE numbers, Anniversary design with nothing on 2016's sheet to scale. validateJump in src/content/aircraft-schema.ts also refuses a minChargeSeconds longer than chargeSeconds, an impulseMax below impulseMin, and curve keys that do not rise strictly through [0, 1].",
+      "properties": {
+        "chargeSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Seconds of charging from empty to full. The tank pays the seat's boosted rate while it fills, and nothing once it is full."
+        },
+        "minChargeSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "A release after less charging than this does nothing, so brushing both triggers does not hop."
+        },
+        "impulseMin": {
+          "type": "number",
+          "minimum": 0,
+          "description": "m/s along the seat's own +Y at the lightest release that fires."
+        },
+        "impulseMax": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "m/s along the seat's own +Y at a full charge."
+        },
+        "curve": {
+          "type": "object",
+          "required": [
+            "keys"
+          ],
+          "additionalProperties": false,
+          "description": "Charge 0..1 -> how far from impulseMin to impulseMax, 0..1. A Unity-shaped AnimationCurve, evaluated by sim/art-lean.ts evaluateCurve.",
+          "properties": {
+            "keys": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "time",
+                  "value",
+                  "inSlope",
+                  "outSlope"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "time": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "value": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "inSlope": {
+                    "type": "number"
+                  },
+                  "outSlope": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "burstSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Seconds the dv is spread over from the release: round(burstSeconds / dt) fixed ticks of dv / n each."
+        },
+        "graceSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Seconds a seat may go unsupported and still count as standing (coyote time), so a seat whose feet chatter on a crest or rock after a landing can still charge."
+        }
+      }
+    },
+    "gliderFile": {
+      "type": "object",
+      "required": [
+        "vehicle",
+        "tuning",
+        "variants"
+      ],
+      "additionalProperties": false,
+      "description": "DEV-399 (AIRCRAFT-VARIANTS section 5, G1). The glider has no generated sheet - 2016 shipped it switched off, so there is nothing to extract (DEV-145) - and so it is the one aircraft whose file carries absolute numbers, in `tuning`. Its variants arrive at G5 as design targets re-solved into a tuning, never as scales: the fields are solved from three chosen numbers, and scaling one moves the others' meaning (section 3.3).",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "vehicle": {
+          "const": "glider"
+        },
+        "note": {
+          "type": "string"
+        },
+        "tuning": {
+          "$ref": "#/$defs/gliderTuning"
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/gliderVariant"
+          }
+        }
+      }
+    },
+    "gliderTuning": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Every field sim/glider.ts's GliderTuning reads, as an absolute number, and no other: exactly src/content/aircraft-schema.ts GLIDER_TUNING_KEYS (tests/unit/glider-wire.test.ts holds the three lists equal, with PROTOTYPE_GLIDER's keys). Anniversary design, chosen and solved in DEV-145.",
+      "required": [
+        "mass",
+        "angularDrag",
+        "aeroScale",
+        "liftSlope",
+        "liftMax",
+        "parasiteDrag",
+        "inducedDrag",
+        "stallSpeed",
+        "stallWidth",
+        "stalledControl",
+        "trimAngleOfAttack",
+        "weathervane",
+        "weathervaneYaw",
+        "pitchDamping",
+        "rollRate",
+        "pitchRate",
+        "yawRate",
+        "sideBleed",
+        "rocketThrust",
+        "rocketSeconds",
+        "rocketRecharge",
+        "groundEffectHeight",
+        "groundEffectGain"
+      ],
+      "properties": {
+        "mass": { "type": "number", "exclusiveMinimum": 0 },
+        "angularDrag": { "type": "number", "exclusiveMinimum": 0 },
+        "aeroScale": { "type": "number", "exclusiveMinimum": 0 },
+        "liftSlope": { "type": "number", "exclusiveMinimum": 0 },
+        "liftMax": { "type": "number", "exclusiveMinimum": 0 },
+        "parasiteDrag": { "type": "number", "exclusiveMinimum": 0 },
+        "inducedDrag": { "type": "number", "minimum": 0 },
+        "stallSpeed": { "type": "number", "minimum": 0 },
+        "stallWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "stalledControl": { "type": "number", "minimum": 0, "maximum": 1 },
+        "trimAngleOfAttack": { "type": "number", "exclusiveMinimum": 0 },
+        "weathervane": { "type": "number", "minimum": 0 },
+        "weathervaneYaw": { "type": "number", "minimum": 0 },
+        "pitchDamping": { "type": "number", "minimum": 0 },
+        "rollRate": { "type": "number", "minimum": 0 },
+        "pitchRate": { "type": "number", "minimum": 0 },
+        "yawRate": { "type": "number", "minimum": 0 },
+        "sideBleed": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 },
+        "rocketThrust": { "type": "number", "minimum": 0 },
+        "rocketSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "rocketRecharge": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 },
+        "groundEffectHeight": { "type": "number", "minimum": 0 },
+        "groundEffectGain": { "type": "number", "minimum": 0 }
+      }
+    },
+    "gliderVariant": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "blurb",
+        "scale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "blurb": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "listed": {
+          "type": "boolean",
+          "description": "false: NOT READY TO SHIP. The hangar does not offer it, and a remembered choice of it flies standard. ?variant=<id> still flies it: a development switch, as ?mission= is for an unlisted course. Absent is listed, and standard is always listed."
+        },
+        "note": {
+          "type": "string"
+        },
+        "scale": {
+          "$ref": "#/$defs/gliderScale"
+        },
+        "mechanics": {
+          "$ref": "#/$defs/gliderMechanics"
+        }
+      }
+    },
+    "gliderScale": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Empty, and it stays empty: exactly src/content/aircraft-schema.ts VARIANT_SCALE_KEYS.glider. The glider's fields are solved, so its variants are design targets (G5), not multipliers.",
+      "properties": {}
+    },
+    "gliderMechanics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "None implemented. VARIANT_MECHANICS in src/content/aircraft-schema.ts is the runtime list.",
+      "properties": {}
+    }
+  }
+}

@@ -1,0 +1,91 @@
+name: asset-denylist
+
+# The repository's continuous checks, in one file.
+#
+# 1. The denylist: no binary content and no purchased asset in the tree or in the history. See
+#    NOTICE. The same script runs in the pre-commit hook; a hook is advisory, so
+#    this is where the guarantee lives.
+# 2. The project's own verification: typecheck, lint and the unit tests, plus a check that the
+#    generated data has not drifted from its recorded hashes.
+#
+# A job here gets a plain checkout and nothing else: no Unity project, no content pack, no GPU.
+# Anything that needs those does not belong in this file. `pnpm extract:check` is the pattern: it
+# needs no Unity project, because it verifies the committed hashes.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asset-denylist-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  denylist:
+    name: Asset denylist (working tree)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Print the rules being enforced
+        run: node .githooks/check-denylist.mjs --list-rules
+
+      - name: Check every tracked file
+        run: node .githooks/check-denylist.mjs --tree
+
+      # A hook without the executable bit is not a hook on Linux or macOS: git skips it silently.
+      - name: Warn if the pre-commit hook is not executable in the index
+        run: |
+          mode=$(git ls-files -s .githooks/pre-commit | awk '{print $1}')
+          echo "index mode of .githooks/pre-commit = ${mode:-<not tracked>}"
+          if [ "$mode" != "100755" ]; then
+            echo "::warning file=.githooks/pre-commit::Not executable in git (mode ${mode:-none}). Fix: git update-index --chmod=+x .githooks/pre-commit"
+          fi
+
+  history:
+    name: Asset denylist (full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Check every blob ever committed
+        run: node .githooks/check-denylist.mjs --history
+
+  check:
+    name: Typecheck, lint, tests, generated-data hashes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # No `version:` input: package.json's `packageManager` pin is the single source of truth.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generated data has not drifted
+        run: pnpm extract:check
+
+      - name: Typecheck, lint, unit tests
+        run: pnpm check

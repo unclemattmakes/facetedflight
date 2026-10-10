@@ -1,0 +1,9 @@
+Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+
+SPDX identifier: CC-BY-SA-4.0
+Full legal code: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+Human-readable deed: https://creativecommons.org/licenses/by-sa/4.0/
+
+Applies to the CRYSTAL Regular typeface by Felipe Munoz and its notice, served
+unmodified. Any modified copy of the font itself must be shared under CC BY-SA 4.0.
+See assets/fonts/crystal-regular-license.txt beside the font.

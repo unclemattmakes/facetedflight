@@ -1,0 +1,749 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ff2.unclemattmakes.com/schema/level.json",
+  "title": "Faceted Flight 2 level",
+  "description": "One mission, as data. Produced by tools/extract/level.mjs from a 2016 Unity scene, and — from M9b — by the in-app level editor. Both write this shape. See PORT_PLAN.md section 5.4.\n\nCOORDINATES: every pos/quat is three.js space. The conversion from Unity is pos (x,y,z)->(x,y,-z), quat (x,y,z,w)->(-x,-y,z,w). It is a mirror (determinant -1) and on meshes it must be paired with a reversed triangle winding and a flipped UV V. Validated empirically, not asserted: see _axis-validation.md.",
+  "type": "object",
+  "required": [
+    "id", "vehicle", "difficulty", "environment", "mode", "worldOffset", "spawn",
+    "timer", "medals", "scoring", "boundary", "generated"
+  ],
+  "additionalProperties": false,
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_]+$",
+      "description": "Mission id. For ported levels this is the 2016 scene basename."
+    },
+    "title": { "type": "string" },
+
+    "vehicle": {
+      "enum": ["hoverjet", "jumpseat", "glider"],
+      "description": "Resolved from Level.ShipPrefab's guid, never from a scene name. PlayerShip_SR14_unet.prefab is deliberately NOT in the map: it shares every physics value with the shipped SR14 but flips glider_lockRollAndYaw, and the extractor errors rather than guess."
+    },
+    "environment": {
+      "type": ["string", "null"],
+      "description": "FF2 environment id (simonet | alpine | desert | kauai), from LoadLevelArt.levelName."
+    },
+    "environmentScene": {
+      "type": ["string", "null"],
+      "description": "The 2016 LevelArt_* scene name this level loaded. Provenance only; FF2 does not load Unity scenes."
+    },
+
+    "mode": {
+      "enum": ["ringAttack", "freeFlight", "targetPractice"],
+      "description": "The mode this level boots in when nothing asks for one. Derived: the vehicle's default (HoverJet Ring Attack, JumpSeat Target Practice) unless a forcing FF2 HONOURS overrides it — so it follows forcedModeFf2 where that is set and forcedMode otherwise. The 2016 record of the forcing is forcedMode, never this."
+    },
+    "forcedMode": {
+      "type": ["string", "null"],
+      "enum": ["freeFlight", "ringAttack", "multiplayer", "recording", null],
+      "description": "2016's Level.ForceGameMode/ForcedGameMode, untouched. Non-null only when Level.ForceGameMode is 1. TWO shipped scenes force a mode (hoverJet_kauai_beg and int_02_jumpSeat); three more serialise ForcedGameMode with ForceGameMode 0, which is inert and must not be read as a forced mode. Read forcedModeFf2 first — this is the record, not the rule."
+    },
+    "forcedModeFf2": {
+      "type": ["object", "null"],
+      "description": "DEV-061. FF2's OWN forcing decision, where it differs from 2016's. Null on twelve of thirteen missions, meaning 2016's forcedMode stands. Non-null on int_02_jumpSeat with mode null: 2016 locks that scene into Free Flight while all 12 of its orbs ship deactivated and 9 of its 11 jump pads are live, so the forced mode scores nothing and the live content belongs to the JumpSeat default. An OBJECT rather than a bare mode string because the value FF2 wants is itself null, which a `forcedModeFf2 ?? forcedMode` fall-through could not express. game/modes.ts's runningMode is the only consumer.",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": ["string", "null"],
+          "enum": ["ringAttack", "freeFlight", "targetPractice", null],
+          "description": "What FF2 forces. Null means FF2 forces NOTHING here and the level's own mode stands."
+        },
+        "_meta": { "type": "object" }
+      }
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["beginner", "intermediate", "professional"],
+      "description": "Which of 2016's three mission ranks this course is filed under \u2014 the MIDDLE step of the level select (DEV-105). 2016's own keys: page_rankSelection's three live Button_Look_Simple instances write exactly these strings into PlayerPrefs[\"MissionRank\"], and MenuManager.ChallengeSelection() switches on them. A fourth, \"training\", sits on an m_IsActive: 0 button and never shipped. Ten of the thirteen are read off the missionSel_<ship>_<rank> page the mission's holotable stands on in setGameplayOptions.unity; see difficultySource for the other three."
+    },
+    "difficultySource": {
+      "type": "string",
+      "enum": ["menu", "id"],
+      "description": "Where `difficulty` came from. \"menu\": read off a missionSel_<ship>_<rank> page in setGameplayOptions.unity. \"id\": that backup has no holotable for this course (it is mid-refactor \u2014 _ui-flow.md section 5's blocking uncertainty \u2014 and 22 of its 37 holotables are m_IsActive: 0), so the rank was taken from the mission id instead. Three are \"id\": rookie_01_hoverJet, rookie_02_hoverJet and hoverJet_kauai_beg. Recorded rather than smoothed over, so a reader can tell a reading from a fallback."
+    },
+    "chainIndex": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Position in 2016's campaign chain, or null for a course outside it. Scripts/Button_Next.cs is the only sequencer in the game (_ui-flow.md section 3): twelve case labels, one chain, ending in credits. hoverJet_kauai_beg is the one null \u2014 it shipped after this backup and never joined the chain. The level select's LAST step orders its tables by this, so 2016's own running order is what a player reads down the arc."
+    },
+    "inChain": {
+      "type": "boolean",
+      "description": "Whether this level appears in the campaign chain. DERIVED: chainIndex !== null. It read a hardcoded true on all thirteen \u2014 including on the one course that is not in the chain \u2014 from the day the extractor was written until DEV-105."
+    },
+
+    "worldOffset": {
+      "$ref": "#/$defs/vec3",
+      "description": "The 2016 `levelOffset` root, (-2048, 0, -2048) in all 13 shipped missions. Already baked into every coordinate in this file; kept for provenance and for round-tripping."
+    },
+
+    "spawn": {
+      "type": ["object", "null"],
+      "required": ["pos", "quat"],
+      "additionalProperties": false,
+      "properties": {
+        "pos": { "$ref": "#/$defs/vec3" },
+        "quat": { "$ref": "#/$defs/quat" },
+        "yaw": { "type": "number", "description": "Degrees about +Y, derived from quat." },
+        "launchKind": {
+          "enum": ["elevator", "direct"],
+          "description": "Which start this mission uses. This keyword USED to be spelled `launch`; when the elevator got its animation curve, `launch` became the curve and the discriminator moved here. The schema kept the old spelling for a while because nothing ran it."
+        },
+        "launch": {
+          "type": ["object", "null"],
+          "description": "The launch elevator, when there is one: the shipped `elevator_up.anim` curve plus the platform and shaft it rides in. Null for a direct start. `releaseInferred` says the release beat was derived from the curve settling rather than read from a field, because 2016 has no such field.",
+          "properties": {
+            "clip": { "type": "string" },
+            "keys": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": { "type": "number" },
+                  "value": { "type": "number" },
+                  "inSlope": { "type": "number" },
+                  "outSlope": { "type": "number" }
+                }
+              }
+            },
+            "rise": { "type": "number", "description": "Metres, the curve's last value." },
+            "duration": { "type": "number" },
+            "settledAtSeconds": { "type": "number" },
+            "releaseAtSeconds": { "type": "number" },
+            "releaseInferred": { "type": "boolean" },
+            "platform": { "type": ["object", "null"] },
+            "shaft": { "type": ["object", "null"] }
+          }
+        },
+        "launchTrace": {
+          "type": ["object", "null"],
+          "description": "The evidence behind `launchKind`, not a setting. `canStartElevator` is the answer; the other four are what was looked at to get it, so a mission that reads oddly can be argued with rather than re-derived."
+        },
+        "deadMoverLiftAmplitude": {
+          "type": ["number", "null"],
+          "description": "How far the shaft's dead mover segments travel, metres."
+        },
+        "jumpStart": {
+          "type": ["object", "null"],
+          "description": "The JumpSeat's standing start, where a mission has one: the countdown trigger and its steps.",
+          "properties": {
+            "pos": { "$ref": "#/$defs/vec3" },
+            "triggerDelay": { "type": ["number", "null"] },
+            "countdownSteps": { "type": ["number", "null"] },
+            "seconds": { "type": ["number", "null"] },
+            "_meta": { "type": "object" }
+          }
+        },
+        "startGrid": {
+          "type": ["object", "null"],
+          "description": "The hangar floor around the launch pad — which deck tiles are blocked, the slabs, the light bar. Placements only.",
+          "properties": {
+            "blockedMeshes": { "type": ["array", "null"] },
+            "slabs": { "type": ["array", "null"] },
+            "lightBar": { "type": ["object", "null"] },
+            "pads": { "type": ["array", "null"] },
+            "deckTilesBlocked": { "type": ["array", "number", "null"] }
+          }
+        },
+        "enableShipDelay": { "type": ["number", "null"], "description": "Trigger_EnableShip.delay, seconds." },
+        "enableGravityOnLaunch": { "type": ["boolean", "null"] },
+        "marker": { "type": "string", "description": "Which 2016 node this pose came from." },
+        "seatTrace": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "DEV-101. On a rigged mission the pre-launch pose comes from the elevator's own seat — `LaunchElevator.PlayerShipRoot`, the node 2016's StartLaunch() parents the ship to — and NOT from `Level.SinglePlayerSpawnPosition`, which `rookie_02_hoverJet.unity` wires to the respawn marker 107.010 m up the shaft. This block records what that field said, so the disagreement is data rather than folklore. Null for a mission with no rideable elevator.",
+          "properties": {
+            "node": { "type": "string" },
+            "seatRef": { "type": ["string", "null"], "description": "LaunchElevator.PlayerShipRoot's fileID as serialised." },
+            "seatRefAgrees": {
+              "type": ["boolean", "null"],
+              "description": "Whether that reference resolves in the scene to the same node. Null where the rig is a real prefab instance and the un-overridden field carries a prefab-internal fileID."
+            },
+            "spawnFieldNode": { "type": ["string", "null"] },
+            "spawnFieldAgrees": { "type": ["boolean", "null"] },
+            "spawnFieldAboveSeat": { "type": ["number", "null"], "description": "Metres the Level spawn field sits above the seat. 0 on six rigs; 107.01 on rookie_02_hoverJet." }
+          }
+        }
+      }
+    },
+    "respawn": {
+      "type": ["object", "null"],
+      "required": ["pos", "quat"],
+      "additionalProperties": false,
+      "properties": {
+        "pos": { "$ref": "#/$defs/vec3" },
+        "quat": { "$ref": "#/$defs/quat" },
+        "yaw": { "type": "number" },
+        "aboveSpawn": { "type": "number", "description": "respawn.y - spawn.y, metres." },
+        "marker": { "type": "string" }
+      }
+    },
+    "markerUsedAtLoad": {
+      "enum": ["spawn", "respawn"],
+      "description": "Which marker Level.InstantiatePlayerShip() actually reads, decided by the SERIALISED Level.respawning (1 in all 13 shipped scenes; the C# initialiser says false). Recorded because a spawn point read from the wrong field puts the player 108 m below where 2016 put them."
+    },
+
+    "routes": {
+      "type": "array",
+      "description": "One entry per live ring group. More than one means the course genuinely branches — only adv_01_hoverJet does, with two 22-ring alternates.",
+      "items": {
+        "type": "object",
+        "required": ["id", "rings"],
+        "properties": {
+          "id": { "type": "string" },
+          "rings": { "type": "array", "items": { "$ref": "#/$defs/ring" } },
+          "_meta": { "type": "object" }
+        }
+      }
+    },
+
+    "route": {
+      "type": ["array", "null"],
+      "description": "World-space Curvy Approximation polyline (Granularity 20, 21 points per control point, seam duplicates dropped). Used for trail crumbs, the airshow camera and ring-ordering checks. Curvy itself is not ported.",
+      "items": { "$ref": "#/$defs/vec3" }
+    },
+
+    "orbs": {
+      "type": "array",
+      "description": "Free Flight energy orbs. `live` is false for an orb the shipped scene deactivated — int_02_hoverJet, adv_01_hoverJet, rookie_02_jumpSeat and int_02_jumpSeat each place 12 and disable all 12.",
+      "items": {
+        "type": "object",
+        "required": ["i", "pos", "live"],
+        "properties": {
+          "i": { "type": "integer" },
+          "name": { "type": "string" },
+          "live": { "type": "boolean" },
+          "pos": { "$ref": "#/$defs/vec3" },
+          "speed": { "type": "number" },
+          "_meta": { "type": "object" }
+        }
+      }
+    },
+
+    "pads": {
+      "type": "array",
+      "description": "JumpSeat landing pads (target_jumppad.prefab placements), with the trigger volumes that make them hittable. `scale` is the INSTANCE transform and is not an extent of anything — it runs to (263.8, 0.14, 263.8) on int_02_jumpSeat, and the pad's real volumes are colliders on children with their own scales on top. Use `landing` / `refuel` / `zones`, which are already in metres.",
+      "items": {
+        "type": "object",
+        "required": ["i", "pos", "live", "landing", "refuel", "zones"],
+        "properties": {
+          "i": { "type": "integer" },
+          "name": { "type": "string" },
+          "live": { "type": "boolean" },
+          "pos": { "$ref": "#/$defs/vec3" },
+          "quat": { "$ref": "#/$defs/quat" },
+          "scale": { "$ref": "#/$defs/vec3" },
+          "landing": {
+            "description": "Trigger_JumpPad — the volume that says you landed. Null only on an extractor failure, which `--check` turns into exit 1.",
+            "oneOf": [{ "$ref": "#/$defs/padVolume" }, { "type": "null" }]
+          },
+          "refuel": {
+            "description": "Trigger_Refuel — a smaller capsule concentric with the landing one.",
+            "oneOf": [{ "$ref": "#/$defs/padVolume" }, { "type": "null" }]
+          },
+          "zones": {
+            "type": "array",
+            "description": "Trigger_JumpTarget boxes — 17 on every shipped pad: one trigger_bullseye and eight each under trigger_mid_section and trigger_large_section. What a hit is worth is the JumpSeat mode's business, not the geometry's.",
+            "items": { "$ref": "#/$defs/padVolume" }
+          },
+          "_meta": { "type": "object" }
+        }
+      }
+    },
+
+    "finish": {
+      "type": ["object", "null"],
+      "description": "What ENDS a run — non-scoring, never one of the rings. A DISCRIMINATED UNION on `shape`, because the two vehicles' gates are different solids and one field called `radius` meaning a sphere here and a half-extent there is how the 65.7/74.6/4.2 mistake happened. `sphereUnion` (HoverJet): a Trigger_FinishLine whose three SphereColliders are 68.59 m and two 32.06 m — the transform's world scale LOOKS like a thin gate and is not a collider extent. `convexMesh` (JumpSeat): a Trigger_Finish_JumpSeat inside target_jumppad.prefab, authored inactive and switched on by an m_IsActive override on exactly one pad per mission, whose convex MeshCollider over hexTile.fbx is a 30.345 x 5.653 x 28.860 m slab measured by decoding the FBX at Unity's 0.1 import scale. On that variant `radius` is the hull's BOUNDING SPHERE — a broad phase, not the gate.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["shape", "pos", "quat", "radius", "spheres"],
+          "properties": {
+            "shape": { "const": "sphereUnion" },
+            "pos": { "$ref": "#/$defs/vec3" },
+            "quat": { "$ref": "#/$defs/quat" },
+            "radius": { "type": "number" },
+            "spheres": { "type": "array", "items": { "type": "object" } },
+            "art": {
+              "type": "object",
+              "description": "What the finish gate LOOKS like (DEV-123): the live renderers under the same Checkpoint_Ring node as the trigger, as WORLD poses in three space. `frame` is jumpGate_diamond — the ring's own mesh at world scale 23.56, three times a ring's 7.77 — wearing checkpoint_finish.mat, ORANGE where a ring is green. `studs` are the 40 live built-in cubes on glowyMaterial (a ring has 18). Never a prefab-local chain: the expanded scene has composed the four intermediate pivots and any instance overrides already.",
+              "required": ["frame", "studMaterial", "studs"],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "object",
+                  "required": ["mesh", "material", "pos", "quat", "scale"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "mesh": { "type": "string" },
+                    "material": { "type": "string" },
+                    "pos": { "$ref": "#/$defs/vec3" },
+                    "quat": { "$ref": "#/$defs/quat" },
+                    "scale": { "$ref": "#/$defs/vec3" }
+                  }
+                },
+                "studMaterial": { "type": "string" },
+                "studs": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["pos", "quat", "scale"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "pos": { "$ref": "#/$defs/vec3" },
+                      "quat": { "$ref": "#/$defs/quat" },
+                      "scale": { "$ref": "#/$defs/vec3" }
+                    }
+                  }
+                },
+                "_meta": { "type": "object" }
+              }
+            },
+            "_meta": { "type": "object" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["shape", "pos", "quat", "radius", "mesh", "half", "hull"],
+          "properties": {
+            "shape": { "const": "convexMesh" },
+            "pos": { "$ref": "#/$defs/vec3", "description": "The COLLIDER's centre, not the GameObject's origin — hexTile's bounds are not centred on it." },
+            "quat": { "$ref": "#/$defs/quat" },
+            "radius": { "type": "number", "description": "BROAD PHASE: the hull's bounding sphere, bigger than the gate in every direction." },
+            "mesh": { "type": "string" },
+            "convex": { "const": true },
+            "half": { "$ref": "#/$defs/vec3" },
+            "hull": { "type": "array", "items": { "$ref": "#/$defs/vec3" } },
+            "_meta": { "type": "object" }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+
+    "clouds": {
+      "type": "array",
+      "description": "The environment's background clouds — placements only; the 2016 meshes are a bought pack and can never ship (D26). NEVER empty for a shipped environment, and it used to be for two of them: the four environments are authored two ways, simonet and desert placing a Prefabs/Levels/LevelArt_<env>.prefab whose clouds must be composed through the instance, alpine and kauai baking the art into the environment SCENE and instantiating nothing. Live counts are simonet 19, alpine 8 of 11 authored, desert 3 of 6, kauai 19.",
+      "items": {
+        "type": "object",
+        "required": ["i", "pos", "scale"],
+        "properties": {
+          "i": { "type": "integer" },
+          "name": { "type": "string" },
+          "pos": { "$ref": "#/$defs/vec3" },
+          "quat": { "$ref": "#/$defs/quat" },
+          "scale": { "$ref": "#/$defs/vec3", "description": "Non-uniform, and that IS the variety: 182 m to 981 m across." },
+          "shape": { "type": ["string", "null"], "description": "\"01\" | \"02\" | \"03\" — which source silhouette." },
+          "_meta": { "type": "object" }
+        }
+      }
+    },
+
+    "props": {
+      "type": "array",
+      "description": "Scenery THIS MISSION places itself, which content/environments/*.json does not and cannot carry because it is per-mission (DEV-218; DEV-219 for the palms). Same schema and same frame as an environment landmark — position is composed to the mission's levelOffset, which is where the environment's LevelArt root sits, verified at 0.000 m against desert.json's own landmarks — so load-props.ts concatenates the two and nothing per-mission exists in src/. Empty on ten of thirteen; adv_01_jumpSeat 1 live, int_01_jumpSeat 11 live palms, rookie_02_jumpSeat 12 live of 16 authored. Placed as Unity 5 STRIPPED PREFAB INSTANCES, so a name grep over the scene finds nothing and loadScene's expandPrefabs:false cannot see them at all — the same trap as DEV-045's finish gate.",
+      "items": {
+        "type": "object",
+        "required": ["name", "mesh", "live", "position"],
+        "properties": {
+          "name": { "type": "string" },
+          "mesh": { "type": "string", "description": "The LEGACY mesh path — the provenance." },
+          "meshAsset": { "type": ["string", "null"], "description": "Bucket path, e.g. assets/props/spire-b.glb. Taken from the environment's own prop vocabulary, never re-derived." },
+          "kind": { "type": ["string", "null"], "description": "spire | rock | palm | … — the environment layer's own classification." },
+          "origin": { "type": "string" },
+          "licence": { "type": "string" },
+          "live": { "type": "boolean", "description": "The full m_IsActive walk, object AND every ancestor — the ring-count rule. A dead instance is not content: rookie_02_jumpSeat has four dead spires and int_01_jumpSeat one dead palm." },
+          "solid": { "type": "boolean", "description": "Whether 2016 gave it an enabled non-trigger collider. NOT derivable from the name: MM_BigRock_collider has NO collider (classes 1/4/23/33/95 only) while Spire_B_w_Collision does, so the name told the truth once and lied once. Spire_C and Spire_D are also collider-less." },
+          "path": { "type": "string", "description": "GameObject chain from the scene root, for a reader." },
+          "position": { "$ref": "#/$defs/vec3", "description": "Unity space, composed to levelOffset (exclusive)." },
+          "rotation": { "$ref": "#/$defs/quat" },
+          "scale": { "$ref": "#/$defs/vec3" }
+        }
+      }
+    },
+
+    "ui": {
+      "type": ["object", "null"],
+      "description": "2016's own UI strings, read from UnityEngine.UI.Text.m_Text on the prefab Level.ShipPrefab names. Byte-exact, capitalisation included: `Speed :` has a space before the colon and `________ medal AwarDeD!` has eight underscores and a lower-case `medal`. Per level because that is how 2016 gets it — the HUD is on the ship, and the HoverJet and JumpSeat prefabs say different things.",
+      "required": ["briefing", "strings"],
+      "properties": {
+        "briefing": {
+          "type": "string",
+          "description": "panel_mission's text, shown at spawn and killed at 3.8 s. Ends in a newline, which is in the shipped bytes."
+        },
+        "strings": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "_meta": { "type": "object" }
+      }
+    },
+
+    "timer": {
+      "type": "object",
+      "required": ["timeLimit", "bonusParTime"],
+      "additionalProperties": false,
+      "properties": {
+        "timeLimit": {
+          "type": ["number", "null"],
+          "description": "Timer_Race.maxRaceTime. Enforced: Timer_Race.cs:96-99 ends the level when it runs out."
+        },
+        "bonusParTime": {
+          "type": ["number", "null"],
+          "description": "The par time the leaderboard time bonus uses. 2016 wrote _parTime twice per run; LevelEnd.cs:298's SetInt runs after RaceTimer.cs:53's SetFloat, so the int wins and this equals Timer_Race.maxRaceTime."
+        },
+        "shadowedParTime": {
+          "type": ["number", "null"],
+          "description": "RaceTimer.timeAttack_maxTime — the value 2016 wrote first and immediately overwrote. Kept so the 20% rookie_01 swing is visible in the data, not just in a document."
+        },
+        "countdown": {
+          "type": ["object", "null"],
+          "description": "The 3-2-1-GO, and DEV-048. `useCountdownFlag` (Timer_Race.useCountdown) is FALSE on all thirteen and gates exactly one caller, Timer_Race.OnEnable. `startedByTrigger` is the route that actually runs: Trigger_EnableShip.DelayedEnable() waits its own `delay` and then calls the public StartCountdown() with no reference to the flag, and the coroutine's last act sets useRaceTimer = true — so this is also when the race clock starts. `shipped` is DERIVED from the two, because the interesting fact is that they disagree and one boolean is what hid it. Seven missions run a countdown: six of the seven HoverJet ones (rookie_01_hoverJet has no Trigger_EnableShip at all) plus int_01_jumpSeat, which places the HoverJet's entire elevator shaft. `seconds` is (steps + 1) * stepSeconds, because GO fires on the beat AFTER the last number.",
+          "properties": {
+            "shipped": { "type": "boolean" },
+            "useCountdownFlag": { "type": "boolean" },
+            "startedByTrigger": { "type": "boolean" },
+            "triggerDelay": { "type": ["number", "null"] },
+            "steps": { "type": ["number", "null"] },
+            "stepSeconds": { "type": ["number", "null"], "description": "1 s. The C# initialiser says 0.5." },
+            "seconds": { "type": ["number", "null"] },
+            "_meta": { "type": "object" }
+          }
+        }
+      }
+    },
+
+    "turnIndicators": {
+      "type": "array",
+      "description": "The arrow signs along the course. Placements only; the mesh is first-party and converted. `live` is the liveness walk, not m_Enabled alone — the whole m_Father chain has to be active, which is the same rule the ring count needs. Guarded geometrically by tests/unit/turn-indicator.test.ts, because the prefab surrounds the imported arrow with Unity-native end-cap bars and those are the only oracle its orientation has.",
+      "items": {
+        "type": "object",
+        "required": ["i", "pos"],
+        "properties": {
+          "i": { "type": "integer" },
+          "name": { "type": "string" },
+          "live": { "type": "boolean" },
+          "pos": { "$ref": "#/$defs/vec3" },
+          "quat": { "$ref": "#/$defs/quat" },
+          "scale": { "$ref": "#/$defs/vec3" },
+          "art": {
+            "type": ["object", "null"],
+            "description": "DEV-198. `turnIndicator_art (2)` — the arrow INSIDE the prefab — as this scene overrode it. UNITY space and prefab-LOCAL, unlike `pos`/`quat` above: the same quantity and the same space as props.turnIndicator.arrow in the constants sheet, which it replaces for this one placement. Null on 87 of the 114 live markers; present on all 21 of rookie_02_hoverJet's and 6 of adv_01_hoverJet's, both Mesa Canyon, where 2016 yawed the sign ~86-90 deg about its own Y so the chevron reads ALONG the course rather than across it.",
+            "required": ["rotation"],
+            "properties": {
+              "name": { "type": "string" },
+              "position": { "$ref": "#/$defs/vec3" },
+              "rotation": { "$ref": "#/$defs/quat" },
+              "scale": { "$ref": "#/$defs/vec3" }
+            }
+          },
+          "_meta": { "type": "object" }
+        }
+      }
+    },
+
+    "medalsFf2": {
+      "type": ["object", "null"],
+      "description": "FF2's OWN Ring Attack thresholds, where they differ from 2016's. A DEVIATION with its reason in `_meta.deviation` — rookie_01_hoverJet's 2016 platinum of 1700 is unreachable against 16 rings x 100, and Target Practice has no 2016 curve at all because 2016 never scored it (DEV-053). Null where 2016's numbers stand.",
+      "required": ["bronze", "silver", "gold", "platinum"],
+      "properties": {
+        "bronze": { "type": ["number", "null"] },
+        "silver": { "type": ["number", "null"] },
+        "gold": { "type": ["number", "null"] },
+        "platinum": { "type": ["number", "null"] },
+        "_meta": { "type": "object" }
+      }
+    },
+
+    "lighting": {
+      "type": ["object", "null"],
+      "description": "Per MISSION, not per environment — LevelArt_<env>.prefab's own Directional light is m_IsActive: 0 and each mission scene carries a disconnected copy pointing somewhere else. int_01_hoverJet is lit from 4 degrees above the horizon. The validator refuses a level whose environment scene contributes a second sun.",
+      "properties": {
+        "sun": {
+          "type": ["object", "null"],
+          "required": ["direction", "colorLinear", "colorGamma", "intensity"],
+          "properties": {
+            "name": { "type": "string" },
+            "kind": { "type": "string" },
+            "colorLinear": {
+              "$ref": "#/$defs/vec3",
+              "description": "LINEAR rgb per unit of intensity: colorLinear x intensity is Unity 5.4's GammaToLinearSpace(m_Color x m_Intensity), what 2016's shader received (DEV-454)."
+            },
+            "colorGamma": {
+              "$ref": "#/$defs/vec3",
+              "description": "The raw m_Color, gamma, as serialised. Provenance, and what ?sunlight=port draws as if linear (DEV-454)."
+            },
+            "intensity": { "type": "number", "description": "m_Intensity, as authored." },
+            "shadows": { "type": ["number", "null"] },
+            "direction": {
+              "$ref": "#/$defs/vec3",
+              "description": "Where the light TRAVELS, three space. Aim a camera at the sun with -direction."
+            },
+            "elevationDeg": { "type": ["number", "null"] },
+            "_meta": { "type": "object" }
+          }
+        },
+        "ambient": {
+          "type": ["object", "null"],
+          "description": "Unity's own ambient, which every Marmoset-shaded surface ignores — the terrain's ambient is the Skyshop SH in the constants sheet. Kept for provenance and for the sky/UI.",
+          "properties": {
+            "mode": { "type": ["number", "null"] },
+            "modeName": { "type": ["string", "null"] },
+            "intensity": { "type": ["number", "null"] },
+            "skyColor": { "$ref": "#/$defs/vec3" },
+            "equatorColor": { "$ref": "#/$defs/vec3" },
+            "groundColor": { "$ref": "#/$defs/vec3" }
+          }
+        },
+        "skyboxMaterial": { "type": ["string", "null"] },
+        "sky": {
+          "type": ["object", "null"],
+          "description": "The 2016 skybox, when it is readable. `available: false` carries a `reason` instead — the six faces are a bought pack and can never ship (D26), so this is provenance and an SH fit, not an asset reference.",
+          "properties": {
+            "available": { "type": "boolean" },
+            "reason": { "type": ["string", "null"] },
+            "material": { "type": ["string", "null"] },
+            "faces": { "type": "object" },
+            "sh": { "type": "array", "items": { "$ref": "#/$defs/vec3" }, "minItems": 9, "maxItems": 9 },
+            "bands": { "type": ["number", "null"] },
+            "residual": { "type": ["number", "null"] },
+            "sampleCount": { "type": ["number", "null"] },
+            "peakDirectionUnity": { "$ref": "#/$defs/vec3" },
+            "sunAngleDeg": { "type": ["number", "null"] }
+          }
+        },
+        "liveLightCount": { "type": ["number", "null"] },
+        "environmentSceneLiveLights": { "type": ["number", "null"] },
+        "disabledLightCount": { "type": ["number", "null"] }
+      }
+    },
+
+    "medals": {
+      "type": "object",
+      "description": "Ring Attack thresholds, score points. Null throughout for rookie_01_jumpSeat, the one shipped mission with no finale_logic at all.",
+      "required": ["bronze", "silver", "gold", "platinum"],
+      "properties": {
+        "bronze": { "type": ["number", "null"] },
+        "silver": { "type": ["number", "null"] },
+        "gold": { "type": ["number", "null"] },
+        "platinum": { "type": ["number", "null"] }
+      }
+    },
+    "medalsExp": {
+      "type": "object",
+      "description": "Free Flight thresholds, orb counts (LevelEnd's *Exp fields).",
+      "properties": {
+        "bronze": { "type": ["number", "null"] },
+        "silver": { "type": ["number", "null"] },
+        "gold": { "type": ["number", "null"] },
+        "platinum": { "type": ["number", "null"] }
+      }
+    },
+
+    "scoring": {
+      "type": "object",
+      "required": ["gateMultiplier", "timeAffectsMedal"],
+      "additionalProperties": false,
+      "properties": {
+        "gateMultiplier": { "type": "number", "description": "100 in every shipped mission." },
+        "levelDelay": { "type": ["number", "null"] },
+        "timePenalty": { "type": ["number", "null"] },
+        "timeBonusMultiplier": {
+          "type": "number",
+          "description": "11.5. A private non-serialised field in Scoreboard.cs, so the code default IS the shipped value."
+        },
+        "fuelPenaltyEnabled": {
+          "type": "boolean",
+          "description": "False. LevelEnd writes _fuelUsed with SetFloat and Scoreboard reads it with GetInt, so the HoverJet fuel penalty always evaluated to 0."
+        },
+        "timeAffectsMedal": {
+          "type": "boolean",
+          "description": "DEV-014, Matt 2026-09-09. 2016 scored rings x 100 with time ignored; FF2 lets time contribute. A deliberate, logged deviation."
+        }
+      }
+    },
+
+    "boundary": {
+      "type": "object",
+      "description": "Out-of-bounds. BOTH fields are per level and both come from the scene. There is no global fallback to fall back to: PlayerBoundary is disabled in 5 of 13 missions (no out-of-bounds death at all), and where enabled the grace is 13 s, not the 10 s in the C# initialiser.",
+      "required": ["enabled", "resetDelay"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "resetDelay": { "type": ["number", "null"] },
+        "present": { "type": "boolean", "description": "Whether the scene has a PlayerBoundary component at all." },
+        "resetFadeSeconds": { "type": ["number", "null"], "description": "2.5 s of fade before the respawn." },
+        "volume": {
+          "type": ["object", "null"],
+          "description": "The play area itself — `trigger_playArea`, a sphere in every shipped mission. Present even where `enabled` is false, because the shape is authored and only the component is off.",
+          "properties": {
+            "shape": { "type": "string" },
+            "centre": { "$ref": "#/$defs/vec3" },
+            "radius": { "type": ["number", "null"] },
+            "isTrigger": { "type": ["boolean", "null"] },
+            "gameObject": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+
+    "fog": {
+      "type": ["object", "null"],
+      "description": "Per mission, not global. 5 of 13 override the defaults and heightDensity spans 0.03-0.2, a 6.7x range. One global 387/0.03 makes every island mission look wrong.",
+      "additionalProperties": false,
+      "properties": {
+        "height": { "type": ["number", "null"] },
+        "heightDensity": { "type": ["number", "null"] },
+        "startDistance": { "type": ["number", "null"] },
+        "distanceFog": { "type": ["boolean", "null"] },
+        "heightFog": { "type": ["boolean", "null"] },
+        "radial": { "type": ["boolean", "null"] },
+        "excludeFarPixels": { "type": ["boolean", "null"] },
+        "color": { "type": ["array", "null"], "items": { "type": "number" }, "minItems": 4, "maxItems": 4 },
+        "density": { "type": ["number", "null"] },
+        "mode": { "type": ["number", "null"] },
+        "linearStart": { "type": ["number", "null"], "description": "Unity's linear-fog near plane; only read when `mode` is linear." },
+        "linearEnd": { "type": ["number", "null"] },
+        "sceneFogEnabled": { "type": ["boolean", "null"] }
+      }
+    },
+
+    "ghosts": {
+      "type": "array",
+      "description": "Baked 2016 flights, filtered PER MISSION. 2016 did no filtering (Level.SinglePlayerGhosts is empty in all 13 scenes and is read only in the Multiplayer branch), so a rookie_01 player raced an int_02 ghost flying a different course. Filtering is a logged deviation.",
+      "items": {
+        "type": "object",
+        "required": ["clip", "spawn"],
+        "properties": {
+          "clip": { "type": "string", "description": "AnimationClip asset basename." },
+          "spawn": { "$ref": "#/$defs/vec3" },
+          "quat": { "$ref": "#/$defs/quat" },
+          "startTime": { "type": ["number", "null"], "description": "Animation m_Time offset; 0.55 on the Simonet/Kauai pads." },
+          "animationEnabled": { "type": ["boolean", "null"] },
+          "playAutomatically": { "type": ["boolean", "null"] },
+          "start": {
+            "oneOf": [{ "$ref": "#/$defs/vec3" }, { "type": "null" }],
+            "description": "DEV-442. Where the recording BEGINS, THREE world space: the clip's first root position key through the GhostRacer's parent transform. Not `spawn`, which is the object's own transform and on rookie_02 stands 440 m from its course. On a course that authored no AI pad, Classic's racers start here (game/racer-grid.ts). Null with the reason in `_meta.start` when the clip cannot be read."
+          },
+          "_meta": { "type": "object" }
+        }
+      }
+    },
+
+    "ambientTraffic": {
+      "type": ["object", "null"],
+      "description": "DEV-146. Another mission's ships flying THEIR course over this level's island while you fly this one — Matt, 2026-09-16: 'Interleaved modes: see HoverJets fly while on a JumpSeat course.' Not 2016: a 2016 scene loads its own course and nothing else. Emitted from the authored DEV_146_AMBIENT_TRAFFIC table in tools/extract/level.mjs, which is why it survives a regeneration; null on every mission that table does not name. The traffic scores nothing, ends nothing and appears in no standings. Whether it is DRAWN is the edition's (gameplay.ambientTraffic), so Classic never reads this field.",
+      "required": ["mission", "count"],
+      "properties": {
+        "mission": {
+          "type": "string",
+          "description": "The donor mission whose course the traffic flies. Must exist and must share this level's `environment` — cross-checked in level.mjs's full run and in tests/unit/ambient-traffic-content.test.ts."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "description": "Ships, spread evenly by arc length round the donor's line. The maximum mirrors AMBIENT_TRAFFIC_MAX in src/content/level-schema.ts and is a structural cap, not a frame budget; the edition's `gameplay.ambientTraffic.maxCount` is the budget and may lower it."
+        },
+        "_meta": { "type": "object" }
+      }
+    },
+
+    "generated": {
+      "type": ["object", "null"],
+      "description": "Null for a level extracted from 2016. Non-null for a procedurally generated one (M6 endless, M9b editor) — same schema, same loader.",
+      "properties": {
+        "seed": { "type": "integer" },
+        "generator": { "type": "string" }
+      }
+    },
+
+    "_meta": {
+      "type": "object",
+      "description": "Provenance. Every emitted value names the scene and fileID it came from, plus the raw Unity coordinates, the liveness rule applied, the coherence checks and the structural assertions CI diffs."
+    }
+  },
+
+  "$defs": {
+    "vec3": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "[x, y, z] in three.js space."
+    },
+    "quat": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[x, y, z, w] in three.js space."
+    },
+    "padVolume": {
+      "type": "object",
+      "description": "One trigger volume inside a jump pad, in WORLD space and at its real size. Unity's scaling is already applied: a box's half extent is size/2 * |scale| component-wise, a sphere's radius is radius * max|scale|, and a capsule's radius uses the two axes PERPENDICULAR to the one it runs along. `pos` is the collider's centre — m_Center scaled and rotated — not the GameObject's origin.",
+      "required": ["role", "kind", "name", "path", "live", "pos", "quat"],
+      "properties": {
+        "role": {
+          "enum": ["landing", "refuel", "score"],
+          "description": "From the SCRIPT on the object (Trigger_JumpPad / Trigger_Refuel / Trigger_JumpTarget), never the name: eight objects called collider_ground (N) are one ring of the target."
+        },
+        "kind": { "enum": ["box", "sphere", "capsule"] },
+        "name": { "type": "string" },
+        "path": { "type": "string", "description": "Path relative to the pad root." },
+        "live": { "type": "boolean" },
+        "pos": { "$ref": "#/$defs/vec3" },
+        "quat": { "$ref": "#/$defs/quat" },
+        "half": { "$ref": "#/$defs/vec3", "description": "Box only: half extents in metres." },
+        "radius": { "type": "number", "description": "Sphere and capsule, in metres." },
+        "height": { "type": "number", "description": "Capsule only: total length, already clamped to Unity's minimum of 2 * radius." },
+        "axis": { "enum": ["x", "y", "z"], "description": "Capsule only: the local axis it runs along. `y` on every shipped pad." },
+        "degenerateToSphere": {
+          "type": "boolean",
+          "description": "Capsule only. True when the 2*radius clamp swallowed the cylinder, so the volume IS a sphere — which is the case on every shipped pad: r 0.951 x 29.83 = 28.4 m against h 0.5 x 21.1 = 10.6 m."
+        }
+      }
+    },
+    "ring": {
+      "type": "object",
+      "description": "A live scoring gate. A ring counts only if its TriggerCheckpoint has m_Enabled 1, addScore != 0, and every ancestor is m_IsActive 1 — with the two runtime-toggled game-mode parents excepted. Without that rule the exporter emits 77 rings for int_02 instead of 21, because deactivated old route versions are still serialised in the scenes.",
+      "required": ["i", "pos", "quat"],
+      "properties": {
+        "i": { "type": "integer", "description": "Ordinal along the route, 0-based." },
+        "order": { "type": "integer", "description": "The NNNN prefix SplinePathCloneBuilder wrote." },
+        "name": { "type": "string" },
+        "pos": { "$ref": "#/$defs/vec3" },
+        "quat": { "$ref": "#/$defs/quat" },
+        "scale": { "$ref": "#/$defs/vec3" },
+        "trigger": {
+          "type": "object",
+          "description": "The gate volume, separate from the ring art: the ring's own transform is the mesh placement, the trigger sits on a child.",
+          "properties": {
+            "pos": { "$ref": "#/$defs/vec3" },
+            "quat": { "$ref": "#/$defs/quat" },
+            "radius": { "type": ["number", "null"], "description": "Largest sphere radius, world-scaled." },
+            "spheres": { "type": "array", "items": { "type": "object" } }
+          }
+        },
+        "scoring": {
+          "type": "object",
+          "description": "No shipped ring gives an impulse boost. speedBoost/boostForce are PRIVATE in the shipped TriggerCheckpoint.cs, so those YAML keys are stale and Unity applied neither; the override sat on an inactive clone-source instance that scene clones do not inherit from. energyBoostAmount 12 IS a legitimate non-serialised code default.",
+          "properties": {
+            "addScore": { "type": "number" },
+            "energyBoost": { "type": "boolean" },
+            "energyBoostAmount": { "type": "number" },
+            "triggerOnce": { "type": "boolean" },
+            "silent": { "type": "boolean" },
+            "triggerNextRoute": { "type": "boolean" }
+          }
+        },
+        "_meta": { "type": "object" }
+      }
+    }
+  }
+}

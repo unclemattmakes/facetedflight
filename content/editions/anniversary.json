@@ -1,0 +1,1593 @@
+{
+  "$schema": "./_schema.json",
+  "id": "anniversary",
+  "title": "Anniversary",
+  "note": "The curated deviations of docs/plan/ANNIVERSARY.md, each one a DEV row. A flag here that no code reads yet is a promise, not a feature — the DEV row says which it is.",
+  "render": {
+    "toneMapping": "aces",
+    "exposure": 1,
+    "haze": {
+      "enabled": true,
+      "startDistance": 400,
+      "range": 3600,
+      "strength": 0.25,
+      "desaturate": 0.45,
+      "tint": [
+        0.66,
+        0.74,
+        0.85
+      ],
+      "note": "aerial perspective: desaturate and cool with distance, near field untouched (V4). 400 m clears the gate you are aiming at (int_01's are 540 m apart); full at 4 km, which is ANNIVERSARY.md section 1.5's 'pushes 1-4 km back'"
+    },
+    "illustrative": {
+      "enabled": true,
+      "note": "the TF2 diffuse warp on the LAND terrains and the props (V7, DEV-092): the direct diffuse response becomes a Half-Lambert ramp, so a facet turned away from a sun that can still see it gets a cool fill where Lambert gives it nothing, and one edge-on to the sun takes the warm stop. Stop luminances 0.065 / 0.193 / 0.982, ascending; stop red/blue 0.25 / 2.71 / 1.05, which is the cool-to-warm half of the shape. The ramp's own curve runs 1.06x to 2.33x of Lambert over N.L >= 0.1 and settles at 1.06x head-on, so the brightest faces barely move and `render.exposure` keeps the job of setting the key light's level. THESE ARE NOT THE NUMBERS YOU SEE: measured on a registered `island-lit` pair, this ramp moves the massif by +4.5 % in display luminance and +1.0 % in red/blue, because on int_01 a 4-degree sun plus DEV-086's shadow map leaves the term very little to work on and ACES compresses what is left. They were set BY that photograph, not by the arithmetic - DEV-092 carries the frames and the ladder of candidates. `strength` is the clean A/B dial (0 is the exact stock response); the stops are what to argue with, and the mission to argue about them on is a HIGH-SUN one - six of the thirteen are above 26 degrees and rookie_01_jumpSeat is 56.8",
+      "shadow": [
+        0.03,
+        0.07,
+        0.12
+      ],
+      "terminator": [
+        0.285,
+        0.175,
+        0.105
+      ],
+      "lit": [
+        1,
+        0.98,
+        0.955
+      ],
+      "overbright": 1.08,
+      "strength": 1
+    },
+    "shadows": {
+      "enabled": true,
+      "mapSize": 2048,
+      "boxHalfSize": 700,
+      "castDistance": 3500,
+      "bias": 0.5,
+      "normalBias": 0.4,
+      "radius": 2,
+      "note": "one directional map from the mission sun, casters at LOD 0 and finer — 2016's LOD-0 rule plus DEV-085's ring, which is finer (V3, DEV-086; DEV-115). 2048 over a 700 m box is 0.68 m a texel against an 8 m facet; 3,500 m up-sun is most of Simonet, against the 22 km a 4-degree ray would truly need. bias 0.5 m and normalBias 0.4 m were first guesses and are now PHOTOGRAPHED (DEV-115, 2026-09-15): on int_01's island-lit stand at 4 degrees the map darkens 44 % of the frame with no acne on any lit facet; on rookie_02's canyon at 52.6 degrees, 24-29 % with every cactus's and 0.3 m shrub's shadow still attached at its base (a 0.4 m normal lift shortens a 52-degree shadow by 0.31 m, and the smallest prop survives it); alpine at 56.8, 17 %. At 4 degrees every metre of depth bias still shifts a shadow ~14 m down-sun, which is why neither number moved. THE TWO TO ARGUE WITH ARE boxHalfSize (where shadows stop, laterally) and castDistance (how far up-sun a ridge can be and still cast) — no frame here shows either edge, because fog and haze carry the far field; a second cascade would double the depth pass and wants a Quest number first. radius 2 is 1.37 m of penumbra whose interleaved-gradient dither is visible at 2x zoom and invisible at 1x — whether it shimmers on a Quest panel is the headset question. Cost on this monitor, island-lit, one frame: the pass is +49 draw calls and +1.08 M triangles over the same frame with the map off (2.86 M vs 1.78 M); the ring's ten chunks are +10 calls and +87 k of that. DEV-453 CORRECTS 'no frame here shows either edge': on alpine's forest the box's edge read as a line (Matt, 2026-09-27), because the scatter's shadows stopped there and DEV-304's canopy handover left the forest floor beyond it with no direct darkening at all. edgeFade is the band, in metres inside the edge, over which the map hands both back to the far-field terms; render/far-shadow.ts's ff2ShadowCover",
+      "edgeFade": 150
+    },
+    "shipShadow": {
+      "enabled": true,
+      "note": "DEV-305, wishlist #29. Matt: \"player ship casts shadows -- use the 3rd-person model as the caster.\" TRUE HERE, and the row it lands on top of is a bug rather than a behaviour: `boot/app.ts` handed the shadow map `getObjectByName('ship_third_person')`, which is the glTF SCENE ROOT, and three reads `castShadow` on the object it is about to DRAW -- a Group is never drawn. `hoverjet-exterior.glb` is ONE node, `ship_ext_orange`, under that root, and it kept three's default of false. So the hull had cast no shadow anywhere since the map landed, not merely in first person, and `shadowFlagsFor('ship-exterior') = {cast: true}` was right about the TABLE the whole time (DEV-069's lesson: a value nothing downstream consults is documentation, not a guard). `shadowMeshesOf` fixes that half for both presets and is not this flag.\n\nWHAT THIS FLAG BUYS is the COCKPIT half, and it costs a draw. 2016 deactivates Art/ThirdPerson when you are inside, and three refuses every cheap way to keep a hidden object in the depth pass: object.visible, material.visible and the layer mask are each read by the shadow pass as well as by the frame, three refusals of the same kind (render/shadows.ts's header names the lines). What is left is a hull DRAWN with colorWrite and depthWrite off -- one more draw call and the vertex work, no fill, nothing in the colour or depth buffer. depthWrite matters as much as colorWrite: with colour masked and depth written the hull punches a silhouette-shaped hole a metre in front of the eye and the world behind it fails the depth test.\n\nWHY IT IS WORTH A DRAW: a shadow's LENGTH is a ruler laid on the ground (ANNIVERSARY.md section 1.5 ranks it second of eight scale cues) and this is the one shadow whose length the player can read against their own altitude, because they are flying the thing casting it. At int_01's 4-degree sun it is a long streak far downsun rather than a patch underneath; at rookie_02's 52.6 degrees it is under you. A DEVIATION from 2016 with a row in docs/DEVIATIONS.md.\n\nIT INTERACTS WITH render.cockpitShadow, and the interaction is the thing to look at before turning both on: the hull SURROUNDS the cockpit, so a hull that casts and a cockpit that receives put the airframe's own shadow across the dashboard -- which is the artifact render/shadows.ts argues against for the cockpit CASTING, arriving through the receiving door instead. Photograph the pair, not each alone."
+    },
+    "cockpitShadow": {
+      "enabled": true,
+      "note": "DEV-306, wishlist #30. Matt: \"cockpit ship receives all shadows.\" TRUE, and it is a DEVIATION from 2016 by construction with a row in docs/DEVIATIONS.md: ShadowRole's `ship-cockpit` is documented \"Neither\" and that is a TRANSCRIPTION -- Unity's cockpit was in neither set and nobody weighed it. render/shadows.ts's argument against the cockpit is about CASTING (the canopy's own shadow across the dashboard at a 0.88 m texel and an 0.08 m near plane, which is shimmer you cannot look away from in a headset) and says nothing about receiving, which is a per-fragment sample on geometry already in the frame.\n\nWHAT IT BUYS: the cockpit goes dark when you fly into a ridge's shadow, which is the half of that moment the port has been missing -- the far-field term (DEV-116) already darkens the ship and the cockpit by the swept height field, so this is the NEAR field, out to render.shadows.boxHalfSize, and the two compose by the min the shader already takes.\n\nTHE FLAGS WERE NEVER WRITTEN AT ALL before this: SunShadowScene had no cockpit entry, so the shell's castShadow and receiveShadow were three's defaults rather than this table's answer. They agreed at {false, false}, which is exactly why nobody noticed -- the same shape as DEV-305's Group. Read the interaction note on render.shipShadow before judging this one alone."
+    },
+    "cockpitSelfShadow": {
+      "enabled": true,
+      "mapSize": 2048,
+      "bias": 0.03,
+      "normalBias": 0.015,
+      "radius": 1,
+      "note": "DEV-323, answering look call 6. Matt: \"in first person, i'd expect the cockpit to cast shadows on itself. like the bars should cast shadows on the console in the right conditions and whatnot.\" TRUE. A second shadow map over the ship alone -- the cockpit shell's bounding sphere, 3.38 m, so 3.3 mm a texel at 2048 against the sun map's 0.68 m -- cast by the shell and sampled by the shell. One depth draw of the shell's 1,182 triangles a frame, and nine compared taps on the shell's sun-facing fragments.\n\nBIAS 0.03 m, SCALED BY SLOPE up to 5x, chosen from photographs rather than argued: a constant 4 mm was acne over the whole nose, 1 cm still hatched the grey panels and the canopy struts, and 2-3 cm with the slope term was clean on rookie_01 at 45 s (sun 38 degrees up in the ship frame, behind) and on int_01's 4-degree sun at 30 s; 3 cm is the margin. The bars' shadows fall 30 cm or more from the bars, so the contact they lose is nowhere anybody looks.\n\nTHE EXTERIOR HULL IS NOT A CASTER, and that is a correction to NEXT.md's row: its canopy is closed, opaque, near-black glass 0.33-0.43 m from the eye, hit in 720 of 720 directions 15-85 degrees up where the shell's frame stops 8.9 % (tests/unit/cockpit-self-shadow.test.ts casts the rays), so it would shade the whole cabin. The shell alone is the whole airframe with the canopy open and its frame as bars.\n\nTHIS FLAG ALSO TAKES LOOK CALL 6'S BLOB AWAY, and Matt should know that before judging it: that same glass, cast into the sun's map (render.shipShadow) and received by the shell (render.cockpitShadow), is the blob, and no bar can show inside it. So while this is on the shell's lookup into the sun's map skips every occluder within the near box's own depth -- the ship -- and keeps the ridge. FALSE puts the blob back exactly as DEV-306 measured it; ?feature=render.cockpitSelfShadow:off is the A/B.\n\nNOT in vr.disable: the pass is one draw of ~1.2 k triangles and the per-fragment cost lands only on the cockpit. The worn check is the shimmer, not the cost -- see DEV-323. Rides the Advanced page's SHADOWS row (it composes shadowsEnabled), so it has no row of its own. mapSize, bias, normalBias and radius are the same units as render.shadows'."
+    },
+    "nearShadow": {
+      "enabled": true,
+      "mapSize": 2048,
+      "boxHalfSize": 80,
+      "edgeFade": 20,
+      "bias": 0.06,
+      "normalBias": 0.05,
+      "radius": 2,
+      "note": "DEV-582, docs/plan/ULTRA.md. A second sun map whose box follows the eye: 2048 texels over +-80 m is 0.078 m a texel against the sun map's 0.68, so the hull in chase view, a racer beside you and the rocks you skim cast shapes instead of blobs. A CASCADE, not a min: inside the box the sun map's lookup skips the near map's up-sun reach (two box widths, 160 m, derived and not a knob; the box also runs four widths on DOWN-sun so the ground under a chase camera and the hull's own shadow are inside it), so the sun map's 1.4 m penumbra is not laid over the sharp edge; edgeFade hands both back across the last 20 m (DEV-453's pattern). The casters are the sun map's (castShadow), the receivers are the sun map's, except the cockpit shell, which keeps DEV-323's own map. bias and normalBias are the sun map's 0.5 and 0.4 scaled by the texel ratio (0.115) as a first guess, and are the numbers to argue with if a lit facet shows acne; radius 2 is a 0.16 m penumbra. In vr.disable until a worn ?perf=1 capture exists (the pass is drawn once for both eyes, the lookup is paid per eye on a fill-bound frame)."
+    },
+    "smoothSky": {
+      "enabled": true,
+      "note": "DEV-320, wishlist #22a. Matt: \"toggle the faceted sky\", then, asked which way it should ship: \"faceted sky off by default\" (2026-09-23). TRUE here, FALSE on Classic. The flag names the DEVIATION because the faceted dome is the faithful answer -- 2016's sky is Quantum Theory/PolyWorld Skies/SkyJ.mat, a LOW-POLY sky pack, and sim/sky-dome.ts opened its six faces to say so -- so Classic keeps it off like every other flag (tests/unit/edition-content.test.ts) and Anniversary is where the deviation lives.\n\nTRUE bakes the dome with one colour per VERTEX instead of per face, and drops the +/-6 % cell variation that makes the facets legible. Same nine coefficients, same cloud banks (now soft-edged lobes), same sun glow and disc, same mesh, draw order, layer and material -- so no new draw call, nothing new in the draw order, and the same triangle count in every census. The environment is prefiltered from the smooth dome, because what lights the world is what is behind it (render/sky.ts); the jitter it loses averages out in the prefilter (tests/unit/sky-smooth.test.ts: the mean sky moves under 1 %). Both domes are built at this value, so boot bakes once.\n\nART_DIRECTION pillar 2 is 'one colour per face', and this is the one surface that now is not. It is a gradient, not a texture, and it is Matt's call (hard rule 9); DEV-320 has the argument. Live: a flip re-bakes on the next frame, so ?feature=render.smoothSky:off is the A/B against the faceted sky."
+    },
+    "sunHeight": {
+      "enabled": true,
+      "softMetres": 0,
+      "note": "DEV-116, Matt 2026-09-15: “an island that looks lit from far away is actually in shadow when inspected up close.” That is the shadow map's box: DEV-086 draws one map on +-700 m around the camera and three answers LIT for everything outside it, so a far island is lit by definition and turns shadowed the moment you fly into the box - the same shape Unity's shadowDistance had, and the reason cockpit and world could never both be right in one map. This is a SECOND term with no per-frame cost: the mission sun never moves, so sim/terrain/sun-height.ts sweeps the collision field once and records, per texel, the height below which a point is in terrain shadow and, SIGNED, how far the ground itself sits below that top (negative where the sun ray cleared it); every lit fragment takes it. The LAND is judged by its texel's signed depth and nothing else; the sea, the props, the racers and the cockpit compare their own world height against the top under them (lowered by the land's jitter so a palm's foot on a lit facet stays lit). Exact for terrain at any distance; the realtime map takes the MINIMUM with it inside its box (a boulder's shadow, the ship's, the detail ring's facets are still the map's), and beyond the box this is the only term. softMetres is the fade WIDTH - metres of depth for the ground, metres of height for everything else - floored at one pixel in the shader, so 0 is an anti-aliased hard edge. DEV-133, Matt 2026-09-16: “there are spots where it's pretty ugly … the shadows looking soft and that colliding with the overall terrain aesthetic.” Photographed at eighteen stands on int_01: DEV-116's 3 m fade was CENTRED on the top, and on lit ground the top IS the terrain the jittered mesh straddles, so every lit facet averaged 0.51 of the sun with per-vertex noise (measured over 2,575 texels). That smudge is gone by construction with the signed depth; what the number now chooses is only how soft a terrain shadow's edge is where the map is not drawing it, and the register wants a crease: 0. A headset that sees the far edge shimmer turns this up first - 1 is 14 m of ramp along flat ground under int_01's 4-degree sun, 3 is 43 m. Not gated on quality - one RG16F fetch per fragment."
+    },
+    "cloudShadow": {
+      "enabled": true,
+      "strength": 0.8,
+      "minSunElevation": 1.5,
+      "note": "DEV-585, Matt 2026-10-03: \"We should have clouds and their shadows in vr / Classic no.\" Every lit thing (ground, sea, props, racers, the cockpit) loses the direct sun under a cloud, through far-shadow's own term. The clouds are projected ALONG THE SUN onto y = 0 once per mission from the placements in force (render/cloud-shadow.ts), so there is no cloud-layer height to get wrong: int_01's nineteen sit 539 to 1,382 m up, and one layer would misplace some cloud's shadow by ~6 km at 4 degrees. Hard edged (the coverage is thresholded, never blurred), and the wind is a uniform offset, never a redraw. THE TWO TO ARGUE WITH: strength 0.8 (a cumulus takes most of the direct sun; ambient and sky light are untouched, so a cloud's shadow is never black) and minSunElevation 1.5 degrees (off at 1.5, full at 3, so int_01's 4-degree sun gets its long bands at full strength and int_02_hoverJet's 0.08-degree sun gets none). NOT in vr.disable, on Matt's words; a worn ?perf=1 capture is the open gate (C5 in docs/plan/ULTRA.md is whether int_01's bands stay)."
+    },
+    "canopyShade": {
+      "enabled": true,
+      "radiusScale": 3,
+      "saturation": 1,
+      "strength": 0.8,
+      "note": "DEV-295, wishlist #13. Matt: “on alpine, the grass under thick forests is the same color as an open field. my goal is to make it darker under the thick forest.”\n\nIt is a RESTORATION, which is the strongest thing about it and the reason it may touch the DIRECT sun as well as the ambient. When this landed, render.props.scatterShadows was FALSE on both presets (DEV-224), so a tree, a cactus or a bush cast nothing on the ground it stands on — that was worth doing, since the scatter is 88-93 % of desert's and alpine's world pass, and this puts the difference back for no second texture fetch, in the spare channels of DEV-116's sun texture. Nothing else darkened that ground, so there was no live shadow to double.\n\nDEV-304 TURNED scatterShadows TRUE IN FLAT and that premise is now conditional, so the DIRECT half of this multiply is weighted by render/shadows.ts's canopyDirectWeight and hands over to the map when the map has it. The INDIRECT half never hands over — a shadow map does not touch ambient or hemisphere light — so the numbers below are still the numbers, and they are still judged with scatterShadows off (?feature=props.scatterShadows:off), which is what a headset ships.\n\nDEV-296 GENERALISED IT. The MAPS needed nothing: the sweep reads its grid from the land's own height field rather than assuming one, so all four environments worked on the first run — kauai's 1025-square grid at a 4 m step included, every one with ZERO off-grid. The PROPS needed a second path, because a prop stands IN the thing shading it: the texel's fourth channel carries the canopy CEILING and a prop's shading ramps out over the last six metres below it, so a lone tree is dark at the trunk and lit at the crown. Not on the sea, the racers, the ship or the cockpit.\n\nDEV-297 IS WHERE THE NUMBERS BELOW COME FROM, and it corrected the model rather than the tuning. Matt, circling two isolated trees on an open slope: “i'd expect the ground in areas like where i've circled to be darker.” It could not be. The kernel was AREA-PRESERVING — normalised to lay down a fixed integral however it was sampled — which makes density meaningful and makes a lone prop's patch impossible, because spreading a fixed integral over a wider disc lowers its peak. Raising radiusScale made every tree's shade broader and FAINTER. The kernel now peaks at a full unit under a canopy that covers at least a texel, capped by area below that, so the shrub-versus-oak bug the normalisation was introduced for stays fixed and a lone tree finally darkens the ground it stands on.\n\nRADIUSSCALE 3: the contact patch is about three times the canopy's own half-width, which is what contact darkening looks like — the light reaching the edge has come a long way sideways. It sets the SIZE of the patch and no longer its depth, which is the whole of DEV-297.\n\nSATURATION 1: one canopy overhead takes 1 - 1/e = 63 % of strength, three overlapping take 95 %. Read directly off the units now that one canopy is 1. Lower makes a single tree darker; higher needs a thicket before anything shows.\n\nSTRENGTH 0.8 is the ceiling. 0 is the exact image before any of this landed, which is what makes the whole feature safe to ship before it has been flown.\n\nWHERE TO JUDGE IT: alpine and desert. Measured at the alpine start from the player's own height, against the same frame with the feature off — mean darkening 29.3 of 255 against the 6.3 the first shipped build managed, at the camera Matt was looking at when he said he could not see it."
+    },
+    "skyVisibility": {
+      "enabled": true,
+      "sky": 0.25,
+      "bounce": 3,
+      "note": "DEV-333, docs/plan/SKY-VISIBILITY.md. Matt, 2026-09-23: “right now the shadows are very dark”, “mesa canyon is a good example”, and he chose BOUNCE over a flat lift or plain sky visibility. A shadowed canyon wall facing a sunlit one now gets that wall's own lit colour back; a pocket under a shadowed ridge gets nothing. BOUNCE 3 is Matt's pick (2026-09-23, from the off / 1 / 2 / 3 sheet on rookie_02's canyon stands): 1 is the physical single bounce off the colour map's albedo, and 3 stands in for the many bounces a real canyon has. Darkest quarter of the narrow canyon frame 4.6 -> 11.4 of 255, the open canyon 17.9 -> 38.0; the brightest quarter moves under 3 levels. SKY 0.25 is deliberately low: V only darkens, and 6a measured that the colour maps already carry 5 % (desert) to 46 % (kauai) of it in the albedo. SKY is still a starting value, to be photographed on kauai and alpine; 0 and 0 is the exact image before this landed."
+    },
+    "horizonGeo": {
+      "enabled": true,
+      "note": "DEV-119, Matt 2026-09-16: 'our game could use horizon geo similar to what we do in king-tide.' 2016 had none - at 9:25 of the gameplay video the faceted dome comes down to a hard line where the matte sea vanishes into the fog. Two bands of paper-cut cards round the eye, one colour per card cut from the mission's own sky at the horizon (the dome's nine SH coefficients; the fog colour where a mission has none), darkened by `silhouette`, and left to the mission fog to dissolve. radius 5200 sits under the 6 km far plane from a 900 m seat (5,277 m to the base) and past a 4 km island from anywhere inside its 2 km boundary except the far side - see the ledger row for the intersection question. peakMetres 420 is 4.6 degrees of sky at that range, low on the horizon like a coast twenty miles off; silhouette 0.55 is king-tide's 0.45 lifted because our fog already takes a third of it at 5 km. THE TWO TO ARGUE WITH ARE radius and peakMetres, from the seat, in a headset.",
+      "radius": 5200,
+      "peakMetres": 420,
+      "silhouette": 0.55
+    },
+    "coast": {
+      "enabled": true,
+      "note": "shallows and a foam line at the join, from the island's own height map (V6, DEV-087). The depths are chosen as BAND WIDTHS on Simonet's measured 1:1 shore: 50 m of water is a mean 34.7 m of sea, about one ocean facet at ?ocean=8; 16 m is 8.5 m, about one land facet. The strengths are the two numbers to argue with, and the foam one is deliberately low — king-tide's overlays were authored at demo strength and read as allover noise on a lap WIDENED 2026-09-21 (DEV-274) on Matt's 'thicker shore ring': shallowDepth 50 -> 90 and foamDepth 16 -> 30, which is about 1.8x and 1.9x of the bands the original note sized against one ocean facet and one land facet. The STRENGTHS are deliberately unmoved -- 'thicker' is a width, and moving two things at once is how you learn nothing.",
+      "shallowDepth": 50,
+      "shallowStrength": 0.55,
+      "shallowColor": [
+        0.35,
+        0.76,
+        0.74
+      ],
+      "foamDepth": 30,
+      "foamStrength": 0.35,
+      "foamColor": [
+        0.92,
+        0.96,
+        0.97
+      ],
+      "foamBreakup": 0.6
+    },
+    "seaReflection": {
+      "enabled": false,
+      "resolutionScale": 0.5,
+      "note": "OFF since DEV-837 (Matt, 2026-10-08 playtest: the sea looked glassy; \"rather none, or fake them\"). The sea keeps DEV-021's per-facet SKY reflection, which is the fake: the sky's own colour at each facet's reflected direction, so the water reads as faceted paper rather than a mirror of the islands. The rest of this note is DEV-583's, kept because the machinery is intact and flipping this to true brings the mirror back. DEV-583, docs/plan/ULTRA.md. 2016's Water.mat carried V_LP_REFLECTIVE_REALTIME: a camera mirrored through the sea plane, so the islands, the clouds and the racers stood upside down in the water. DEV-021 kept only the sky, because in a headset the mirror is two more scene renders. This restores it on a MONITOR under the ultra tier and nowhere else: render/sea-reflection.ts renders the mirror only while ultraFor(settings, presenting).seaReflection is true AND this flag is on, and ultraFor is null while presenting, so a headset never draws it (it is also in vr.disable, belt and braces). The tint and strength (_ReflectColor, alpha 0.5), the Fresnel (1) and the push (_ReflectionDistortion 0.3) are the sheet's. THE ONE NUMBER TO ARGUE WITH: resolutionScale 0.5, the mirror at half the drawing buffer per axis (a quarter of the pixels); the facets' push hides its softness, and 1 is the full frame."
+    },
+    "flatFov": {
+      "enabled": true,
+      "note": "the lens opens with airspeed, on the monitor only (S7, DEV-093). `base` is null, so it rests at the renderer's 70 and the 55-60 of section 1.5 item 8 stays Matt's call with a lookdev slider on it. The curve's x are the game's own speeds off the generated sheet: 90 is terminalSpeedCruise (89.81, unboosted), 120 minBoostEffectsSpeed, 180 terminalSpeedBoost (179.62, exactly twice cruise), 240 stage 2, 340 where the audio curves stop. So the ship rests at 70 at cruise and reaches 75 at the boosted terminal on a straight — a 5-degree, 7 percent open, the standard racing cue. 240 needs the boost AND a speed chain of about seven gates (18 N a gate on a 437.5 N thrust, and terminal is proportional to thrust), and 350 would need about twenty-three, which no 21-gate course can give — so the top of this curve is a guard rail, not a destination. The numbers to argue with are the 5 at 180 (the only one a player holds for seconds at a time) and the 2.5x attack-to-release ratio, against Boost_FOV.cs's own 1.25x",
+      "base": null,
+      "addBySpeed": [
+        [
+          90,
+          0
+        ],
+        [
+          120,
+          1.5
+        ],
+        [
+          180,
+          5
+        ],
+        [
+          240,
+          7.5
+        ],
+        [
+          340,
+          9
+        ]
+      ],
+      "attackSeconds": 0.22,
+      "releaseSeconds": 0.55
+    },
+    "clouds": {
+      "enabled": true,
+      "note": "clouds that are clouds (V5, DEV-090): a soft terminator, a lit rim where the sun is behind them, a slow wind, and 2016's nineteen grown and lifted. wrap 0.5 lifts the shaded half by up to a third of a fully lit face — 1.0 is the full half-Lambert and flattens the form to a white blob, 0 is the boulder. THE ONE TO ARGUE WITH IS scaleMultiplier: 1.35 takes int_01's nineteen from 181.7-893.2 m across to 245-1206, and it is the only key here that changes what 2016 authored rather than how it is lit. drift is 3.5 m/s, which moves a cloud 256 m over int_01's 73-second lap and 630 m over the 180-second clock — less than one mean cloud width (693 m after the multiplier), which is the argument for the number  --  singleSided: Cull the back faces (DEV-276). Matt, 2026-09-21: \"it'd be nice if ... the cloud geo would be hidden (or at least not double-sided).\" This is the second half of that sentence and it delivers the first half for free - with back faces culled, a cloud you are INSIDE draws nothing, because every face between you and the world is a back face. No per-frame containment test, no bounding sphere that fits a lobed blob badly, and no tuning number nobody can check. What it COSTS is the thing DoubleSide was added for: at a grazing angle the far side used to show through the gaps between knots, and without it a thin edge can read as a hole punched in the cloud. That is the trade Matt named himself, and it is the number to argue with from OUTSIDE a cloud at a shallow angle - int_01's 4-degree sun is the worst case for it. Also halves what the rasteriser does on nineteen hulls, on a frame that is 75 % fill.  --  WHAT THE 'CLOUD VFX' WAS, and Matt's call on it, 2026-09-21. He described what he saw: 'i think what i experienced was like i was inside a dense fog, then came out of it.' THAT IS THIS GEOMETRY. An opaque near-white hull with an emissive floor, enveloping the camera, reads as dense fog; coming out of it is the far side passing you. So the effect he called rad was never a missing feature waiting to be built - it was this mesh seen from inside, and culling the back faces removes it. Wishlist section 2b asked what the effect was; this is the answer, and it closes that blocker.  Matt, told exactly that: 'keep it single sided and we'll add particles later.' So the hull stops standing in for weather and a deliberate effect takes the job - which is the right shape, because an opaque mesh doing fog by accident cannot be tuned, cannot 'hit faster' on entry, and shows faceted polygons through itself, all three of which were his complaints about it.  THE GAP IS DELIBERATE AND IS NOT A BUG: until those particles exist, flying into a cloud on Anniversary shows NOTHING. Classic keeps the whiteout (singleSided false), so the two presets differ on this and that is on purpose. Anyone surprised by an empty cloud interior should read this note rather than reach for the flag. DEV-276.",
+      "wrap": 0.5,
+      "rimStrength": 0.9,
+      "rimPower": 3,
+      "sunTint": 0.7,
+      "emissive": 0.3,
+      "scaleMultiplier": 1.35,
+      "altitudeLift": 250,
+      "driftSpeed": 3.5,
+      "driftDirection": [
+        0.8,
+        0,
+        -0.6
+      ],
+      "singleSided": true,
+      "whiteout": 0.8,
+      "whiteoutRelease": 0.6,
+      "poolSize": 12,
+      "tintSpread": 0.08
+    },
+    "bloom": {
+      "enabled": true,
+      "note": "2016's bloom, on the flat build (V2, DEV-091). NEVER while presenting, and that is FAITHFUL rather than a compromise: the component sat on Main Camera under Mono_Cam and CameraMode.cs boots with a private static vrMode = true, so the headset never saw it. The VR variant V2 offered instead IS built now, as vrHalo below (DEV-336, Matt 2026-09-23: \u201ci also didn't see bloom working in vr\u201d, \u201cif there's a cheap way to do it, let's do it\u201d): additive halo billboards on the gate studs (one instanced draw sharing the studs' own matrices) and on the sun (one quad), drawn only while presenting. STUD 1.2 x the stud's own scale at 0.2 was chosen against this bloom's own frame on int_01 at 25 s, where 2.5 and 0.35 read as orbs rather than a glow; SUN 5 degrees at 0.3 is a first guess nobody has seen yet. All four are for the headset to judge.\n\nTHRESHOLD 1.0, and 2016's was 0.63, a deliberate deviation with a measurement behind it. The quantity is the same (Rec.709 luminance, linear, white = 1.0): three applies renderer.toneMapping only when the destination is the canvas or an XR target, so the scene writes untone-mapped linear radiance into the composer's target and OutputPass puts ACES on at the end. What changed is the SOURCE. 2016's framebuffer CLIPPED at 1.0, so everything from 0.63 up was on its way to flat white and the bloom is what gave that white a shape; the Anniversary preset has a tone curve (DEV-081) and no longer clips, so 0.63 now fires on ordinary sunlit ground that 2016 rendered featureless. Measured on int_01 at 20 s off the Classic frame, which is saturate(linear) and therefore readable back: 11.54 % of pixels are at or above 0.63 and only 6.14 % are fully clipped. Reproducing the number reproduced the wrong picture: a milky wash over the cliffs and the sea, photographed. The quantity that carries over is 'brighter than the old buffer could hold', and that is 1.0.\n\nSTRENGTH 0.3 NOW (DEV-656, Matt 2026-10-05, 'go with your recs' to the consultant review: the flat game's glow is a thing the HUD of a broadcast would want, not a sludge risk with the threshold where it is). It was 0.1, and the reasoning below is the reasoning for 0.1, kept because it is how the number was reached. Same-tick photographs at 0.1, 0.2, 0.3 and 0.4 on int_01 at 8, 22 and 40 s: at 0.3 the studs and the speed streaks glow wider, the distant gate frames still read as separate rings, and the terrain's creases are as crisp as with bloom off; 0.4 starts to lift the haze at the gate close up, so 0.3 is where it stops. The paragraph that follows was written for 0.1. STRENGTH 0.1 WAS, and 2016's intensity was 0.53, not the same dial. three composites bloom = 3.0 * strength * sum(lerpBloomFactor(f_i) * mip_i) and adds it, and the five weights sum to 3.0 at EVERY radius (the mix preserves the sum), so on a bright region larger than every kernel the added light is 9 * strength * L. The strength that matches 2016's intensity * L there is 0.53/9 = 0.059. 0.1 is above that on purpose: what the eye reads is the HALO around a small bright thing rather than the lift on a large one, and a ring stud, the sun disc and a 6 cm speed streak are all far smaller than the five kernels (about 12 to 1,400 frame pixels across). Measured against the same frame with bloom off: mean +0.044 sRGB luminance over the whole frame, +0.050 on the sea glint, +0.006 on the sunlit hillside faces. THIS IS THE NUMBER TO ARGUE WITH, against the 40 s frame, which is what the feature is for: the ring studs glow the way 2016's did, and that glow is exactly what PORT_PLAN section 6.1 priced the cut at.\n\nRADIUS 0.1, tight. 2016 ran ONE blur iteration at blurSize 1.2 on its own downsampled buffer: a glow that hugs the bright thing, not a halo across the screen. radius does not change how much light is added, only how WIDE it is spread, and the widest of three's five mips has a blur footprint of about 700 frame pixels. Low is both the faithful shape and what keeps the sea's glint off the cliffs behind it.\n\nRESOLUTIONSCALE 1, which is already section 3.2's half-res bloom: UnrealBloomPass halves whatever it is handed before the first mip.",
+      "threshold": 1,
+      "strength": 0.3,
+      "radius": 0.1,
+      "resolutionScale": 1,
+      "vrHalo": {
+        "studRadius": 1.2,
+        "studIntensity": 0.2,
+        "sunAngleDeg": 5,
+        "sunIntensity": 0.3
+      }
+    },
+    "thirdPerson": {
+      "enabled": true,
+      "note": "the SPRING on the third-person view: pad X (2016's CHANGE VIEW), V, or the CAM chip, flat build only (DEV-128, arm re-derived in DEV-150). CLOSER THAN 2016 SINCE DEV-357 (Matt, 2026-09-24: 'i'd love to be closer', then about two thirds): the arm is 8 m and the lag cap 3.5 m, about 11.5 m at cruise against 2016's ~18.5. What follows is the 2016 derivation the old 12.5 m and 6 m came from, kept because it is still what Classic flies. The arm WAS 12.5 m because that is 2016's OWN arm. The shipped `CamRoot_3rdPerson` on `Resources/PlayerShip_SR14_Photon.prefab` carries a LIVE SmoothTransformConstraint (m_Enabled 1, whole m_Father chain m_IsActive 1) chasing a transform called `cam target 3rdPerson` at (0, 1.700, -12.500) in ship-root space, with `position_interpolation: 2` (DampLimited, i.e. Vector3.SmoothDamp) and `positionSpeed: 0.066` as SmoothDamp's smoothTime; 8.89 m is only where `CamChanger` PARKS the rig, not where the camera sits, so 2016's third person was never rigid. positionLagSeconds is 2016's own 0.066. At cruise this arm is 12.5 m plus the lag capped at 6 m, about 18.5 m, and the four third-person 2016 Steam shots measure the ship's 6.1654 m beam at 11.4-13.0 percent of the frame width, which through Unity's projection at the traced vfov 75 puts 2016's own camera at no more than 17.6-19.8 m (DEV-150). maxLagMetres 6 is the one deviation and it is deliberate: 2016's cap is 45.9 m, which is no cap, and a boost from rest would take the ship out of frame. 9 degrees of arm and -6 of aim put the ship 41 percent down from the top of a 70-degree lens (2016: 42-48). rollFollow 0.35 is a third of the bank on the horizon: the Riders Republic cue without the nausea of a welded camera. The fov curve is HALF of `flatFov.addBySpeed`'s shape at the top and it is multiplied by the speed-FX slider, so `off` is exactly the resting lens. The number left to argue with is rollFollow. king-tide's chase camera (offset (0, 1.1, -3.7), damping 12, no probe, no fov) is the nearer relative and this is the more complete arm",
+      "armLength": 8,
+      "minArmLength": 4,
+      "pivotOffset": [
+        0,
+        1.5,
+        0
+      ],
+      "armPitchDeg": 9,
+      "aimPitchDeg": -6,
+      "positionLagSeconds": 0.066,
+      "rotationLagSeconds": 0.28,
+      "maxLagMetres": 3.5,
+      "pitchFollow": 0.6,
+      "rollFollow": 0.35,
+      "probeRadius": 1.5,
+      "fovAddBySpeed": [
+        [
+          90,
+          0
+        ],
+        [
+          120,
+          1
+        ],
+        [
+          180,
+          5
+        ],
+        [
+          240,
+          8
+        ],
+        [
+          340,
+          10
+        ]
+      ],
+      "hudOffset": [
+        0,
+        -0.5,
+        -1
+      ],
+      "hudScale": 1.5
+    },
+    "racerLivery": {
+      "enabled": true,
+      "note": "DEV-350. Matt, 2026-09-24: \"replace ai 'ghosts' as ai 'racers' - solid shaded, different coloration than the player's orange hoverjet.\" TRUE: the racers wear the player's own hull and lambert1, opaque and lit, each livery turned to its own colour through the channel the orange lives in -- the VERTEX colours (render/racer-livery.ts). That is what 2016's own AI racer prefab (GhostRacer.prefab) was: hoverJet_exterior_blue.fbx under the player's lambert1.mat, opaque. PALETTE, DEV-350 follow-up (Matt, 2026-09-25: \"go with bright rainbow colors for our color palette\"): a rainbow with the ORANGE taken out, because the orange is the player's. In racer order -- fast, steady (the two 2016 pads), then cutter, wide, cruiser (the slots), and a sixth for a sixth ship: red #ff1f4b, yellow #eef91f, green #1ad132, cyan #129fde, blue #0f64bd (GhostRacer's own hue, 210.8 degrees, more saturated), violet #9637e9. The accents are repainted with the panel (Matt's call on DEV-350's two-tone question). Measured in OKLab against the player's orange panel, under neutral light, under int_01's sun as the port drew it before DEV-454, AND under the 2016 sun (DEV-454's colorLinear) of every mission a racer flies, each luminance-normalised: every colour at least 0.15 from the orange, which is where DEV-350's magenta already sat, and every pair at least 0.15 apart. DEV-462 (Matt, 2026-09-27: \"go with your rec\"): the rainbow was designed under the paler sun, and 2016's orange light pulled green and cyan together -- 0.116 on int_01, and 0.039 on rookie_01, whose sun has almost no blue in it -- and put the violet 0.115 from the orange there. So the cyan moved toward blue (186 -> 198.5 degrees, still cyan by name), the blue deepened to keep that pair apart (HSL lightness 0.52 -> 0.40, same hue), and the violet stepped off the orange (275 -> 272 degrees, lightness 0.60 -> 0.565). Nearest now: violet to the orange 0.160 and green to cyan 0.161, both under rookie_01's sun; red to the orange 0.169 in neutral light. The red is pushed to 348 degrees, crimson, away from the orange; the yellow to 63, because at 55 it falls inside the painter's own 30-degree livery band. THE COST, stated: to a protanope red and orange are one colour (0.027), which no rainbow can avoid; DEV-350's palette kept every colour 0.07 clear for every eye. The title's flypast jets take the first two. The one number to argue with is any triple here; a seventh racer wraps to red.",
+      "palette": [
+        [
+          1,
+          0.12,
+          0.296
+        ],
+        [
+          0.9347,
+          0.9775,
+          0.1225
+        ],
+        [
+          0.1012,
+          0.8188,
+          0.1969
+        ],
+        [
+          0.0705,
+          0.6231,
+          0.8695
+        ],
+        [
+          0.06,
+          0.3909,
+          0.74
+        ],
+        [
+          0.5882,
+          0.217,
+          0.913
+        ]
+      ],
+      "shadow": {
+        "enabled": true,
+        "note": "DEV-350. TRUE: the solid hulls cast into the sun map, as the player's hull does -- 2016's GhostRacer hull is m_CastShadows 1. Measured on int_01 at a frozen 10 s frame: 15 depth draws and 17.4 k triangles (306 -> 291 calls with it off). NOT in vr.disable, because that is a handful of draws against the thousands of instances props.scatterShadows puts in the same pass -- a count, not a millisecond, so the worn capture is the check."
+      }
+    },
+    "sceneTint": {
+      "enabled": true,
+      "note": "DEV-446. Matt, 2026-09-27: \"would like to be able to 'tint' the overall scene color - similar to how i did in 2016.\" 2016 had NO scene-wide tint: no camera on the shipped rig (Cameras_gameplay.prefab) carries a colour grade, curve, lookup or overlay, and the thirteen missions' m_Modifications put no colour on it (DEV-446 has the walk). What 2016 authored per scene was the fog, the sun, the sky's grey _Tint and the terrain's _Color, all ported. So this is Anniversary's own tool, ON with a NEUTRAL default and NO missions: not a pixel moves until one is authored. A value is { color, strength }: the displayed world is multiplied by mix(1, color / luma(color), strength) per channel -- a luma-preserving filter, so the colour's hue and saturation are what it tints toward and its brightness does not matter (the frame's level is render.exposure's job). Keyed by level id, because 2016's mood levers (fog, sun, sky) were per mission; `default` covers every level not named. AUTHOR IT with ?lookdev=1 on the mission: pick a colour, drag strength, Copy JSON, paste under `missions`. Drawn as one blended full-screen quad and ONLY while not identity, so as shipped it costs no draw and no fill. The one number to argue with is any mission's strength.",
+      "default": {
+        "color": [
+          1,
+          1,
+          1
+        ],
+        "strength": 0
+      },
+      "missions": {}
+    }
+  },
+  "fx": {
+    "speedLines": {
+      "enabled": true,
+      "note": "the 2016 tube, re-authored so it reads: wider, soft-edged, a dark core (S2)",
+      "widthScale": 5,
+      "alphaScale": 1.3,
+      "softEdge": true,
+      "coreDarkness": 0.45,
+      "tubeLift": 6.6
+    },
+    "speedRamp": {
+      "enabled": true,
+      "note": "DEV-351. Matt, 2026-09-24: 'our speed lines particle fx are pretty binary. it'd be nice if they ramped in both in numbers, transparency, and speed.' 2016 plays exactly ONE boost system at a time, cut at the prefab's 120 / 240 / 350 m/s: nothing at 119, 75 streaks a second at 120; at 240 the tube jumps from a 4.6 m shell riding the ship to an 8.1 m shell left in the world, doubles its count, and its streaks go from about 170 m/s past the eye to about 615. This crossfades the three by EMISSION RATE instead: each stage is 2016's own, alone, at the middle of the band 2016 gave it (180, 295 and 393.75 m/s, all off the sheet), and between two middles the count runs straight from one authored rate to the next (75, 150, 300) while the outgoing stage's streaks finish their lives. The 50/50 points land at 237.5 and 344.4, within 6 m/s of 2016's cuts. Below 180 the first stage RAMPS IN from `onsetSpeed`: its rate from nothing, its alpha from `alphaFloor` and its spawn speed from `speedFloor` (the streak's drawn LENGTH is computed from its speed, so it shortens too), all three reaching 2016's own numbers at 180. No multiplier ever exceeds the sheet. 60 is not a guess about taste: it is 120 - (180 - 120), which puts the ramp-in's halfway point ON 2016's first cut, the way each hand-off's halfway point sits on (or within 6 m/s of) the others. The floors ARE guesses, and they are the numbers to argue with, from the cockpit, through an acceleration: 0.35 so the first streaks are visible rather than notional, 0.6 so they are slower without hanging in the air: at 0.6 about half of stage 1's streaks still reach the eye before they die, against about 72 % at the authored speed (the sheet's speed and lifetime ranges against the 100.2 m from the emitter to the eye; tests/unit/speed-line-ramp.test.ts integrates it). Off at the speed-FX slider's 0 like S2, so 'off' means one thing; drawn WHOLE at light and full, because a half-ramp is a half-cut and light is the default setting. game/speed-line-ramp.ts is the arithmetic.",
+      "onsetSpeed": 60,
+      "alphaFloor": 0.35,
+      "speedFloor": 0.6
+    },
+    "wingTrails": {
+      "enabled": true,
+      "note": "DEV-358 and its follow-up. Matt, 2026-09-24: 'particle trails on the wing-tips once we're at a decent speed (show them on the ai racers as well)', then 'lightly tinted each racer's own color it'd be great if they glowed. add a trail to the player in third person.' Two ribbons per HoverJet from the tips' trailing corners, measured off the hull (render/wing-trails.ts). 'Decent' is the speed the engine holds on its own: whole at the unboosted terminal speed (derived.hoverjet.terminalSpeedCruise, 89.8 m/s), nothing the boost's own factor of two below it (44.9), a smoothstep between, off the sheet. DEV-358 had them whole only at full BOOST, so a player who does not hold boost, flying at 89.8, made no vapour at all: that is why Matt asked for a trail the player already had. TINT 0.35 toward each craft's own livery at full brightness (the racers' palette, the player's orange): mostly white, no channel below 0.65, and charcoal, which has no hue, stays white rather than reading as smoke. GLOW 4: the centre line is an HDR colour, and at the default slider (alpha 0.5) its luminance over black is 1.3 (magenta) to 2.0 (white), every craft above the bloom's threshold of 1.0; the halo (35 % at the core's edge, falling to nothing at the glow's edge, the core 30 % of the width) is geometry, so a headset, which has no bloom, still sees a glow. MAXWIDTHDEG 0.8: the ribbon never subtends more than 0.8 degrees at the eye, which keeps the player's own trail, streaming back past the chase camera at 3-7 m, a thin bright line rather than a band from the frame's corners; DEV-358's 10 m near fade did that job by fading the whole of it, so it is 2 m now, for a ribbon through the eye. ALPHA 1 at full (0.5 at light, the default). The player's own show FROM THE SEAT TOO since 2026-09-25 (fromCockpit true; Matt: 'i wanna see the wing tip trails from the cockpit'): measured at cruise on int_01, every point of the ribbon is 105 to 174 degrees off the nose and at least 3.0 m from the eye, so from the seat it is over your shoulder, never in the forward view, never wider than the 0.8-degree cap and never inside nearFade. What reads from there is a short bright stub at each tip: the cockpit's own sill hides the rest (wing-trails.spec.ts, the seat arm; DEVIATIONS DEV-358 follow-up of 2026-09-25). tint, glow, alpha and maxWidthDeg are first guesses from a flat burst: the numbers to argue with, on a lap.",
+      "seconds": 0.3,
+      "startWidth": 0.3,
+      "endWidth": 0.8,
+      "alpha": 1,
+      "minVertexDistance": 0.5,
+      "nearFade": 2,
+      "tint": 0.35,
+      "glow": 4,
+      "core": 0.3,
+      "halo": 0.35,
+      "maxWidthDeg": 0.8,
+      "fromCockpit": true
+    },
+    "motes": {
+      "enabled": true,
+      "note": "the near-field air, scaled by the speed FX comfort setting (S1). count HALVED 1400 -> 700 by DEV-525 (Matt, 2026-09-29, 'sounds good' to NEXT.md P1 #7): the art-director read found the motes beating pillar 1 (silhouette at speed) - a blizzard in chase beside int_01's cliff at ~37 s, over the gates from the seat. count is the one number moved; aheadBias (whether they park in the sightline) and alpha are untouched and are the next two to argue with",
+      "count": 700,
+      "innerRadius": 3.5,
+      "outerRadius": 55,
+      "size": 0.07,
+      "stretchSeconds": 0.006,
+      "alpha": 0.5,
+      "minSpeed": 20,
+      "fullSpeed": 160,
+      "aheadBias": 0.8,
+      "colorLight": [
+        0.85,
+        0.89,
+        0.96
+      ],
+      "colorDark": [
+        0.12,
+        0.14,
+        0.18
+      ]
+    },
+    "ringBurst": {
+      "enabled": true,
+      "randomDirection": 0.25,
+      "note": "The gate burst, pointed back at the player (DEV-272). Matt, 2026-09-21, from the cockpit: 'i don't see them. maybe they're oriented the wrong direction? it should be a spray in the direction of travel, but it's not.'\n\nCORRECTED 2026-09-23 (DEV-304's session, found by `particles-p3` against the raw Unity YAML). This note used to build its argument on a coneShell at 7.78 degrees, and THAT EMITTER DOES NOT DRAW. Read the next sentence carefully, because two different things are called ringBurst: THIS BLOCK is the preset flag and it is live; the 2016 EMITTER named `ringBurst` on Checkpoint_Ring.prefab is `active: false, emits: false`, and so is `ringIdle`. The wishlist's section 2 P2 table has the same error. The live six are ONE 18.9-degree one-shot cone, ONE circleEdge one-shot, and FOUR continuous sprays, two of them at ZERO degrees.\n\nTHE CONCLUSION GETS STRONGER, WHICH IS WHY THE NUMBER DID NOT MOVE. `randomDirection` was read as replace-the-cone-with-a-uniform-sphere, and a sphere is about 60x the solid angle of an 18.9-degree cone and UNBOUNDEDLY more than a zero-degree one -- a 0-degree spray scattered over a whole sphere is a worse ratio than the 7.78-degree cone this note used to cite. The same particle count arrives at a tiny fraction of the density in the direction you are looking, and THAT RATIO IS THE COMPLAINT.\n\nWHAT A READER SHOULD GO AND LOOK AT DOES CHANGE, and this is the part the old note got wrong in a way that would cost somebody a session: with the two burst emitters dead, this number mostly moves the gate's PERMANENT SPRAY rather than the fly-through flash. Tuning it against the flash is tuning against something that does not exist. Judge it on the ring you are approaching and on the four continuous sprays, not on the quarter-second as you pass.\n\n0.25 blends the random direction a quarter of the way from the authored cone rather than replacing it: enough spread that a spray does not read as a laser, with most of it back in front of you. IT IS A FIRST GUESS AND IT IS THE NUMBER TO ARGUE WITH, and it has to be argued FROM THE COCKPIT AT SPEED. 0 is the authored cone exactly; 1 is Classic, which is the port's own long-standing behaviour to the bit.\n\nWhat this does NOT touch: the circleEdge one-shot has `randomDirection` false, so it sprays radially outward in the plane of the ring BY DESIGN and is unmoved at any value. Part of what reads as sideways is 2016, and it stays.\n\nNot on the speed-FX comfort slider, deliberately. This is not vection - it is whether an effect is pointed at you - and a player who turned vection down did not ask to stop seeing the gate they just flew through."
+    },
+    "gatePulse": {
+      "enabled": true,
+      "note": "the gate pass as an EVENT (S6, DEV-108). 2016's one-shot ring burst and S4's whoosh already fire from this call site; this is the third channel. S6 is the one Anniversary proposal with no 2016 behaviour under it at all, so there was nothing to be faithful to — but two of these numbers are measured rather than guessed, and the measurement is the reason they are not S6's own. PHOTOGRAPHED on int_01 at 178 m/s: the gate that fires the pulse FILLS THE PERIPHERY for the first ~0.09 s of it (a frame at the crossing is green to all four edges, and one 0.09 s later has clear sky there), so S6's 0.2 s at a squared decay would spend about seventy per cent of its light behind the object that triggered it — rendered, not reviewed, which is DEV-044's whole lesson. Hence 0.4 s and a LINEAR fade: what you see is the gate's own green persisting and dying away as the gate leaves, which is the effect described. Gates on int_01 are about 3 s apart at speed, so 0.4 s is still punctuation. The SHAPE is not a guess either: the band starts at 0.42 and is full only at 0.62, past the edge midpoint, so the central 84 % of the frame's width and height is untouched at any strength — research 05 R7 allows a pulse at the periphery and nowhere else, and `edition-schema.ts` refuses an innerRadius below the aperture the STRONGEST comfort vignette blacks out. The colour is the ring's own `frameGlowColor` off the generated sheet (0.537, 1, 0.559) brought 35 % toward white. gainBySpeed is `audio.speedCurves.gateWhooshGain`'s breakpoints, copied deliberately: one event, two channels, one shape. THE NUMBER TO ARGUE WITH IS strength — 0.28 is a peak alpha at the outermost pixel before the speed curve (0.74 at 178 m/s) and the comfort slider, so a full-slider gate at speed washes the frame's corners by about a fifth. Shoot it with AB_AT=13.56 AB_SPEEDFX=full on int_01, which is 0.09 s past the fifth gate; the second question is whether 14 wedges read as air or as a shutter",
+      "strength": 0.28,
+      "seconds": 0.4,
+      "decayShape": 1,
+      "innerRadius": 0.42,
+      "feather": 0.2,
+      "streaks": 14,
+      "streakDepth": 0.55,
+      "tint": 0.35,
+      "gainBySpeed": [
+        [
+          40,
+          0.25
+        ],
+        [
+          120,
+          0.6
+        ],
+        [
+          240,
+          0.9
+        ],
+        [
+          340,
+          1
+        ]
+      ]
+    },
+    "waterSpray": {
+      "enabled": true,
+      "note": "DEV-429, NEXT.md P3 #2, water first. Matt, 2026-09-26: 'plz continue the polish elements like water over the hull when going over water'. A HoverJet within heightMetres of the VISIBLE sea (the ocean's field plus this frame's bob; the per-vertex chop, up to 4 m, is not modelled) and over sea (the ocean's field above the island's) throws paper droplets up from its HULL: lift m/s within angleDeg of vertical, plus carry of its own velocity. Born at the hull and not at the modelled sea, because the chop buried them there (98 alive, none on screen); a ship this low is skimming the water you can see, at rate x closeness x a smoothstep from minSpeed to fullSpeed x the speed-FX slider, because spray streaming past the hull is vection (ART_DIRECTION). colour is render.coast's foamColor typed again. The JumpSeat has 2016's own ground_fx and gets none; the racers get none (an emitter each is the next step). heightMetres is THE NUMBER TO ARGUE WITH; every number is a first guess in DEV-080's sense.",
+      "heightMetres": 8,
+      "minSpeed": 30,
+      "fullSpeed": 120,
+      "rate": 400,
+      "carry": 1,
+      "lift": 20,
+      "angleDeg": 40,
+      "radius": 3,
+      "lifetime": 0.8,
+      "size": 0.45,
+      "gravity": 1,
+      "drag": 1,
+      "colour": [0.92, 0.96, 0.97],
+      "shade": 0.8
+    },
+    "propBurst": {
+      "enabled": true,
+      "note": "DEV-428: what a struck plant that STANDS (gameplay.propCollision.strike) throws. `count` paper triangles from a ball of `radius` about the contact, `spread` m/s of scatter plus `carry` of the hitter's velocity, in the prop's OWN face colours: the vertex colours of the geometry it is drawn with, area-weighted, from the faces within colourBand of the height it was struck at (the crown throws leaves, the foot bark), times shade. They tumble, the air takes their speed (drag) and they fall at `gravity` g, growing in and shrinking out over `lifetime`. Paper, not light: a prop does not glow (ART_DIRECTION). The racers' strikes burst too, within maxMetres of the eye (a 0.45 m piece is about a pixel at 400 m); only the player's plays the sound. Not on the speed-FX slider: a burst is an event, like the gate's. HERE rather than in gameplay because every gameplay number is hashed into the lap rules (DEV-372), and a leaf's size must not reset a board. carry is THE NUMBER TO ARGUE WITH; every number is a first guess in DEV-080's sense. The sway Matt asked for is P4's aSway pipeline (NEXT.md P4 #3/#18) and is not here: the DEV-428 row says where it plugs in. DEV-529 (Matt, 2026-09-29, 'ok' to DEV-464's proposal): carry 0.8 -> 1 and drag 1 -> 0.5, so the pieces leave WITH the hull and ride the canopy instead of falling behind the eye in a tenth of a second; the before/after seat times are in the DEV-529 row.",
+      "count": 40,
+      "carry": 1,
+      "spread": 12,
+      "radius": 1.5,
+      "lifetime": 1.4,
+      "size": 0.45,
+      "gravity": 0.35,
+      "drag": 0.5,
+      "shade": 0.9,
+      "colourBand": 0.2,
+      "maxMetres": 400
+    },
+    "splash": {
+      "enabled": true,
+      "note": "DEV-613. Matt, 2026-10-03: 'can you spawn a \"splash\" particle fx when anything goes in or out of the water? i'm thinking i'd see it the most w/ dolphins land in the water, and if jets crash into the water'. Paper, like the spray (water does not glow): a CROWN of `crown.count` triangles thrown up and out from the rim of a disc, and DROPS, a narrower and faster cone from its middle; two fields, one draw each, one program (the spray's). A dolphin throws one where it leaves the water and one where it lands, at the DRAWN sea (its leap's two ends); a HoverJet, the player's or a racer's, throws one when its hull meets the sea (a contact over water deep enough to be sea) and one when it rises exitMetres back out, at most one per minSeconds. Size: body x sqrt(speed / refSpeed), within minScale..maxScale; a splash k times the size is k times every length (its height and its pieces) and sqrt(k) the time, which is how one splash looks under one gravity. outScale makes the way out smaller than the way in. A fixed pool of `emitters` splashes, the oldest giving way, so a pod leaping at once cannot add to the frame; none past maxMetres from the eye. Not on the speed-FX slider: a splash is an event, like the gate burst. maxScale (a crash) and dolphinBody are THE NUMBERS TO ARGUE WITH; every number is a first guess in DEV-080's sense.",
+      "emitters": 10,
+      "maxMetres": 700,
+      "refSpeed": 8,
+      "minScale": 0.4,
+      "maxScale": 8,
+      "jetBody": 1.6,
+      "dolphinBody": 1.3,
+      "outScale": 0.6,
+      "exitMetres": 3,
+      "minSeconds": 0.5,
+      "carry": 0.15,
+      "gravity": 1,
+      "drag": 0.6,
+      "shade": 0.85,
+      "crown": {
+        "count": 36,
+        "lift": 11,
+        "angleDeg": 18,
+        "radius": 1.4,
+        "lifetime": 1.1,
+        "size": 0.7,
+        "colour": [0.94, 0.97, 0.98]
+      },
+      "drops": {
+        "count": 20,
+        "lift": 15,
+        "angleDeg": 28,
+        "radius": 0.6,
+        "lifetime": 1.3,
+        "size": 0.4,
+        "colour": [0.8, 0.91, 0.94]
+      }
+    }
+  },
+  "cockpit": {
+    "shake": {
+      "enabled": true,
+      "startSpeed": 40,
+      "fullSpeed": 200,
+      "amplitude": 0.005,
+      "angle": 0.0036,
+      "stageGain": [
+        1,
+        1.35,
+        1.8,
+        2.4
+      ],
+      "frequency": [
+        4.7,
+        7.3,
+        11.1
+      ],
+      "note": "the cockpit mesh vibrates with speed and boost; the rig never moves (S3). Ceilings at the full slider: 12 mm and 0.5 degrees at stage 3, about 3 mm and 0.13 degrees at a 150 m/s cruise — and those are peaks of a mean-of-three-sines, so the felt size is ~0.41 of them",
+      "throttle": {
+        "fullThrottle": 1,
+        "boost": 1,
+        "topSpeed": 1,
+        "note": "ALL 1 SINCE DEV-528 (Matt, 2026-09-29): 'old jitter was better. (before my suggestion) - maybe i should just adjust the curve and then fine-tune later'. At 1 / 1 / 1 the weight is exactly 1 at every engine state, so the buffet is DEV-083's again, bit for bit (cockpit-shake.test.ts flies it). The mechanism stays, and so do these three numbers, as the curve to shape: ?lookdev=1 has a 'cockpit buffet' group with a slider for each and a Copy JSON for this block. What DEV-426 shipped, for reference: fullThrottle 0.6, boost 1, topSpeed 0.8. DEV-426, Matt's own numbers (2026-09-26): '0.6x the current jitter at full throttle and then 1x the jitter at boost, and then fade back to 0.8x jitter once at top speed. (multiplier is amplitude, not speed)'. They multiply the buffet above and not the racer-hit jolt. Full throttle to boost follows the SPOOLED thrust (0.25 s at no chain), so it never pops; the fade to topSpeed runs linear in speed from the live unboosted terminal to the live boosted one, which the ring chain lifts from 180 to ~335 m/s. game/cockpit-shake.ts has the curve. HoverJet only: the JumpSeat has no boost and no chain, and keeps 1"
+      }
+    },
+    "lighting": {
+      "enabled": false,
+      "note": "OFF EVERYWHERE since 2026-09-21 (DEV-263) — Matt: “we don't need the cockpit point lights.” NOT a VR override: it is a look decision that applies to the flat build too, which is why it is this flag rather than an entry in `vr.disable`. It also buys something the other five do not — a light COUNT is field #36 of three's program cache key (DEV-186), so two fewer lights means every lit material stops sharing its key with a variant that has them. Everything below is kept real rather than zeroed so turning it back on is one boolean, and so the measurement that justified it survives: a dim cabin, measured on the 534 canopy-frame vertices themselves: the frame's sRGB luminance goes p10 29 / median 56 / p90 109 with the tint fix alone to p10 37 / 82 / 120 with these two lamps, and nothing clips. Both positions are chosen for CLEARANCE — the cabin is 0.37 m from eye to canopy, so a 1/r^2 lamp 84 mm off a strut blows it to white; at these offsets the nearest vertex is 0.176 m (fill) and 0.244 m (dash). V8, DEV-088",
+      "fill": {
+        "color": [
+          0.72,
+          0.8,
+          1
+        ],
+        "intensity": 0.6,
+        "distance": 3,
+        "decay": 2,
+        "offset": [
+          0,
+          0.1,
+          0.3
+        ]
+      },
+      "dash": {
+        "color": [
+          1,
+          0.86,
+          0.62
+        ],
+        "intensity": 0.3,
+        "distance": 1.8,
+        "decay": 2,
+        "offset": [
+          0,
+          -0.3,
+          -0.4
+        ]
+      },
+      "emissive": {
+        "color": [
+          0.6,
+          0.68,
+          0.85
+        ],
+        "intensity": 0.0022
+      }
+    },
+    "body": {
+      "enabled": true,
+      "note": "the seat and the pilot, first-party, off the measured floor 1.322 m below the eye. The palette is the cockpit's own: `trim` is its orange vertex colour through the lambert1 tint, and `suit` sits below its hull grey so the pilot reads darker than the hull around him. V8, DEV-088",
+      "hands": true,
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "palette": {
+        "seat": [
+          0.055,
+          0.062,
+          0.075
+        ],
+        "trim": [
+          0.26,
+          0.06,
+          0.016
+        ],
+        "suit": [
+          0.105,
+          0.115,
+          0.135
+        ],
+        "glove": [
+          0.03,
+          0.031,
+          0.035
+        ]
+      }
+    },
+    "placement": {
+      "note": "where the cockpit readout sits, from the EYE of the vehicle flying (DEV-129), one block per vehicle since DEV-362. `hud` is the HoverJet's: 2016's own upper screen, composed out of `PlayerShip_SR14_Photon.prefab`'s `Ship_HUD/panel_shipUI`, which sets it into the dash's recess 14-36 mm proud of the glass (`render/hud-dash.ts`; `tests/unit/hud-recess.test.ts` measures it against the cockpit mesh and fails if it leaves). It was (0, -0.3, -0.72) tilted -0.42, a plate floating in front of the dash nose. `jumpSeatHud` is the JumpSeat's, unchanged: 2016's JumpSeat gauge stood free in front of the shell, and it keeps its pose. Identical in both presets: a placement is not a preset feature and has no off",
+      "hud": {
+        "offset": [
+          -0.00443,
+          -0.37397,
+          -0.84614
+        ],
+        "tilt": -0.891079,
+        "scale": 1
+      },
+      "jumpSeatHud": {
+        "offset": [
+          0,
+          -0.3,
+          -0.72
+        ],
+        "tilt": -0.42,
+        "scale": 1
+      }
+    }
+  },
+  "audio": {
+    "speedCurves": {
+      "enabled": true,
+      "note": "wind and engine that move with airspeed and throttle; a whoosh per gate (S4, DEV-084)",
+      "aircraftWindGain": [
+        [
+          25,
+          0
+        ],
+        [
+          60,
+          0.4
+        ],
+        [
+          110,
+          0.75
+        ],
+        [
+          180,
+          0.45
+        ],
+        [
+          340,
+          0.3
+        ]
+      ],
+      "flightWindGain": [
+        [
+          120,
+          0
+        ],
+        [
+          170,
+          0.55
+        ],
+        [
+          250,
+          0.85
+        ],
+        [
+          340,
+          1
+        ]
+      ],
+      "windCutoffHz": [
+        [
+          25,
+          500
+        ],
+        [
+          80,
+          1400
+        ],
+        [
+          160,
+          3500
+        ],
+        [
+          260,
+          7000
+        ],
+        [
+          340,
+          12000
+        ]
+      ],
+      "thrustRate": [
+        [
+          0,
+          0.9
+        ],
+        [
+          0.05,
+          0.92
+        ],
+        [
+          0.5,
+          1
+        ],
+        [
+          1,
+          1.09
+        ]
+      ],
+      "afterburnerRate": [
+        [
+          0,
+          0.97
+        ],
+        [
+          1,
+          1.06
+        ]
+      ],
+      "afterburnerStep": 1.05,
+      "gateWhooshGain": [
+        [
+          40,
+          0.25
+        ],
+        [
+          120,
+          0.6
+        ],
+        [
+          240,
+          0.9
+        ],
+        [
+          340,
+          1
+        ]
+      ],
+      "gateWhooshPitch": [
+        [
+          40,
+          0.85
+        ],
+        [
+          120,
+          1
+        ],
+        [
+          240,
+          1.18
+        ],
+        [
+          340,
+          1.3
+        ]
+      ],
+      "windRate": [
+        [
+          25,
+          0.8
+        ],
+        [
+          120,
+          1
+        ],
+        [
+          240,
+          1.3
+        ],
+        [
+          340,
+          1.5
+        ]
+      ]
+    },
+    "engine": {
+      "rumble": {
+        "enabled": true,
+        "note": "a deep rumble under the 2016 loops: the Thrusters loop's own tonal layers an octave down (47 / 70.5 Hz) plus a 47 Hz sub sine, low-passed, mixed under the loops so Classic's character survives with weight added; the burner opens the filter and adds a growl layer (DEV-137)",
+        "gainByThrottle": [
+          [
+            0,
+            0.3
+          ],
+          [
+            0.05,
+            0.45
+          ],
+          [
+            1,
+            0.7
+          ]
+        ],
+        "cutoffHz": 180,
+        "boostGain": 1.2,
+        "boostCutoffHz": 320,
+        "growlGain": 0.6
+      },
+      "pitchTracking": {
+        "enabled": true,
+        "note": "every engine voice, and the racers', rises with FORWARD SPEED; knees on the sheet's four 2016 speed gates so idle / cruise / boost land where the loop swaps sat — about seven semitones from a standstill to 350 m/s and three and a half across a race's 150..340, slewed so a crash glides down rather than chirping (DEV-137; widened from four by DEV-425, because Matt asked for the pitch again ten days after it shipped)",
+        "rateBySpeed": [
+          [
+            0,
+            0.85
+          ],
+          [
+            25,
+            0.88
+          ],
+          [
+            120,
+            1
+          ],
+          [
+            240,
+            1.16
+          ],
+          [
+            350,
+            1.28
+          ]
+        ],
+        "slewPerSecond": 0.25
+      }
+    },
+    "lift": {
+      "enabled": true,
+      "note": "a motor under the lift ride whose pitch and level follow the PLATFORM's speed, derived tick to tick from the ride curve (int_01: moving from 0.8 s, 16.6 m/s peak at 11.6 s, stopped at 13.4 s), and a clunk when it comes to rest; 2016's ride has a servo, a muted loop and eight whooshes, and nothing that follows the platform. Numbers are first guesses (DEV-424)",
+      "rateBySpeed": [
+        [
+          0,
+          0.55
+        ],
+        [
+          4,
+          0.8
+        ],
+        [
+          16,
+          1.1
+        ]
+      ],
+      "gainBySpeed": [
+        [
+          0,
+          0
+        ],
+        [
+          0.5,
+          0.2
+        ],
+        [
+          5,
+          0.85
+        ],
+        [
+          16,
+          1
+        ]
+      ],
+      "stoppedBelow": 0.25,
+      "arriveGain": 1
+    }
+  },
+  "terrain": {
+    "ocean": {
+      "subdivisionByLod": [
+        8,
+        4,
+        2,
+        1,
+        1,
+        1
+      ],
+      "note": "DEV-183. Spend the sea's facets where one is more than a few pixels across and stop spending them where it is not: 8 in the band under the ship, falling to 2016's own 1 by LOD 3. What that SAVES is not known. The sea's vertex cost is UNMEASURED: the only reading, 'ocean=8 -> ocean=1', is withdrawn (`docs/plan/VR-PERF-WAVE-2-WORK.md` §6b — two loads by construction, and the queue meant to confirm it read `?ocean=1` as MORE expensive than the ladder). And on int_01 the ladder is INERT over most of the route: the course sits where the sea's four 8 km chunks meet, so at most stands every built chunk is at LOD 0 and only rung 0 acts — which is 8, as in Classic (DEV-183 §3, walked by `tests/unit/ocean-density.test.ts`; a triangle count, not a millisecond). The geometry already coarsens by 2^lod on its own (LOD is a stride over the vertex grid), so this ladder takes the world-metre facet from 32 m at LOD 0 to 128, 512 and 2048 m — and DEV-183's other half is that `render/water.ts` now gets told, per band, which of those it is looking at. It was told 32 m for the whole plate before, which flattened the derived normal everywhere beyond LOD 0 and took the glint out of exactly the far water int_01's 4-degree sun lights. Classic holds 8 at every level, which is the build this replaced."
+    },
+    "detailRing": {
+      "enabled": true,
+      "note": "LOD -1 (T1): the chunks within 320 m of the ship at 4 m facets instead of 8. 320 m is 3.5 s of the 90 m/s cruise section 2.1 measures against, so the ground you are about to be over is fine before you get there; it sits inside the narrowest shipped LOD 0 band (700 m, alpine); and from the route's altitude the grain change is about 43 degrees below the horizon rather than in the forward view. Budget on Simonet's 256 m chunks: 8,712 triangles a chunk against 2,312, at most 14 chunks in the ring, so up to +89,600 triangles and +268,800 vertices over what Classic draws. Turned off at quality `low`. If a Quest cannot hold it the first number to move is `radius` — 256 m is 12 chunks, 200 m is 9.",
+      "baseResolution": 4,
+      "radius": 320,
+      "jitterScale": 0.5,
+      "maxInFlight": 2,
+      "smoothMetres": 48,
+      "smoothNote": "DEV-131, Matt 2026-09-16: 'the highest detail of terrain looks terraced to me.' It is, and the terraces are in the DATA: every 2016 height map is 8-bit and Simonet's is scaled to 1536 m, so one grey level is 6.02 m (4.02 m on the 1024 m worlds), and the 4 m grid lands exactly on texel centres so bilinear never interpolates — measured 0.0 % sub-level steps on all four maps, 70 % of Simonet's 4 m neighbours exactly level, p90 shelf 36 m. The ring's grid is rebuilt from a reconstruction that never leaves HALF A LEVEL of the stored map (a ramp through a staircase never does; a cliff is clamped back to within 3 m of itself): a triangle blur of this radius, clamped. 48 m is twelve texels — over the p90 shelf, under the ridge spacing. LOD 0 and above are untouched and still match the oracle; this is the ring only. 0 turns it off."
+    },
+    "lodFade": {
+      "enabled": true,
+      "durationScale": 1,
+      "note": "DEV-130, Matt 2026-09-16: 'the terrain lod-popping is very noticeable.' 2016 AUTHORED a cross-fade — FacetedTerrain.LODTransitionTime is 1 s on Simonet's islands, 0.6 s on its ocean, 1 s alpine, 0.6 desert, 1/0.6 Kauai, all on the sheet — and never got one: the TerrainAlphaMaterial it faded through is the opaque Marmoset shader (on the Simonet prefab it is literally the same material as TerrainMaterial), so for a second both LODs drew opaque and then the old one popped off. Classic keeps the pop, which is what shipped (video 0:55, 13:20). Anniversary draws the transition 2016 wrote down, as a screen-door: both meshes for `lodTransitionTime * durationScale` seconds, each fragment owned by exactly one of them, no blending and no depth fight. The one number is this ratio; 1 is the authored duration per environment. Cost during a transition: one extra draw call and one extra chunk of triangles per fading chunk, complementary fragments so shading does not double; about ten chunks a second cross the 1,024 m band at 180 m/s."
+    },
+    "bakedLight": {
+      "enabled": false,
+      "rung": 3,
+      "note": "DEV-232, and it ships OFF. Bake the LAND's diffuse lighting into its vertex colours once and gate three's physical chain out behind it. It is EXACT rather than approximate on this geometry: sim/terrain/faceted.ts writes one normal and one colour to all three vertices of every triangle and never indexes the soup, render/skyshop-ibl.ts forces iblIrradiance to zero so the whole indirect diffuse is a LightProbe's spherical harmonics, and DEV-192 already replaced the point-light loop with #if 0 -- so every diffuse term on a terrain fragment is a function of the face normal, and storing it per vertex stores a value that was already uniform over the polygon. What it LOSES is the view-dependent half plus the shadows: the environment reflection and the GGX lobe (Marmoset _SpecInt is 0.05 on Simonet, so the terrain is very nearly matte and DEV-182 photographed the whole IBL cut at 0.9-2.2 levels of 255 there, 4.3-5.1 on the desert), terrain.surfaceGloss with them because its only consumer is that specular, and both the shadow-map and ff2SunHeightTerm multiplies -- so the ship, the racers and the landmarks stop casting onto the ground, which ANNIVERSARY.md ranks second of the eight scale cues. It has no numbers because the sun and the probe are read off the scene; the one knob is which RUNG, and DEV-237 made that a field rather than a sentence. rung 3 is what is written here and what DEV-232 measured at -0.80 ms p50 / -1.15 p95 on adv_02_jumpSeat (bracket 0.01 ms): it drops everything, shadows included. rung 1 keeps the shadow multiply per fragment -- outgoingLight = diffuseColor.rgb * ff2ShadowOnly(), so getShadow and ff2SunHeightTerm both still run and the ship, the racers and the landmarks go on casting onto the ground -- and buys less; its millisecond is unmeasured and its PICTURE is not: photographed on adv_02_jumpSeat, rung 3 sits 2.07 mean levels of 255 from the shipped build (the bake really is lossless for the diffuse) while rung 1 sits 33.9 levels DARKER, because three multiplies a shadow into directLight.color only and a bake that has collapsed direct and indirect into one colour shadows the ambient with it. At a 4-degree sun that is most of the island, not a corner of it. The correction is a second baked attribute and is not built; DEV-237. There is no rung 2: baking ff2SunHeightTerm puts the shadow terminator back on the 8 m grid the signed field exists to get it off, so it is a separate argument and is not built. Which rung, and whether to flip the flag at all, is Matt's call and wants a headset: docs/DEVIATIONS.md DEV-237 has the triptych. Measure it before flipping it: docs/plan/DEV-232-BAKED-LIGHT.md, and note that FF2_UNLIT's number is a CEILING on this and not an estimate, because that gate also deletes the fog."
+    },
+    "diagonalFix": {
+      "enabled": true,
+      "note": "DEV-831, Matt 2026-10-08: the fixed diagonal, the one 2016's code meant to choose. Changes every facet's split, not the collision surface."
+    },
+    "surfaceGloss": {
+      "enabled": true,
+      "note": "DEV-132, Matt 2026-09-16: 'rocks rougher than the ocean, grass shinier than the rocks.' 2016 had one _Shininess per island (5.01 on Simonet, a GGX roughness of 0.17 through DEV-008's transcription) and no gloss map, so every facet carried the same sheen — the video (11:40, 13:20) reads it as matte because _SpecInt 0.05 leaves an F0 near 0.02. The generator has no classes; the colour map WAS painted by class, and k-means over the four shipped maps finds World Machine's six swatches on Simonet, alpine and Kauai and a red/brown set on the desert (scratch/terrain-look/palette.mjs, DEV-132). So a facet's class is the nearest swatch to its own vertex colour — the raw stored bytes, untinted — and each class carries a roughness. ORDER, checked by terrain-surface.test.ts against the sea's own 0.27 off the sheet: water 0.27 < grass 0.42 < forest 0.5 < scrub 0.6 < sand 0.7 < seabed 0.75 < rock 0.85. Only roughnessFactor moves; F0, tint and vertex colour are DEV-008/DEV-014's. The numbers to argue with are the per-class roughness values; the swatches are measured.",
+      "classes": [
+        {
+          "id": "rock",
+          "roughness": 0.85,
+          "swatches": [
+            [
+              0.832,
+              0.8,
+              0.678
+            ],
+            [
+              0.679,
+              0.665,
+              0.539
+            ],
+            [
+              0.577,
+              0.458,
+              0.385
+            ],
+            [
+              0.424,
+              0.322,
+              0.256
+            ],
+            [
+              0.244,
+              0.182,
+              0.142
+            ],
+            [
+              0.716,
+              0.41,
+              0.262
+            ]
+          ]
+        },
+        {
+          "id": "sand",
+          "roughness": 0.7,
+          "swatches": [
+            [
+              0.835,
+              0.656,
+              0.532
+            ],
+            [
+              0.739,
+              0.556,
+              0.45
+            ]
+          ]
+        },
+        {
+          "id": "scrub",
+          "roughness": 0.6,
+          "swatches": [
+            [
+              0.551,
+              0.548,
+              0.427
+            ]
+          ]
+        },
+        {
+          "id": "forest",
+          "roughness": 0.5,
+          "swatches": [
+            [
+              0.261,
+              0.316,
+              0.247
+            ],
+            [
+              0.286,
+              0.325,
+              0.171
+            ]
+          ]
+        },
+        {
+          "id": "grass",
+          "roughness": 0.42,
+          "swatches": [
+            [
+              0.444,
+              0.471,
+              0.309
+            ],
+            [
+              0.447,
+              0.528,
+              0.24
+            ]
+          ]
+        },
+        {
+          "id": "seabed",
+          "roughness": 0.75,
+          "swatches": [
+            [
+              0.095,
+              0.127,
+              0.138
+            ]
+          ]
+        }
+      ]
+    },
+    "oceanRings": {
+      "enabled": true,
+      "note": "DEV-339. The sea as five camera-centred rings (a geometry clipmap) instead of the plate's four 8 km chunks. OFF until measured and seen: the live switch is __ff2.oceanRings(on), which builds the rings on the first call and reports the triangles it is drawing. 64 cells a side at 32 / 64 / 128 / 256 m is the plan's example ladder (docs/plan/OCEAN-PERF.md section 3) plus a fifth level at 512 m, because the 256 m level's window ends at 8.2 km and the frustum's far corners at a 6 km far plane reach 8.5 km (the GPU crack scan saw the sky through them), and level k is the plate's LOD k at the same 8 x 8 split, so each level's vertices ARE the plate's (tests/unit/ocean-ring-lattice.test.ts: bit for bit). About 35 thousand triangles live (41 thousand submitted) against 454 thousand on int_01. What it saves in milliseconds is the thing the live switch exists to measure.",
+      "cells": 64,
+      "innerCell": 32,
+      "levels": 5,
+      "faceNormals": false
+    }
+  },
+  "hud": {
+    "speedUnit": "kmh",
+    "nextGateArrow": {
+      "enabled": true,
+      "note": "a paper-cut arrow on the glareshield pointing at the next gate (DEV-124). Matt, 2026-09-16: a 'next gate' indicator arrow towards the front of the cockpit. On the SHIP like the HUD, 0.8 m ahead of the eye and 0.16 m below it, so it sits on the dash top just under the forward view; it points along the bearing to the next ring (then the finish; the nearest open pad on a JumpSeat course; nothing in Free Flight) in the ship's own frame and hides while that bearing is inside a 10-degree cone, growing in over the next 4 degrees so a target drifting across the edge does not blink it. The colour is the HUD's own accent (#ffcf7a) in linear, so it reads as the same instrument family. THE NUMBER TO ARGUE WITH IS coneDegrees",
+      "coneDegrees": 10,
+      "featherDegrees": 4,
+      "lengthMetres": 0.08,
+      "offset": [
+        0,
+        -0.16,
+        -0.8
+      ],
+      "color": [
+        1,
+        0.623,
+        0.194
+      ],
+      "emissive": 0.8
+    },
+    "raceMap": {
+      "enabled": true,
+      "note": "the course from above, a dot per ship, and your place, on a plate beside the readout (DEV-361). Matt, 2026-09-24: 'simplified race mini map hud to understand your position relative to others - grab from king-tide'. Ring Attack and every other mode whose rules have opponents, with live AI racers; nothing where nobody races. The plate is a CHILD of the readout, on the pilot's RIGHT (the perf plate has the left), in the same plane and at the panel's height, so it follows the preset's placement and the third-person camera and hides with the pause menu. Geometry, not a canvas: one draw call, no texture, no raster. A racer's dot wears its livery (DEV-350), the player's is the player's own orange and ringed. The place reads P2/6 and is live from the release; at the line it is the results panel's own place. THE NUMBER TO ARGUE WITH IS widthMetres",
+      "widthMetres": 0.11,
+      "gapMetres": 0.03,
+      "dotMetres": 0.006,
+      "playerDotMetres": 0.009
+    },
+    "bars": {
+      "enabled": true,
+      "note": "the gate combo's countdown under GATES and the boost tank under TIME (DEV-615). Classic draws neither, as 2016's panel drew no bars (DEV-791); the JumpSeat's fuel gauge is 2016's own and is not this flag's"
+    }
+  },
+  "props": {
+    "enabled": true,
+    "note": "familiar-size objects by rule: boulders, rocks, shrubs and flocks (V9, DEV-089). Every density here is a first guess, and density is the number to move if a Quest says so",
+    "seed": 20260913,
+    "clearance": 45,
+    "variants": 4,
+    "scale": {
+      "note": "DEV-134, Matt 2026-09-16: 'do a scale pass on the trees in alpine to be more true to life'. Measured through the renderer's own instance matrix: alpine's shipped Tree_Organic pass is 15-83 m tall (tree1 11.1 m at scale 1 x 1.4..5.5; tree10 15.0 m), and the never-run Tree Pack pass Anniversary also draws is 11-78 m (tree10 3.89 m x 6..20). A mature spruce or fir is 20-45 m. 0.6 puts the forest at roughly 9-50 m with the tallest at gate height, which is what the 2016 video's launch pad (0:55) shows for the nearest trees. Desert's cacti are 15-46 m against a saguaro's 12-15; 0.35 lands them 5-16. Palms (18-37 m; a coconut palm is 20-30) and bushes (1.6-4.8 m) are left at 1 and listed here so the numbers are on the page. A first guess in DEV-080's sense: the knob to argue with is the number beside each kind, and the density is 2016's regardless, so a smaller tree is a sparser forest.",
+      "tree": 0.6,
+      "cactus": 0.35,
+      "palm": 1,
+      "bush": 1
+    },
+    "groundSnap": {
+      "enabled": true,
+      "note": "DEV-134, Matt: 'many of the trees in alpine seem to be floating'. They were, and the arithmetic says by how much: the Tree Pack pass Anniversary alone draws carries ObjectHeightOffset -2.6, SUBTRACTED, so +2.6 m, against trunk bases 0.03-0.11 m x scale below the origin - net 0.4 to 2.4 m of air under every big tree before the gap between the height map and the mesh is counted. DEV-288 CORRECTS THE ATTRIBUTION OF THAT GAP: this note called it the 0.8 m jitter, and measured over 23,053 placements the jitter is worth only 0.09-0.23 m of the mean. The rest is FACETISATION - a prop is placed by a bilinear read of a 4 m map and the mesh is an 8 m triangulation of it - so the gap is near zero on flat ground and metres on steep, and is not capped by RandomOffset at all (desert worst 21.8 m). The rule this note rests on is strengthened, not weakened; only the named cause was wrong. With this on the base goes to the RENDERED facet (sim/terrain/surface.ts, the same vertex grid the chunks are built from) and 0.6 m under it. Measured before/after on alpine in tests/unit/prop-ground.test.ts. SINCE DEV-288 this flag also governs the DRESSING (the generated rocks, boulders and shrubs), which had the same defect from the same cause - see tests/unit/dressing-ground.test.ts. The dressing takes NO sink: a generated prop buries a fraction of itself in its own geometry, so the 0.6 m below would bury it twice. What it does NOT fix: a chunk drawn at LOD 1 or 2 is a coarser cut of the same vertices and can run under a ridge a tree stands on; that is DEV-130's popping seen from the roots, and the sink hides only the small end of it.",
+      "sink": 0.6
+    },
+    "scatterShadows": {
+      "enabled": true,
+      "note": "DEV-304 TURNED THIS TRUE, and the flag did not change meaning -- its SCOPE did. Wishlist #33, Matt: \"sharper prop shadows onto the terrain\", under the frame this whole file is written to (\"these behind the anniversary mode and toggle-able, anniversary being great in 2d\"). So it is true HERE and listed in `vr.disable`, which is DEV-263's mechanism used exactly as designed: 2.70 ms is a quarter of a worn 11.51 ms frame and nothing at all on a monitor, where the same build runs ~178 fps at 1.02 ms of GPU with, in DEV-263's words, nothing to buy. Everything DEV-224 measured is still true; what changed is that there is now a place to spend it. THE INTERACTION IS THE PART TO READ: DEV-295 darkens the ground under the scatter by multiplying all four reflectedLight accumulators, and it was allowed to touch the two DIRECT ones only because this flag was false -- \"there is no live shadow to double\". With this true there is, so `render/far-shadow.ts` weights the direct half by `uSunTopD.z`, written from `render/shadows.ts`'s `canopyDirectWeight`, which is composed from `shadowCastersFor` and therefore already knows about the quality tier and about `vr.disable`. It is a uniform and not a define so a live flip on the Advanced page costs no recompile. What the handover COSTS, and it is a look call rather than a correctness one: the map's box is boxHalfSize 700 m around the camera, so a forest beyond that loses its direct darkening; and at a 4-degree sun a 20 m tree's real shadow is a ~286 m streak lying downsun rather than a patch under it, so the lone tree DEV-297 exists for keeps less than a dense stand does. One number, linear, in canopyDirectWeight. TO GO BACK: false here, and the weight follows on its own.\n\nDEV-224'S ARGUMENT FOLLOWS, KEPT WHOLE, because it is the measurement and it is still the reason this is off in a headset. WHERE IT IS FALSE - VR, and quality `low`, which has no map at all - the scatter still RECEIVES, a tree in the ridge's shadow is still dark, and the land at LOD 0, the seventeen hand-placed landmarks and the ship's exterior hull all keep casting, so the frame keeps every shadow that is a scale cue at a distance you can read one. The reason is arithmetic, not taste: the scatter is 88-93 % of desert's and alpine's world pass (7.42 M triangles in 18 draw calls on desert, and the same 7.42 M on all four of its missions - it is a per-ENVIRONMENT constant, so one flag covers eight of thirteen missions), and the shadow pass draws every one of those triangles a SECOND time: 2 x world + 1 x shadow closes desert's stereo frame to 0.01 M. Switching the whole depth pass off on adv_01_hoverJet - the worst mission in the game - measured 10.37 -> 7.68 ms GPU p50 through a real SteamVR compositor, with the baseline arm re-run at the end drifting 0.01 ms (docs/plan/VR-PERF-WAVE-3.md section 5). About 1.7 ms of that 2.70 is the depth pass's geometry and about 1.0 is per-fragment shadow sampling in the main pass, which a false still keeps. The A/B is one flag from either side: `?feature=props.scatterShadows:off` is DEV-224's arm and `:on` is 2016's caster set, which is what flat ships now."
+    },
+    "meshLod": {
+      "enabled": true,
+      "note": "DEV-338. Matt, 2026-09-24: “create lods or whatever else you think needs to happen to smooth out the current method of either showing a prop or not at all.” Every prop inside 2016's LODDistance (1280 m; 1920 on alpine's first pass) was drawn at FULL detail -- a 1,520-triangle bush at 1,200 m is a few pixels -- and the scatter is the whole worn VR gap (DEV-263: 8-18 % of frames at 90 Hz with it drawn, 96-98 % without). Each rung is a copy of every scatter mesh simplified at load to `keep` of its distinct corners (three's SimplifyModifier on the positions, then each new face painted the colour of the nearest original face, so it stays one colour per face -- ART_DIRECTION pillar 2). A chunk moves to rung k once its NEAREST point is `from` metres away, with 2016's 3 % hysteresis at every edge, and it changes rung by 2016's own staggered reveal: a shuffled share of the chunk moves each frame over lodTransitionTime, so a forest coarsens a few trees at a time, never as a block. The OUTER edge is 2016's number measured 2016's way and does not move. NOT in vr.disable: the headset is what it is for. On in flat too, where it costs nothing and the far forest is a handful of pixels either way. TO JUDGE IT: `?feature=props.meshLod:off` is the A/B from either side, and it is live -- the chunks walk back to the full meshes by the same staggered swap.",
+      "rungs": [
+        { "from": 200, "keep": 0.35 },
+        { "from": 550, "keep": 0.12 }
+      ]
+    },
+    "maxSlope": {
+      "enabled": true,
+      "note": "DEV-356. Matt, 2026-09-24, before shipping: “don't place props on steep slopes.” A 2016-scatter placement (trees, palms, cacti, bushes: the things drawn UPRIGHT whatever the ground does) whose rendered facet is steeper than `sin` is not built -- not drawn, not a collider. 2016 had no such rule and its baked clones stand on cliffs as often as ours, so this is a deviation. 0.7 IS 44 DEGREES, the angle at which the ground falls about a metre for every metre across: past it a vertical trunk's downhill side leaves the facet by more than the ground snap's sink can bury. It is the number to argue with -- 0.8 (53 degrees) keeps more of the forest, 0.6 (37) clears more -- and the per-environment counts it removes are in the ledger row. The dressing's boulders, rocks and shrubs are NOT filtered by this: their bands carry their own slope limits. `?feature=props.maxSlope:off` is the A/B.",
+      "sin": 0.7
+    },
+    "scatter": [
+      {
+        "kind": "rock",
+        "note": "the shoreline. The one band with a hard edge in the world, and the one place the eye already knows the scale because it can see where the water stops -- SIMONET DROPPED 2026-09-21 (DEV-274). Matt: 'remove the rocks from the islands map. they're too small to notice.' At 0.3-1 m against 8 m facets these were below the threshold they were authored to establish, and at 620/km sq over a 16.8 km sq map that is about ten thousand instances nobody was reading. Kauai keeps them pending the same look; it is one word here.",
+        "environments": [
+          "kauai"
+        ],
+        "nearWater": true,
+        "altitudeMin": 0.5,
+        "altitudeMax": 15,
+        "slopeMin": 0,
+        "slopeMax": 0.62,
+        "density": 620,
+        "scaleMin": 0.3,
+        "scaleMax": 1,
+        "tint": 0.6,
+        "palette": [
+          [
+            0.3,
+            0.29,
+            0.27
+          ],
+          [
+            0.42,
+            0.4,
+            0.36
+          ],
+          [
+            0.22,
+            0.22,
+            0.23
+          ]
+        ]
+      },
+      {
+        "kind": "rock",
+        "note": "inland, everywhere that is not a cliff face. The smallest class and the most numerous: 0.3-1 m is the size that says the facets are EIGHT metres and not one -- SIMONET DROPPED 2026-09-21 (DEV-274), same call as the shoreline band: the size that was supposed to say the facets are eight metres was instead saying nothing at all, about four thousand times over.",
+        "environments": [
+          "kauai"
+        ],
+        "nearWater": true,
+        "altitudeMin": 15,
+        "altitudeMax": 700,
+        "slopeMin": 0.05,
+        "slopeMax": 0.8,
+        "density": 240,
+        "scaleMin": 0.3,
+        "scaleMax": 0.9,
+        "tint": 0.66,
+        "palette": [
+          [
+            0.34,
+            0.33,
+            0.3
+          ],
+          [
+            0.26,
+            0.26,
+            0.26
+          ]
+        ]
+      },
+      {
+        "kind": "boulder",
+        "note": "steep ground: the cliff faces and the scree under them. slopeMin 0.42 is 25 degrees",
+        "environments": [
+          "simonet",
+          "kauai"
+        ],
+        "nearWater": true,
+        "altitudeMin": 4,
+        "altitudeMax": 800,
+        "slopeMin": 0.42,
+        "slopeMax": 0.96,
+        "density": 190,
+        "scaleMin": 1.2,
+        "scaleMax": 3.2,
+        "tint": 0.55,
+        "palette": [
+          [
+            0.36,
+            0.35,
+            0.33
+          ],
+          [
+            0.28,
+            0.28,
+            0.29
+          ],
+          [
+            0.45,
+            0.42,
+            0.37
+          ]
+        ]
+      },
+      {
+        "kind": "shrub",
+        "note": "gentle ground below the treeline, where 2016's palms are not. Greener than the ground it stands on, so a ridge with shrubs on it reads as a ridge with things on it",
+        "environments": [
+          "simonet",
+          "kauai"
+        ],
+        "nearWater": true,
+        "altitudeMin": 6,
+        "altitudeMax": 450,
+        "slopeMin": 0,
+        "slopeMax": 0.4,
+        "density": 330,
+        "scaleMin": 0.6,
+        "scaleMax": 1.6,
+        "tint": 0.42,
+        "palette": [
+          [
+            0.16,
+            0.24,
+            0.11
+          ],
+          [
+            0.21,
+            0.3,
+            0.14
+          ],
+          [
+            0.13,
+            0.19,
+            0.1
+          ]
+        ]
+      },
+      {
+        "kind": "boulder",
+        "note": "desert and alpine have no ocean, so there is no shoreline to measure an altitude band from and SLOPE is the whole rule. The altitude range is deliberately open: nobody has looked at those two environments with this on, and a band tuned against Simonet's sea would be a number pretending to be a measurement",
+        "environments": [
+          "desert",
+          "alpine"
+        ],
+        "nearWater": false,
+        "altitudeMin": -1000,
+        "altitudeMax": 100000,
+        "slopeMin": 0.42,
+        "slopeMax": 0.96,
+        "density": 190,
+        "scaleMin": 1.2,
+        "scaleMax": 3.2,
+        "tint": 0.55,
+        "palette": [
+          [
+            0.38,
+            0.32,
+            0.26
+          ],
+          [
+            0.3,
+            0.27,
+            0.24
+          ],
+          [
+            0.47,
+            0.4,
+            0.31
+          ]
+        ]
+      },
+      {
+        "kind": "rock",
+        "environments": [
+          "desert",
+          "alpine"
+        ],
+        "nearWater": false,
+        "altitudeMin": -1000,
+        "altitudeMax": 100000,
+        "slopeMin": 0.05,
+        "slopeMax": 0.8,
+        "density": 300,
+        "scaleMin": 0.3,
+        "scaleMax": 1,
+        "tint": 0.66,
+        "palette": [
+          [
+            0.36,
+            0.31,
+            0.26
+          ],
+          [
+            0.28,
+            0.26,
+            0.24
+          ]
+        ]
+      },
+      {
+        "kind": "shrub",
+        "environments": [
+          "desert",
+          "alpine"
+        ],
+        "nearWater": false,
+        "altitudeMin": -1000,
+        "altitudeMax": 100000,
+        "slopeMin": 0,
+        "slopeMax": 0.4,
+        "density": 260,
+        "scaleMin": 0.5,
+        "scaleMax": 1.4,
+        "tint": 0.42,
+        "palette": [
+          [
+            0.2,
+            0.24,
+            0.12
+          ],
+          [
+            0.26,
+            0.27,
+            0.15
+          ],
+          [
+            0.15,
+            0.18,
+            0.1
+          ]
+        ]
+      }
+    ],
+    "unbakedPasses": {
+      "enabled": true,
+      "note": "2016's generator passes that 2016 never RAN (DEV-102). Matt, 2026-09-14: “keep em for anniversary”. `FacetedTerrain`'s scatter is an editor-time `GenerateObjects()` whose output is serialised on the component, and three of the port's five passes have a serialised output of ZERO objects: alpine's 6-20x Tree Pack pass (which is also `m_Enabled: 0`) and the palm generators on Simonet and Kauai (enabled, and empty). So 2016 scattered props in TWO environments while the port drew five passes across four, for four sessions, on the strength of the components having parameters. THIS FLAG IS WHAT LETS BOTH READINGS BE TRUE AT ONCE: Classic draws what 2016 SHIPPED, Anniversary draws what 2016 SET UP. The predicate is `bakedObjects > 0` off each environment JSON's own `shipped2016` block, deliberately the COUNT and not the component's enabled flag, because DEV-102's whole lesson is that when a 2016 component's job is to produce objects you count the objects. Read at WORLD BUILD, so a live EDITION flip does not restack the trees under you - the next course swap does."
+    },
+    "birds": {
+      "enabled": true,
+      "note": "seven flocks along the lap, twelve birds each, one metre across, circling 55 m over the ground at 11 m/s. 84 instances and ONE draw call. Seven and not five because they are spread by ARC LENGTH: on int_01's 11.3 km that is one every 1.6 km, and a bird only reads inside about 200 m",
+      "flocks": 7,
+      "birdsPerFlock": 12,
+      "altitude": 55,
+      "radius": 60,
+      "speed": 11,
+      "size": 1,
+      "palette": [
+        [
+          0.05,
+          0.05,
+          0.06
+        ],
+        [
+          0.1,
+          0.1,
+          0.11
+        ],
+        [
+          0.6,
+          0.61,
+          0.64
+        ]
+      ]
+    }
+  },
+  "gates": {
+    "passedFade": {
+      "enabled": true,
+      "note": "a passed gate HIDES when you leave it and never shrinks (DEV-869, Matt: never scale the rings down; FF-TV and watch links keep every gate up). Before DEV-869 it folded away over 0.3 s (DEV-122); seconds 0 is that fold made instant. 2016 held for 2 s and then removed the whole gate in one frame; that hold is on the sheet and Classic runs it. The clock starts when you LEAVE the gate (DEV-195, waitForExit). This note used to say the shrink was safe to start on the pass because 'the gate you just threaded is already behind you', but it is not: a pass is stamped on the IN edge of a 22.619 m trigger sphere, which fires a measured median of 21.5 m BEFORE the gate's own plane. Over 129 crossings the gate had shrunk to 0.675 of its size (0.390 at p05) by the time the ship reached the plane, which is what Matt saw in the headset. Player passes only, any order, exactly as 2016. THE NUMBER TO ARGUE WITH IS seconds; the one NOT to argue with is delaySeconds, which is 0 because the exit anchor has already bought ~22 m",
+      "waitForExit": true,
+      "delaySeconds": 0,
+      "seconds": 0
+    },
+    "finishBanner": {
+      "enabled": true,
+      "note": "a chequered, crenellated band on the finish gate's top edge (DEV-123). 2016's finish is the ring's own frame in ORANGE at three times a ring's size, and a black cut-out of that is a nearer ring (pillar 1). Twelve 12 m cells across the 147 m top edge, two rows, each cell 30 % narrower than its pitch so the outline is notched; the light cells glow at the frame's own allowance. Sized in metres rather than as a fraction of the frame because a silhouette at 500 m is read as a size",
+      "columns": 12,
+      "rows": 2,
+      "cellMetres": 12,
+      "gap": 0.3,
+      "lift": 4,
+      "light": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "dark": [
+        0.03,
+        0.03,
+        0.035
+      ],
+      "emissive": 0.6
+    }
+  },
+  "menu": {
+    "holoTerrainColours": {
+      "enabled": true,
+      "brightness": 1,
+      "holoMix": 0,
+      "rim": 0.25,
+      "scanline": 0.06,
+      "note": "DEV-140, Matt 2026-09-16: “holo tables should be using the terrain's colors.” DEV-579, Matt 2026-10-03: “use the real colors for the menu dioramas.” Both presets draw the island in the palette cut from its environment's colour map (content/palettes/), shown as the map's own byte and shaded by a relief light baked into the faces (render/diorama.ts), over a sea at the ocean's own surface in 2016's Simonet-table turquoise. THIS flag is the port's tell that the model is a projection: brightness multiplies the colour, holoMix leans every face toward the room's holo tint, rim lights the facets that turn away from the eye in that tint, scanline darkens faint horizontal bands. holoMix is 0 since DEV-579: at 0.12 it was half of what made the islands read as chalk. The numbers to argue with are rim (silhouette) and scanline; off, the table is 2016's plain miniature."
+    },
+    "medalOutline": {
+      "enabled": true,
+      "widthFraction": 0.06,
+      "colour": [
+        0.04,
+        0.05,
+        0.07
+      ],
+      "opacity": 1,
+      "note": "DEV-151. An inverted hull behind the emblem - the same geometry scaled up, back faces only - so the medal reads as a SHAPE against the island rather than as a tint against it (ART_DIRECTION pillar 1: spend the budget on the silhouette). The tier colours are 2016's and stay 2016's; this adds a border, it does not touch a medal's hue. Measured over all four palettes and all four tiers, WCAG contrast against the island goes from a median 2.3-4.8 (15 of 16 tier/environment pairs marginal or worse, every tier but bronze under 3:1 across most of every island) to the border's own 13-20:1 everywhere, because the border is near-black and the island never is. widthFraction is a fraction of the emblem's own height, not metres, because the emblem is scaled to the table. 0.06 is about one facet of the emblem: a visible edge at the page framing without reading as a drop shadow. The colour is the room's darkest structural tone, not pure black, so it sits in the hangar rather than on top of it. The number to argue with is widthFraction"
+    }
+  },
+  "gameplay": {
+    "note": "THE ONLY BLOCK THAT CHANGES THE GAME (section 0.2, DEV-110). Matt, 2026-09-14: “do it”. Everything else in this file is presentation and a Classic run and an Anniversary run of the same flight score the same; under this block they do not, which is why it is fenced off here rather than folded in beside the render flags. Classic reads none of it and its own numbers are zeroed twice over.",
+    "proximity": {
+      "enabled": true,
+      "note": "G1, section 4.1: the low line is the fast line. A score bonus for flying close to the ground, shown as a meter - Superflight's whole design in one rule, and it answers section 2.3 item 1: perceived speed is optic flow, optic flow falls off with distance, and the one place this port already feels fast is low over a ridge. Nothing rewarded going there. THE POOL IS NEVER MEDALLED, and that is the balance answer rather than a number. The section 5 table gives this row Risk: balance, and the first pass tried to answer it by keeping maxBonus small enough that a bonused run could not reach the next medal - this note claimed 0.6 put a perfect low run at “3,360 against 2,100, deliberately below the platinum thresholds”. That was arithmetic nobody checked and it is false twice over: 3,360 is not below 2,100, and int_01's platinum IS 2,100 while a clean 21-gate run scores exactly 2,100. Platinum is a perfect run; there is no headroom to tune into, so no maxBonus above zero could have satisfied the claim. The bonus therefore goes nowhere near `state.score`: medals keep meaning exactly what they meant in 2016, on the same flight, to the point, and the bonus is the Anniversary SCORE instead - what the results panel totals and what a leaderboard would rank. The risk is answered by construction rather than by tuning. The remaining numbers are first guesses of the kind only a playtest settles. What is NOT a guess is the shape: the ramp is LINEAR between nearMetres and farMetres, because this is a scoring signal a player has to be able to predict - “half the meter is halfway between the two numbers” is learnable and an ease is not. 12 m is about two ship lengths (the HoverJet hull is 5.5-6 m) and 90 m is roughly what int_01's route holds over the water, so the meter is empty on the authored line and fills only when you choose to go down. maxBonus 0.6 makes a deck-level gate worth 160 instead of 100. minSpeed 60 is the anti-hover clause: without it the optimal play is to stop dead one metre off a hillside, which is the opposite of what the lever is for. DEV-154 (Matt, 2026-09-16, having flown it: “i've yet to see scoring influenced by flying near objects/terrain”): maxBonus pays only AT a gate, and the gates are NOT LOW. On int_01 the twenty-one gate centres sit 17.8 to 336.5 m above the surface, median 87.6, and not one of them is within nearMetres - the same on rookie_01 (0 of 16) and int_02 (0 of 21) - so a full meter at a gate is unreachable by construction, and a ship flown exactly through every centre, an ideal nobody can fly, caps at +319 of the 1,260 that maxBonus advertises. Five of the autopilot's twenty-one crossings read the meter at exactly 0.00, and quartering how low it flies (minClearance 60 to 15 m) moves the payout only from +227 to +378. perSecond is the second inlet and it pays for the LINE: every tick, at the meter, on all thirteen missions rather than the seven with rings. 10 is a tenth of a ring per second - on the measured autopilot lap it pays +223 against the gate channel's +227, so an ordinary lap's pool roughly doubles; its absolute ceiling, the meter pinned at 1 for the whole 99.7 s, is +997, which is below the gate channel's nominal 1,260 and below the 1,661 the near-miss cooldown permits over the same lap, and it is still never medalled. awardStep 25 changes NO score - it is how often the event row is allowed to say so, a quarter of a ring like nearMissPoints so the two banners are one vocabulary. Its cadence is itself the meter: every 2.5 s pinned on the deck, every 11 s at the autopilot's mean 0.224, about nine banners a lap.",
+      "nearMetres": 12,
+      "farMetres": 90,
+      "maxBonus": 0.6,
+      "minSpeed": 60,
+      "attackSeconds": 0.25,
+      "releaseSeconds": 0.9,
+      "perSecond": 10,
+      "awardStep": 25
+    },
+    "gateEvents": {
+      "enabled": true,
+      "note": "G2, section 4.1: a gate taken through its centre at speed, and a pass close to the ground. The centredness is measured on the SWEPT SEGMENT rather than at the crossing tick - sim/gate-quality.ts says why, and the short version is that the tick-sampled distance is mostly frame rate: the ship covers 3.7 m per step at 300 m/s, so a perfectly centred line gets a different number depending on where the tick boundaries fell. cleanCentredness 0.6 is measured against the gate's OWN trigger radius, so a course with tighter rings asks for more without anything being re-tuned. minSpeed 90 is terminalSpeedCruise off the generated sheet (89.81, unboosted) rounded - “at speed” means faster than the ship goes without trying. nearMissMetres 8 is one terrain facet, which is the smallest distance this world can express. The cooldown exists because a long low pass down a valley is ONE piece of flying and not four hundred events. DEV-112 (Matt, 2026-09-15: “hugging a wall scores higher”): nearMissMetres is now measured against the NEAREST surface - sim/surface-proximity.ts, six probes in the ship's frame plus the belly - so a canyon wall off the wingtip is a near miss the way a ridge under the hull is, and the same number feeds G1's meter, so the two cannot disagree. A near miss now PAYS: nearMissPoints 25 banks into G1's pool - the Anniversary score, never the medal - and it needs minSpeed of forward speed, the same “at speed” a CLEAN gate needs, because with points on it a ship parked a metre off a cliff would otherwise bank once per cooldown for ever. 25 is a quarter of a ring: at the 1.5 s cooldown the most continuous deck-level flying can bank is 1,000 a minute, against 1,260 for all twenty-one of int_01's rings taken on the deck, so a lap that also threads the walls can roughly double its low-line pool and cannot out-earn the gates on a course that has them. It is the one channel of the pool that is GATE-INDEPENDENT, which is what the six missions without rings get. A first guess of the kind only a playtest settles; nobody has flown it.",
+      "cleanCentredness": 0.6,
+      "minSpeed": 90,
+      "nearMissMetres": 8,
+      "nearMissCooldown": 1.5,
+      "nearMissPoints": 25
+    },
+    "chainMeter": {
+      "enabled": true,
+      "note": "G2's other half, section 4.1: “The speed chain made visible. maxSpeed += 18 per gate, reverting after 5.5 s, is the core skill loop and today it is invisible except as a number. A bar that fills and decays is the loop made legible.” No numbers of its own on purpose - it draws what sim/speed-chain.ts already holds (stacks, and sinceGate against the prefab's 5.5 s cooldown), so it cannot disagree with the mechanic it is reporting. THIS ONE CHANGES NO SCORE; it is in the gameplay block because it belongs with the two levers it explains, and because a player who can see the chain plays differently, which is a change to the game even when the arithmetic is untouched."
+    },
+    "gateBullseye": {
+      "enabled": false,
+      "note": "OFF since DEV-421. Matt, 2026-09-26, after a playthrough: “remove ‘crosshair’ from the ring art.” The crosshair was THIS - four bars and a pip in the aperture, photographed at the same pose on both presets, and Classic's gate had none. Turned off by its own flag rather than deleted, so the reticle, its tests and the argument below stay one boolean away; the fractions are kept so a flip back draws what it drew. What follows is DEV-153's case for it, as written. DEV-153. Matt, 2026-09-16: “love the new gate scoring and feedback. makes me [want] 'bullseye target' art inside the gates to show players where to aim.” 2016 drew NOTHING in the aperture, traced rather than assumed: Checkpoint_Ring.prefab is 34 GameObjects and all 19 of its MeshRenderers sit on the rim - jumpGate_diamond plus 18 built-in cubes under highlightCubes, every one at |x| 9.1-9.6 or |y| 14.3-15.5 in prefab space - the only object at (0,0,0) is ringIdle, a ParticleSystem whose EmissionModule.enabled is 0 with maxNumParticles 1, TriggerCheckpoint's own checkpointArt field is null on this prefab, the two variants carry a frame and nothing else, and int_01_hoverJet.unity holds exactly 21 of each prefab object and no gate name the prefab does not have. The 2016 video frames agree: every gate is an open outline you can see the mountain through. So this is Anniversary only and Classic keeps the bare frame. THE RADIUS IS NOT A NUMBER ANYBODY PICKED. Matt asked for art to show where to AIM, and the game already has a rule about where to aim - G2's CLEAN. sim/gate-quality.ts scores centredness as 1 - distance/radius against the gate's OWN trigger radius, so the circle a player is being asked to hit already has a radius in metres: trigger.radius x (1 - cleanCentredness), which is 22.62 x 0.4 = 9.05 m on int_01. That is what this draws, the way chainMeter draws the chain sim/speed-chain.ts already holds, so the art cannot disagree with the rule it reports and a course with tighter rings gets a tighter reticle for free. The CENTRE is the TRIGGER's, not the frame's: trigger_checkpoint sits at prefab-local (-0.069, -0.571, -0.728) under its own rotation, so the sphere the rule measures from is not the middle of the hole you look through, and a reticle at the visual centre would be pointing at the wrong place. FOUR BARS AND A PIP rather than a disc or a thin ring: you fly THROUGH a gate, so a filled disc is a wall in the one place the player is looking; a thin torus is the shape that aliases away first at the distance you commit to a line from (DEV-044's lesson - a thing too small has not been reviewed, it has been rendered); and a gate is ALREADY MADE OF 18 BARS, so four more in the same stud material cannot read as a foreign object and no new asset is imported. The four marks have their OUTER ends on the circle and point inward, so the gap between opposite marks IS the diameter and the eye reads the ring they are the ends of. It does not fight what else is on a gate: DEV-108's pulse is pinned at or outside 0.3 UV radius so it never touches the centre of view, DEV-124's arrow HIDES once the target is inside its cone so it vacates the centre exactly when this appears, and DEV-123's banner owns the top edge. THE NUMBERS TO ARGUE WITH are the three fractions, and they are fractions rather than metres on purpose. They were SIZED AGAINST THE GATE'S OWN BARS rather than by eye: at ring scale 2 the 18 studs are 1.12-1.83 m across and up to 16.55 m long, so at int_01's 9.05 m clean radius a mark is 4.07 m long and 1.36 m thick and the pip is 1.45 m - all inside the range of things this object already draws. The first pass had them at 0.81 m, thinner than the thinnest stud, which is DEV-044's trap exactly (a thing too small has not been reviewed, it has been rendered); gate-bullseye.test.ts now asserts the comparison against the sheet's stud scales instead of against an opinion. The reticle's diameter is 18.10 m in an aperture whose narrower span measures 48.5 m - 37 %. Nobody has seen this in a headset.",
+      "markLength": 0.45,
+      "markThickness": 0.15,
+      "pipSize": 0.16,
+      "emissive": 2
+    },
+    "racers": {
+      "enabled": true,
+      "note": "DEV-125. Matt, 2026-09-16: “add 3 more racers to the hover jet. these should be aligned in front of the player at the race start.” Five on the grid: the two 2016 AI pads beside the player keep their racers (usePads), and three slots stand AHEAD in a chevron on the start deck - a pair 12 m ahead at 13 m either side, and an apex 27.5 m dead ahead - so the player starts at the back of the grid and sees all five leave. The numbers are the DECK's: int_01's platform runs from about 8 m behind the release point to 29 m ahead of it and 75 m wide (the light bar), the bar itself sits 17-22 m ahead, and a pad is 10.3 m across - so the pair sits between the player's pad and the bar with 3 m to spare, and the apex pad sits just past the bar and overhangs the deck edge by 3 m. 13 m of lateral spacing is two hull widths (the HoverJet is 5.5-6 m) so nobody shares air on the first straight, and every slot faces the spawn heading, which is the route's own direction to within 2 degrees. Nobody moves until GO: the racers are not stepped while the lift holds the player, so the grid stands through the ride and the 3-2-1 and leaves on the same tick the player is released (Timer_Race's GO). Which slot gets which controller is `tuning`; left blank, the loader hands out the five in `AI_RACER_TUNINGS` order. THE NUMBERS TO ARGUE WITH are the slot positions, and only a headset can judge whether three jets 12-28 m ahead at eye height are a grid or a wall.",
+      "usePads": true,
+      "slots": [
+        {
+          "ahead": 12,
+          "right": -13
+        },
+        {
+          "ahead": 12,
+          "right": 13
+        },
+        {
+          "ahead": 27.5,
+          "right": 0
+        }
+      ],
+      "separation": {
+        "enabled": true,
+        "note": "DEV-364. Matt, 2026-09-24: “right now our ai racers tend to converge on the same path - can you have them avoid each other.” They converged because there is one racing line and every racer is pulled onto it; the five tunings differ in pace, not path. Measured on int_01 over the real Simonet ground with the player proxy flying: 4.3 m mean lateral difference between two racers at the same arc length, pairs down to 0.15 m apart. Each racer now flies a LANE, ranked from where its grid slot stood it and spaced evenly about the line: laneSpacing 6 is the 4.4 m collider beam plus 1.6 m of air, so five lanes span +/-12 m. gateFraction 0.5 leaves +/-9.1 m of lane at a 22.6 m ring (half the radius less half a beam), and gateFunnel 0.02 narrows every lane together to that, gently, over the ~150 m either side of the ring: a pursuit follower cuts a bend's inside by 8-15 m at a ring, and an inside lane plus that cut misses the ring. The funnel is SHALLOW on purpose: a sharp one at every ring forces the controller at its own period (rings 2.9 s apart, natural period ~2.8 s) and cost `fast` 23 s in the first cut. laneEaseMetres 1000 walks a racer from its slot to its lane over ~6 s after gate 0. avoidReach 100, avoidClearance 8, avoidGain 16: a racer steers off any craft - another racer or the player - AHEAD of it or alongside and within 8 m of its track, by at most 16 m, and rejoins its lane when the air clears; alongside it settles 5.3 m off, clear of the 4.4 m beam. What is BEHIND it is the other pilot's to avoid (the car behind owns the pass): a racer that dodged whatever came up behind could never be caught, and being pushed is the other half of what was asked. Result on int_01: 12.1 m mean lateral difference (from 4.5), no two craft ever overlapping, every racer 21/21, lap times within the spread they already had. THE NUMBERS TO ARGUE WITH are laneSpacing and avoidGain, on a lap.",
+        "laneSpacing": 6,
+        "laneEaseMetres": 1000,
+        "gateFraction": 0.5,
+        "gateFunnel": 0.02,
+        "avoidReach": 100,
+        "avoidClearance": 8,
+        "avoidGain": 16
+      },
+      "contact": {
+        "enabled": true,
+        "note": "DEV-364. Matt, 2026-09-24: “right now players can fly straight into them and through them.” Every racer and the player is a capsule off the HoverJet's own collider hull (the sheet's five colliders, composed: 4.435 m beam, 4.893 m long), and two that touch are pushed apart - the overlap removed and the closing speed shared by inverse mass, so momentum is conserved exactly. A push, NEVER a crash: nothing here touches the crash rule, and a racer shoved into a hillside meets the hillside by DEV-126's. restitution 0.5 hands back half the closing speed as a push: a 30 m/s rear-end slows the rammer by 22.5 and throws the other ahead by the same. restingSpeed 5: under 5 m/s of closing speed there is no bounce, so two ships steered into each other lean rather than chatter at the fixed step. passes 3 settles three in a pile. Matt, 2026-09-25: restitution 0.5 KEPT, and a hard hit costs something on top of it - see `hit`.",
+        "restitution": 0.5,
+        "restingSpeed": 5,
+        "passes": 3
+      },
+      "hit": {
+        "enabled": true,
+        "note": "DEV-364 follow-up. Matt, 2026-09-25: “sound and physics cost - nudge the players as if they got hit.” The push above is momentum only, so ramming a racer at 20 m/s read as a nudge. Now the PLAYER, struck harder than minSpeed, takes a hit on top of the push, once, on the tick of it, in the sim: strength s runs 0 at minSpeed to 1 at fullSpeed; the speed is scrubbed by scrub x s; the nose is swung toward the way the push threw the ship at headingKick x s rad/s and the canopy tipped that way at attitudeKick x s rad/s (hit from the left, the left wing lifts and the nose slews right; ram a tail and the nose rides up; rammed, it dips). The body's own 1.95 /s angular drag bleeds the kicks away over about half a second, so a kick of k turns the ship through about k / 1.95 rad, and the stick is live throughout. 2016's `hit` cue plays (a mission-bank group it configured and never called) and the cockpit jolts: `cockpit.shake`'s own waveform at shakeGain x s times its amplitude, dying away over shakeSeconds, so it follows that flag and the speed-effects slider. A racer takes the push alone. minSpeed 5 is the push's restingSpeed: a lean is not a hit. fullSpeed 30 is DEV-364's own 30 m/s rear-end; the game's measured ram was 20.9 m/s, and a straight rear-end at that speed (s 0.64) costs 7.6 % of the speed and noses the rammer up about 11 degrees, most of it inside half a second (tests/unit/racer-hit.test.ts holds both). scrub 0.12 puts a typical hit beside a tree broken at racing speed (breakSlowdown 0.06). Never a crash: this writes the player's velocity and angular velocity and nothing else. THE NUMBERS TO ARGUE WITH, on a lap: scrub and attitudeKick.",
+        "minSpeed": 5,
+        "fullSpeed": 30,
+        "scrub": 0.12,
+        "headingKick": 0.4,
+        "attitudeKick": 0.6,
+        "shakeSeconds": 0.45,
+        "shakeGain": 5
+      }
+    },
+    "crash": {
+      "enabled": true,
+      "note": "DEV-126. Matt, 2026-09-16: “we should have player ships crash if they collide too hard - they get reset near their crash spot, but back on the course (like an arcade game).” 2016 never crashed: Ship_HoverShip.OnCollisionEnter runs Flash() - angular drag x3 for 0.3 s, explode2, gas and boost released - and endOnCollide is 0 on the shipped prefab, so the port's zero-bounciness contact (DEV-020) IS the 2016 behaviour and stays as the below-threshold case. minImpactSpeed 45 is the NORMAL component of velocity the contact removes: half of terminalSpeedCruise off the generated sheet (89.81 m/s, the unboosted terminal), i.e. a ship at unboosted terminal hitting at 30 degrees of incidence, a boosted 180 m/s ship at 14.5 degrees, a chained 340 m/s ship at 7.6 degrees - a graze at any speed bounces, a nose-in at racing speed crashes. resetBackMetres 120 is under a quarter of int_01's 513 m gate spacing, so you come back on the leg you crashed on and not in front of a ring you already took; clearanceMetres 40 sits between the 2016 ghost's measured minimum clearance (26 m) and the autopilot's own 60 m floor, and only lifts a reset that the course line would put lower than that. resetSpeed 40 is under half the unboosted terminal, so a crash costs the whole speed chain and the run-up to the next gate; that is the arcade price. holdSeconds 0.55 with the 0.1 s kill fade in and the 0.35 s cut fade out (fade.ts) makes the whole beat 1.0 s. The AI racers obey the same rule with the same numbers and no curtain, back onto their own line. Untested in a headset; every number here is a first guess of the kind a playtest settles.",
+      "minImpactSpeed": 45,
+      "resetBackMetres": 120,
+      "clearanceMetres": 40,
+      "resetSpeed": 40,
+      "holdSeconds": 0.55,
+      "resetClearStepMetres": 10
+    },
+    "propCollision": {
+      "enabled": true,
+      "note": "DEV-136, Matt 2026-09-16: 'there are no collision with props - it'd be nice if they broke apart (the trees, cacti, etc)'. 2016 had neither. Every scattered prop and every landmark is a vertical capsule off its DRAWN bounds (sim/props/collision.ts); the hull's five spheres test nine hash cells a tick. At or above breakSpeed the prop breaks - collider gone, propHit fired, the instance swapped for its facets flying apart along their normals under (0,-32,0) for fractureSeconds - and the ship loses breakSlowdown of its speed. Below it the hull bounces off with bounceRestitution and the tree stands. breakSpeed 45 is half the HoverJet's unboosted terminal 89.8 m/s: a slow drift into a trunk glances, anything like racing speed goes through it. First guesses in DEV-080's sense, every one; breakSlowdown is the number that decides whether the forest is a hazard or a decoration. In THIS block because it moves the ship. DEV-147 gave the AI racers the same colliders with their own state; DEV-180 gave them racerStuckSeconds, because the 99.65 %-above-breakSpeed measurement that justified BREAK rather than AVOID was taken over the RACE, and a racer that has finished or been crash-reset is under breakSpeed by construction.",
+      "breakSpeed": 45,
+      "breakSlowdown": 0.06,
+      "bounceRestitution": 0.25,
+      "radiusFraction": 0.3,
+      "cellMetres": 64,
+      "fractureSeconds": 1.5,
+      "racerStuckSeconds": 0.25,
+      "strike": {
+        "enabled": true,
+        "note": "DEV-428. Matt, 2026-09-26: 'instead of removing props that are collided with, spawn particle burst fx at the collision point, in the color fo the collided prop, and give it some velocity from the collision', then, of the tree: 'stay standing - it'd be great if we could trigger shader motion or something on trees.' On: a contact at or above breakSpeed still costs breakSlowdown and the hitter still goes THROUGH, but the collider is KEPT (sim/props/collision.ts `passing`), so the tree is solid to the next flier and to your next pass, and the renderer leaves it drawn and throws fx.propBurst instead of the fracture. Off: DEV-136, the collider goes and the tree comes apart. PLANTS only: a spire (a landmark rock, 65-208 m of collider) struck at speed is still removed and fractured, because flying THROUGH a standing one puts the eye inside stone; what a standing rock should do instead is Matt's call. DEV-180's stuck-racer escape still REMOVES what it is resting on, and that one tree fractures, because the renderer draws what the sim has. Just the switch: the burst's look is fx.propBurst, kept out of this block because every gameplay number is hashed into the lap rules (DEV-372)."
+      }
+    },
+    "energy": {
+      "enabled": true,
+      "note": "DEV-143, Matt 2026-09-16: “hold gas + boost as much as you can” feels one-dimensional. So boost COSTS energy. The whole system was already extracted at trust `verified` off PlayerShip_SR14_Photon.prefab#11400144 and nothing in src/ read a key of it: the tank is 100, the burn is engineBurnrate 8 x BoostBurnrate 4 = 32/s, and the penalty for reaching zero is RebootTime = 3 s of NO BOOST (2016's own answer to an empty tank, with its blackout, its disabled controls and its 0.4-unit handback taken off). The tank recharges THROUGH the lockout, deliberately: 2016 freezes the recharge and hands back 0.4 units out of 100, which at any rate that makes boost cost something is a tank that empties again next tick, forever. rechargeScale is the ONE number here. THE NUMBER TO ARGUE WITH, and it wants a headset and a lap, not a monitor. DEV-410, Matt 2026-09-25: 'sometimes it feels like the brakes got hit even though i just passed through a ring. i'd expect each ring to build up my boost bar a bit, and if i'm boosting through a chain, it should be able to continuously refill the boost.' The brakes were very likely the lockout: a held boost cycled 6.25 s on, then 3 s out, 3 s on, 3 s out (read off the arithmetic, not measured on his lap). So lockoutScale 0 removes it (Matt's call at filing), and an empty tank boosts on what the recharge pays, which is half power here (recharge / burn), so the speed eases down rather than dropping. ringRefill 0.5 of the tank per ring is derived: int_01's longest leg, 513 m ring to ring, is 2.86 s of held boost at the sheet's boosted terminal of 179.6 m/s, which at the net -16/s is 45.7 units. Half a tank is the smallest round fraction that covers it, so a chain taken at full boost never runs dry. sim/energy.ts has the working, and tests/unit/energy.test.ts computes it from the level. Follow-up, Matt 2026-09-26, asked whether an empty tank should give half power: 'nothing - i think part of the problem is not realizing the boost bar is filling / emptying'. So reengage 0.25: once dry, boost stays out until the tank holds a quarter again (about 1.6 s of recharge) or a ring refills it, and the HUD's tank now names itself and says EMPTY. 0.25 is a first guess.",
+      "rechargeScale": 0.16,
+      "lockoutScale": 0,
+      "ringRefill": 0.5,
+      "reengage": 0.25,
+      "startFill": 0
+    },
+    "energyRace": {
+      "enabled": true,
+      "note": "DEV-144, from the playthrough triage: the early prototype, where gates give energy and running dry drops you. A MODE - `game/modes.ts`'s fourth row, which is Ring Attack in every field but `energyPowered` - and NOT a tweak, so this flag makes the mode selectable rather than switching a rule on inside one. `?mode=energyRace` is the only door today; no shipped level names it and none can, because content/levels is a generated sha256-guarded tree whose own _schema.json enumerates the three 2016 modes (see the DEV-144 row). Both numbers were sized against a MEASUREMENT of the shipped game - the two 2016 ghosts of int_01, all 21 gates matched on both: gate-to-gate p50 2.59 s / max 6.93 s (fast) and 4.78 s / 6.79 s (slow); release to gate 1 is 9.9 s, the longest gateless stretch in the run; the run home is 0.89 s, not the 24.5 s a first pass got by reading `ghost.duration - lastGate` (the recording rolls on while the ship coasts to a stop - DEV-027's lesson, and it would have sized the tank at twenty times what the mode needs). 0.2 is not a round number picked for looking tidy: it is 1 / (1 + BoostBurnrate), so BOOSTING costs exactly the shipped engineBurnrate of 8/s - a 12.5 s tank - and cruising costs a fifth of that. A gate pays a third of a tank. Swept against both ghosts at boost duty cycles of 0 / 25 / 50 / 75 / 100 %: cruising and half-boost are comfortable for both pilots (tank never below 52); at three-quarters the fast line has 26 units left and the slow line 9; flat out, the FAST line finishes on an empty tank and the SLOW line dies at gate 2. That knife edge is the anchor - the 2016 fast lap is exactly what a full-boost run costs. THE NUMBERS TO ARGUE WITH, and this mode has never been flown by anyone.",
+      "drainScale": 0.2,
+      "gatePayFraction": 0.35
+    },
+    "ambientTraffic": {
+      "enabled": true,
+      "note": "DEV-146. Matt, 2026-09-16: “Interleaved modes: see HoverJets fly while on a JumpSeat course.” WHICH course the traffic flies is the LEVEL's — `ambientTraffic` in content/levels/*.json, emitted by an authored table in tools/extract/level.mjs — because it differs per island: int_01_jumpSeat's targets sit a median of 452 m from int_01_hoverJet's racing line, rookie_02_jumpSeat's sit a median of 853 m from its neighbour's and would read as specks. This block is the switch and the frame budget. maxCount 4 is not a taste: a JumpSeat mission has NO racers at all (its mode has no opponents), while int_01_hoverJet already flies five, so four ambient ships keep the worst JumpSeat frame at or below a ship count this engine has been drawing since DEV-125 — measured at 12 extra draw calls for three ships (4 each: hull, canopy, 2 struts) plus one trail apiece. recycleClearMetres 1500 is where a 6 m hull is about four to six pixels on a Quest 3 (6/1500 rad = 0.23 degrees, 20-25 px/degree), which is DEV-044's own threshold for a thing that has been rendered rather than seen — so a lap recycle cannot be watched rather than is unlikely to be. EVERY NUMBER HERE WAS CHOSEN ON A MONITOR and the count is the one to argue with: three ships on an 11.3 km circuit is a jet across the bay roughly every 30 s, and whether that is traffic or emptiness is a headset question.",
+      "maxCount": 4,
+      "recycleClearMetres": 1500
+    },
+    "variants": {
+      "enabled": true,
+      "note": "DEV-380, docs/plan/AIRCRAFT-VARIANTS.md. Matt, 2026-09-24: “a new selection after the aircraft type.” The switch for the variant step and nothing else: the variants themselves are the AIRCRAFT's, in content/aircraft/<vehicle>.json, each a set of multipliers on 2016's own sheet, and standard is 2016 because it scales nothing. Today only standard exists (DEV-381, DEV-383 and DEV-384 add the rest) and ?variant=<id> is the development switch; the hangar step is DEV-382."
+    },
+    "glider": {
+      "enabled": true,
+      "note": "DEV-399, docs/plan/AIRCRAFT-VARIANTS.md section 5 (G1). The glider as a third aircraft: its course joins the level list and the hangar gets a third aircraft table, one variant (standard) until G5. A switch and nothing else: the glider's numbers are its own file's, content/aircraft/glider.json. It flies in the HoverJet's cockpit and hull until it has art of its own (G3, Matt's asset call), and no human has flown it yet (G4)."
+    },
+    "rooms": {
+      "enabled": true,
+      "note": "DEV-389 and DEV-477, plan/MULTIPLAYER.md section 6.3. Live multiplayer: private rooms by link or code, HoverJet Ring Attack, up to the course's six starts. Matt, 2026-09-25 (section 11 call 2): “go from lobby to loaded in the map, to a shared countdown - everyone gets go at the same time.” WHERE PEOPLE START, Matt, 2026-09-27: “1 player per start-point (players instead of the ai racers)”, the racers' own starts. So a room's starts are single player's list (src/game/racer-grid.ts roomStarts): the player's pad, then 2016's two (its AI pads, or where its recordings began on the rookie courses), then the three chevron slots of gameplay.racers. People take the first ones, one each, in a shuffle the room draws; bots take the rest. NOT LEVEL, and chosen knowing it: a room's time runs from each player's own release, and the chevron stands 9.5 to 27.2 m nearer gate 0 than the pad (tests/unit/racer-grid.test.ts writes the table down). NOT IN ANY LAP'S RULES: a room lap never goes on a solo board (section 11 call 10), so nothing here can move a board. Preview only (content/build-channel.ts PREVIEW_ONLY): production has no rooms Worker bound."
+    },
+    "editor": {
+      "enabled": true,
+      "note": "DEV-466, docs/plan/EDITOR.md section 5.7. The course editor and player courses: make a course on one of the four islands on the desktop, fly it, save it as a link or a file, and play one somebody sent you. Matt, 2026-09-27: “desktop editor first”, “it'd be nice to get something in for 1.0”. Preview only (content/build-channel.ts PREVIEW_ONLY) until the call at release, 2026-10-06. NOT IN ANY LAP'S RULES: it decides what the menus offer, not what a lap is, so it moves no board."
+    },
+    "tv": {
+      "enabled": true,
+      "note": "DEV-480, docs/plan/FF-TV.md. Faceted Flight TV: the title's fourth top row, a live race picked at random (no room's code, no names: the server strips them, DEV-479), the AI racers when nothing is live (DEV-483), and links to share, ?tv, ?tv=<id>&follow=<n> and ?tv=lap:<id> (the /tv short forms). Matt, 2026-09-30: “i want it to go out with 1.0 and be easy to share links to view self, others, or random rooms.” Preview only (content/build-channel.ts PREVIEW_ONLY) until Matt has worn it; taking it off that list is the 1.0 shipping edit. NOT IN ANY LAP'S RULES: it only watches, so it moves no board.",
+      "headsetCuts": {
+        "enabled": false,
+        "note": "DEV-481 follow-up. In a headset, the comfort cuts (trackside vantages through black, teleport and snap turn) instead of the flat camera. Off at launch, Matt, 2026-10-01: “let's keep it functionally identical to flat at launch. (don't limit VR users to teleport and snap turn)”. Kept for a comfort option after launch."
+      }
+    }
+  },
+  "boundary": {
+    "note": "The out-of-bounds countdown made visible (DEV-127). Matt, 2026-09-16: “let's do a 'fuzzy screen' visual if players go out of bounds.” 2016 had a HUD panel and an alarm; both are kept, and this is the third channel.",
+    "fuzz": {
+      "enabled": true,
+      "note": "Signal-loss static that grows with the 13 s countdown. It comes in from the CORNERS and closes on the centre with the clock — the clear disc is R_OPEN × (1 − progress), so the middle of the frame and the RETURN banner are untouched until the final second, and the player can still see where to fly back. Both ramps are linear so the static reads as a clock. NOT on the speed-FX comfort slider: static is screen-fixed and carries no self-motion cue, so it is feedback rather than vection, and a player who turned the speed effects off did not ask to lose the warning that their run is about to end (the argument DEV-084 makes for the wind). The comfort answer it does owe — flicker — is answered by the grain refreshing at 24 Hz rather than the display rate. THE NUMBER TO ARGUE WITH IS strength: 0.85 is the static's overlay alpha at the frame edge as the clock hits zero, so the last frame before the death curtain is mostly noise with the world still visible behind it. Photographed at 25 / 75 / 95 % of the countdown on int_01; see the DEV-127 row.",
+      "strength": 0.85
+    }
+  },
+  "vr": {
+    "note": "What Anniversary turns OFF while a headset is presenting. DEV-263, Matt 2026-09-21: “off in VR, on in flat.” THE MEASUREMENT THAT PRODUCED IT, and it is the first worn A/B this project has taken: rookie_01_hoverJet at 1512 px an eye, same minute, same machine — Classic held 96.9% of its frames at 90 Hz, Anniversary 75.0%. Nine runs, seven of them Classic, every one 94-98%; int_01_hoverJet on Classic held 98.2% across 9,728 frames. Flat, the same build runs ~178 fps with GPU p50 1.02 ms, so there is NOTHING to buy on a monitor and this list would only cost look there. Each entry is a path from `editionFeatures()` and the loader refuses one that is not — a typo here cannot quietly disable nothing.",
+    "disable": [
+      "terrain.lodFade",
+      "terrain.surfaceGloss",
+      "render.haze",
+      "render.illustrative",
+      "props.scatterShadows",
+      "render.skyVisibility",
+      "terrain.detailRing",
+      "render.nearShadow"
+    ],
+    "perEntry": {
+      "render.nearShadow": "DEV-582, until a worn ?perf=1 capture exists. The pass is drawn once for both eyes and is cheap (a 160 m box holds few casters), but the lookup is one more five-tap PCF per lit fragment, paid per eye, on a worn frame that is 75 % fill. docs/plan/ULTRA.md says why the default is decided by a capture rather than argued; taking this line out is the edit that ships it to the headset.",
+      "render.clouds": "OFF THE LIST since DEV-585. Matt, 2026-10-03: \"We should have clouds and their shadows in vr.\" It was listed because he could not see them from the cockpit (2026-09-21, DEV-263: they were free to drop, not a cost cut), and the clouds group measured 0.02 to 0.16 ms on a monitor frame (VR-PERF-WAVE-3.md section 10.3). Now a headset flies the same lifted, drifting, rim-lit clouds as flat, and the clouds and render.cloudShadow agree because the shadow map is built from the placements actually drawn. A worn ?perf=1 capture is the open gate; if it says otherwise, the row says so and Matt decides, rather than the path quietly coming back.",
+      "terrain.lodFade": "Matt: “this looks bad in general.” The only entry judged on LOOK rather than cost, and the one that wants a flat decision too — it is here rather than globally off because the flat call has not been made yet, not because VR is the reason.",
+      "terrain.surfaceGloss": "six per-fragment classes over the whole terrain, which is the shape of cost this build is most sensitive to: halving the eye resolution took Anniversary from 4.6% to 75% of frames at 90 Hz, so fill is the axis.",
+      "render.haze": "a per-fragment term over everything at range, same argument as the gloss.",
+      "render.illustrative": "a full-screen treatment, same argument again.",
+      "terrain.detailRing": "DEV-337, Matt after the third worn flight (2026-09-24): \u201cturning detail ring off was always a win\u201d, \u201clet's disable it for default VR experience\u201d. Measured on this machine, one frozen rookie_01 frame at one 1620 px eye with the rest of this list applied, bases alternated: 0.10-0.24 ms of GPU and ~0.28 M triangles, for finer ground within 320 m that is hard to see at flying speed. The worn capture could NOT confirm it: every ring press in it was made while paused, with frames already at 95-99 %. The Advanced page puts it back for one session; flat keeps it.",
+      "render.skyVisibility": "DEV-333. Matt, after the first worn flight with it (2026-09-23): \u201cmaybe we need to gate that feature to flat only.\u201d One texture fetch per LAND fragment, and the land is most of the frame; that same capture measured the headset at 2160 px an eye, where the frame is already over budget with the scatter on. The bake is lazy on the flag, so a session that starts in the headset pays no load time for it either. Flat keeps bounce 3.",
+      "props.scatterShadows": "DEV-304, wishlist #33. The ONE entry here with a headset measurement of its own rather than an argument: 2.70 ms GPU p50 on adv_01_hoverJet through a real SteamVR compositor (10.37 -> 7.68), which is DEV-224, and DEV-224 is why it was false EVERYWHERE until now. It is true on the preset and listed here because the flat build has 1.02 ms of GPU and nothing to buy, so this is the first row where §0's \"on in flat, off in VR\" buys something a player can see rather than only something a profiler can. The interaction the flag carries goes with it: `canopyDirectWeight` composes `shadowCastersFor`, which reads the preset AFTER this list has been applied, so in a headset the canopy bake takes its two DIRECT lines back in the same notify."
+    }
+  },
+  "life": {
+    "note": "The life pass (Matt, 2026-09-27: “would like the \"life\" pass to come online sometime soon”). Scenery that moves; never an opponent, a collider or a score (DEV-146's rule). Outside `gameplay` so it cannot restart a board. DEV-545, Matt 2026-09-30: “kill the fish” — DEV-449's shoals are gone; the boats and the dolphins stay.",
+    "boats": {
+      "enabled": true,
+      "note": "DEV-447. Stationary first: moored and anchored boats near the shore and the start, riding the facet the sea is drawn with. 2016's own bought Geometric-Landscape rowboat and sailboat, never placed in 2016. Two draw calls. Dropped at quality `low`. DEV-532, Matt 2026-09-29: “boats look pretty small” — the scales went from 1.4-1.8 and 3-3.8 to 2.6-3.0 and 5.5-6.5: a 8.2-9.5 m whaleboat and a 13.7-16.2 m sailing yacht (mast 14-17 m), under the 18-37 m palms 2016 drew from this same pack at scale 4-8. About 1.75x as many pixels from the seat; the scale ranges are the numbers to argue with.",
+      "minQuality": "medium",
+      "seed": 447,
+      "alongRoute": 8,
+      "atStart": 3,
+      "routeReach": [80, 900],
+      "startReach": [110, 450],
+      "depth": [3, 40],
+      "startOpenWater": true,
+      "spacing": 70,
+      "swing": 25,
+      "search": { "step": 10, "angles": 24 },
+      "kinds": [
+        { "id": "rowboat", "mesh": "assets/life/boat-row.glb", "weight": 3, "scale": [2.6, 3.0], "draft": 0.3 },
+        { "id": "sailboat", "mesh": "assets/life/boat-sail.glb", "weight": 2, "scale": [5.5, 6.5], "draft": 0.25 }
+      ]
+    },
+    "dolphins": {
+      "enabled": true,
+      "note": "DEV-449. polyfish's dolphin (Matt's own), in pods off the course, each leaping once every few seconds from and into the drawn sea. One draw. Dropped at quality `low`. DEV-532, Matt 2026-09-29: “i haven't seen the dolphins” — measured, a dolphin was up, in view and 10 px or more for ~0.35 s a lap. So the pods sit by the line (16 aims, 25-300 m out, where 6 aims 60-900 m out were), are bigger (3.1-3.8 m, a large bottlenose, where 2.2-2.8), leap higher and livelier, and BREACH: a pod leaps together as the player comes at it, the apex `breach.apexAhead` metres off.",
+      "minQuality": "medium",
+      "mesh": "assets/life/dolphin.glb",
+      "gravity": 9.81,
+      "seed": 449,
+      "alongRoute": 32,
+      "lineAbove": 80,
+      "atStart": 1,
+      "routeReach": [25, 300],
+      "startReach": [60, 600],
+      "depth": 8,
+      "spacing": 250,
+      "perPod": [3, 6],
+      "podRadius": 14,
+      "swing": 12,
+      "period": [4, 7],
+      "height": [2, 3.5],
+      "length": [6, 10],
+      "scale": [18, 22],
+      "search": { "step": 10, "angles": 24 },
+      "breach": { "apexAhead": 80, "below": 28, "ahead": 45, "reach": 600, "minSpeed": 30, "stagger": 0.2, "rest": 8 }
+    }
+  }
+}

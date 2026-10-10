@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>Racing other people · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="racing">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        I tried to put multiplayer into Faceted Flight back in 2016, first with Photon and then
+        with Unity's own networking. Neither got where I wanted it, and Photon ended up so tangled
+        into the game that even single player spawned your ship through it. For the anniversary
+        edition, Claude got multiplayer working straight out of the gate, and it didn't tie the
+        game to a service like Photon to do it. As an old man, that blew my mind.
+      </p>
+      <p>
+        I'd like this code to be useful to other people making games, so this chapter goes through
+        how it works. The three demos below run the game's own networking code. Only the internet
+        connection in them is pretend, so you can make it as bad as you like.
+      </p>
+
+      <h2>A race is everyone's time trial, flown at once</h2>
+      <p>
+        In a room, each player flies their own ship in their own copy of the game, exactly like
+        single player. Your time is your own count of the game's fixed ticks from your own GO.
+        Nobody's result depends on the network, so a photo finish is settled by ticks, never by
+        whose screen saw whom cross the line first. Everyone else's ship is only drawn.
+      </p>
+      <p>
+        The room itself is a small server on Cloudflare, one per race, that passes messages
+        between the players. It keeps the lobby: who's in, which colors they picked, and whether
+        everyone has loaded. Then it picks one moment for GO and tells everybody. None of the game
+        runs on it. It has no idea how a HoverJet flies, so it can't disagree with the game about
+        it. Up to six people race in a room, the room's owner can fill the empty starts with AI
+        racers, and anyone with the watch link can follow along two seconds behind.
+      </p>
+      <p>
+        A room can race a course somebody made in the editor, too. The room carries the course's
+        share link, so everyone who joins builds the course from it, including people who've never
+        seen it. The lap server builds it from the same link to check each lap, with the same code
+        the game uses.
+      </p>
+
+      <h2>Agreeing on GO</h2>
+      <p>
+        Your computer's clock and the room's don't agree, and nothing tells you by how much. So
+        the game asks. It sends the room a ping stamped with its own time, the room answers with
+        its time, and when the answer gets back the game knows the room's clock read that number
+        somewhere inside the round trip. One ping is a rough guess. A few dozen get very close,
+        and how you combine them matters.
+      </p>
+      <div data-toy="room-clock"></div>
+      <p>
+        <strong>Try it:</strong> the gray dots are single pings, each round trip split down the
+        middle, and they bounce around with the jitter. The yellow line keeps the ping with the
+        fastest round trip, which is the classic way to do this. The blue line is the game's. It
+        takes the fastest trip in each direction from whichever pings had it, so it settles sooner
+        when the delays up and down are random. Press <em>join burst</em> to send the eight pings
+        the game sends when you join a room. Then try <em>upload slower by</em>. A connection
+        that's always slower in one direction can't be seen from a round trip, and all three lines
+        settle off zero by half the difference. That's alright, because each player's result is
+        timed from their own GO, so a few milliseconds of difference at the start never reaches
+        the results.
+      </p>
+      <p>
+        Once the clocks agree, "tick 2,000 of this race" is the same moment on every computer in
+        the room, and that shared tick is what the rest of the multiplayer code is built on.
+      </p>
+      <pre data-snippet="src/net/room-clock.ts#sharedTickAt" data-caption="the shared tick"></pre>
+
+      <h2>What latency looks like at this speed</h2>
+      <p>
+        The HoverJet averages about 159 meters a second over a lap, and a chained lap touches twice
+        that. A car in a racing game covers a few tens of meters a second. When you see another
+        player's ship, you're seeing where it was a moment ago: the time the message took to reach
+        you, plus a little buffer so the motion stays smooth. Call it a sixth of a second. At 159
+        meters a second, that's about 26 meters, five hull lengths. At the peak speed of a chained
+        lap it's ten.
+      </p>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value">165 ms</div><div class="stat-label">delay you see</div></div>
+        <div class="stat-card"><div class="stat-value">26 m</div><div class="stat-label">at a mean lap's speed</div></div>
+        <div class="stat-card"><div class="stat-value">5 hulls</div><div class="stat-label">behind where it really is</div></div>
+      </div>
+      <p>
+        So two players can't collide fairly, since each would be hitting a ship that's somewhere
+        else on the other screen. In a room every craft passes through every other, and nobody's
+        position decides anything. The race comes down to two things latency doesn't change: how
+        many rings you took, and on which tick you crossed the line.
+      </p>
+
+      <h2>Drawing the other ships</h2>
+      <p>
+        Each player sends their ship's pose about twenty times a second: 44 bytes holding its
+        position, rotation, velocity and stick. When one arrives, the game files it under the tick it was
+        sent on, and draws the ship a little in the past on the shared clock, on a smooth curve between the poses either side. Because
+        poses are filed by when they were sent, a late bunch of them lands where it belongs and
+        the ship keeps moving through them. How far in the past it draws adjusts itself: it backs
+        off quickly when messages start arriving late, and creeps forward again when the
+        connection settles.
+      </p>
+      <div data-toy="remote-ship"></div>
+      <p>
+        <strong>Try it:</strong> the white outline is where the other player really is. The yellow
+        dots are their messages as they arrive, and the blue ship is what you'd see. Turn up the
+        <em>stalls</em>. A WebSocket never loses a message, but a stalled one holds up everything
+        behind it, and then they all arrive at once. Switch to <em>newest message only</em> to see
+        that drawn raw: the ship freezes, then jumps. With <em>the game's track</em> it keeps
+        flying through the stall. Push the <em>one-way delay</em> up and watch the gap to the white
+        outline grow.
+      </p>
+
+      <h2>How the lap server checks a time</h2>
+      <p>
+        A time sent by a browser is a number anybody can type, so the lap server doesn't take one.
+        It takes the whole lap, every pose the ship passed through, and works the time out for
+        itself using the game's own scoring. Before that, it checks whether a HoverJet could have
+        flown those poses at all: no jumps the lap doesn't explain, and no speed past what the
+        ship could reach with the rings it had taken so far. Only then does it look at the time
+        the browser claimed, and only to compare. A room's results come from the same judge, so
+        the room never takes a player's word for a time either.
+      </p>
+      <div data-toy="lap-judge"></div>
+      <p>
+        <strong>Try it:</strong> start with <em>honest</em>, then try each cheat. <em>fly faster</em>
+        speeds up a stretch, and the ceiling catches it. The speed chain raises that ceiling with
+        every ring banked, so an honest chained lap is never refused for being fast.
+        <em>teleport</em> forward is refused even when it's labeled as a crash reset, because a
+        crash only ever puts you back. <em>jump</em> rewinds the ship without marking a reset, and
+        that's refused too: a jump the lap doesn't explain. <em>lie</em> about the time is the
+        easiest to catch, since the server already knows it. Missing a ring isn't cheating, so
+        <em>skip a ring</em> is accepted and kept off the leaderboard.
+      </p>
+      <pre data-snippet="src/net/lap-validate.ts#speedCeiling" data-caption="the ceiling a lap is held to"></pre>
+
+      <h2>Using it in your own game</h2>
+      <p>
+        The room is plain TypeScript. It takes its clock, its storage and its list of connections
+        as arguments, which is how the tests run whole races in memory with no server at all. The
+        Cloudflare part is a thin wrapper around it, built on Cloudflare's own small library for
+        rooms like this, and the game's side is the browser's built-in WebSocket. By our math, a
+        room costs well under a cent an hour on Cloudflare's paid plan.
+      </p>
+      <p>
+        The pieces are small and separate. The clock, the pose format and the track each lean on
+        the game for little more than the length of its tick:
+      </p>
+      <ul>
+        <li><code>src/net/room-server.ts</code>: the room, its lobby, and GO</li>
+        <li><code>src/net/room-clock.ts</code>: agreeing on the time</li>
+        <li><code>src/net/pose-codec.ts</code>: the 44-byte pose</li>
+        <li><code>src/net/remote-track.ts</code>: drawing a ship from its poses</li>
+        <li><code>src/net/lap-validate.ts</code>: judging a lap</li>
+      </ul>
+      <p>
+        The game's code is MIT licensed, so if your game needs any of this, take it.
+      </p>
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "$comment": "DEV-651. The AI racers' callsigns, as Matt wrote them (2026-10-05). HAND-AUTHORED data: adding a name is adding a row here, never touching src/. Each race draws its racers' callsigns from this pool with the race's own seed (src/content/callsigns.ts), so no name stands twice in one race and TV, a room and a replay read the same names. Display is upper case (callsignDisplay), the pool keeps the words as written.",
+  "callsigns": [
+    "stan",
+    "peaches",
+    "poe",
+    "lil bitey",
+    "mama pedro",
+    "trashleigh",
+    "trashica",
+    "trashlynn",
+    "cutie",
+    "g-dub",
+    "hashinka",
+    "desert rose",
+    "the dude"
+  ]
+}

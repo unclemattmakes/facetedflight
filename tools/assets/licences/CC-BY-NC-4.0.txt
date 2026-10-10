@@ -1,0 +1,10 @@
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+
+SPDX identifier: CC-BY-NC-4.0
+Full legal code: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+Human-readable deed: https://creativecommons.org/licenses/by-nc/4.0/
+
+Applies to the first-party files of Faceted Flight listed in CONTENT-MANIFEST.json
+with this identifier. Credit: Faceted Flight by Uncle Matt Makes, facetedflight.net.
+Not for commercial use; for a commercial grant, ask. The name and branding are
+not licensed.

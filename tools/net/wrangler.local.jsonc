@@ -1,0 +1,26 @@
+// tools/net/wrangler.local.jsonc — a LOCAL D1 for the lap server, and nothing else. DEV-372.
+//
+// Read only by `wrangler d1 migrations apply ... --local -c tools/net/wrangler.local.jsonc`
+// (docs/lap-server.md has the whole recipe). It is deliberately NOT at the
+// repository root and deliberately has no `pages_build_output_dir`:
+//
+//   - A Wrangler file at the root WITH `pages_build_output_dir` becomes the
+//     Pages project's source of truth on the next deploy, and the dashboard's
+//     bindings (LAPS_DB on both environments, set 2026-09-24) turn read-only.
+//     This file must never be able to do that.
+//   - The database id below is not a Cloudflare id. It names a SQLite file under
+//     `.wrangler/state`, and `wrangler pages dev --d1 LAPS_DB=ff10yr-laps-local`
+//     opens the same file. The real `ff10yr-laps` / `ff10yr-laps-preview` ids
+//     are in no file in this repository.
+{
+  "name": "ff-10yr-lap-server-local",
+  "compatibility_date": "2026-09-01",
+  "d1_databases": [
+    {
+      "binding": "LAPS_DB",
+      "database_name": "ff10yr-laps-local",
+      "database_id": "ff10yr-laps-local",
+      "migrations_dir": "../../migrations"
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "note": "DEV-475: v1 player courses as the pre-v2 build wrote them (44f13f23): the canonical course, its id, its link token, its .ffcourse file (base64url), a draft as the editor stored it, and what that build expanded it to (its spawn, its live rings, its finish). Made by that build’s own code, so the migration is tested against real v1 bytes, not against v1 as v2 imagines it. Never regenerate with a v2 build.",
+  "made": "44f13f23",
+  "courses": [
+    {
+      "label": "start at the first point (every draft began there)",
+      "course": {
+        "v": 1,
+        "island": "simonet",
+        "sky": "int_01_hoverJet",
+        "vehicle": "hoverjet",
+        "mode": "ringAttack",
+        "path": {
+          "points": [
+            [-761.6, 149.6, 2008.2],
+            [62.6, 195.1, 1598.9],
+            [1009, 619, 1003],
+            [784.8, 407.6, 301.8],
+            [660.2, 252, -434.8],
+            [464.6, 741, -1138],
+            [462, 877.6, -1619.8],
+            [77.2, 829.4, -1622.2],
+            [-696.8, 178, -751.4],
+            [-1102, 620, 838]
+          ],
+          "gap": 400
+        },
+        "rings": [],
+        "start": {
+          "t": 0
+        },
+        "finish": {
+          "t": 0.95
+        },
+        "timeLimit": 180,
+        "name": ["Amber", "Heron"]
+      },
+      "id": "pc_529c769e8a09",
+      "token": "ffc1.Nc9NasMwEAXgu8x6PMzIsv522ZXSGxgT3ESN1cRysEWghNy9yKXbb-bBe094QBCEtN3GfIYAW5qXHAsgbNcfCJByObIcp-UR1_fdH3FKp1uEADt-7zgv5yprypdDKePpCgj3sUwQnnBfUi4bhL5vrBEyKNqTQcXsSA3YG1XNdyQonXfkB-yF2aMRj8LcDthbp8mhZksGWxZyNWeYFKpOYaNbvZM2mgxaLdiItH-i0Nkaa8SI37-sJYVOedIVldpbNMYbcijWYWM7IV1NhBUaxehaNwwIl_EOQTO_cJ9aRw0IWxnXUpcWCPX0lXLapn8g370QSprjR5pTgSCOEfI4Rwg9HObPuALCW1yXDMPrFw",
+      "file": "RkZDT1VSU0UBAQ8BAAA1z01qwzAQBeC7zHo8zMiy_nbZldIbGBPcRI3VxHKwRaCE3L3Ipdtv5sF7T3hAEIS03cZ8hgBbmpccCyBs1x8IkHI5shyn5RHX990fcUqnW4QAO37vOC_nKmvKl0Mp4-kKCPexTBCecF9SLhuEvm-sETIo2pNBxexIDdgbVc13JCidd-QH7IXZoxGPwtwO2FunyaFmSwZbFnI1Z5gUqk5ho1u9kzaaDFot2Ii0f6LQ2RprxIjfv6wlhU550hWV2ls0xhtyKNZhYzshXU2EFRrF6Fo3DAiX8Q5BM79wn1pHDQhbGddSlxYI9fSVctqmfyDfvRBKmuNHmlOBII4R8jhHCD0c5s-4AsJbXJcMw-sX",
+      "draft": {
+        "course": {
+          "v": 1,
+          "island": "simonet",
+          "sky": "int_01_hoverJet",
+          "vehicle": "hoverjet",
+          "mode": "ringAttack",
+          "path": {
+            "points": [
+              [-761.6, 149.6, 2008.2],
+              [62.6, 195.1, 1598.9],
+              [1009, 619, 1003],
+              [784.8, 407.6, 301.8],
+              [660.2, 252, -434.8],
+              [464.6, 741, -1138],
+              [462, 877.6, -1619.8],
+              [77.2, 829.4, -1622.2],
+              [-696.8, 178, -751.4],
+              [-1102, 620, 838]
+            ],
+            "gap": 400
+          },
+          "rings": [],
+          "start": {
+            "t": 0
+          },
+          "finish": {
+            "t": 0.95
+          },
+          "timeLimit": 180,
+          "name": ["Amber", "Heron"]
+        },
+        "selection": null,
+        "authorLap": null,
+        "remixedFrom": null
+      },
+      "expanded": {
+        "spawn": [-761.6, 149.6, 2008.2],
+        "rings": [
+          [-400.2658570343733, 145.9073847866228, 1836.7696481661906],
+          [-44.03478522827842, 172.3210980799402, 1657.5781256127962],
+          [295.25860984315926, 279.523950558925, 1476.9750258241188],
+          [622.8927720697164, 433.8505742187667, 1307.300280379773],
+          [928.5505506893197, 585.8630458138042, 1100.5285711116903],
+          [1006.0928943401174, 583.6402467762249, 748.8596969295161],
+          [828.3117325174754, 445.6409868535459, 418.4898681252719],
+          [737.3437232659996, 324.97651147073907, 49.882613285488155],
+          [680.2177210803839, 239.9826726908662, -334.55207098353657],
+          [590.6104477992171, 386.34739292447415, -687.9833008351401],
+          [499.2089484508137, 635.4753354349751, -987.1806124545442],
+          [463.75689269595966, 819.9022218563157, -1334.1996592478756],
+          [385.2959288373544, 896.0178973614611, -1684.0918195295121],
+          [38.86253567070476, 803.269753141289, -1593.0916852943767],
+          [-210.0283612134433, 571.9201980531657, -1382.5413323967725],
+          [-438.6520796160108, 348.28926353655555, -1142.881126764889],
+          [-649.1522990794558, 193.56254517429514, -842.7436694776283],
+          [-800.9613486828686, 199.28120814134155, -476.5010558596054],
+          [-902.3552551636448, 294.076009750839, -101.66640613895726],
+          [-984.2132853583289, 418.0707265956556, 269.6587576592417]
+        ],
+        "finish": [-1018.6706563418943, 479.6309936317397, 439.5229521509949]
+      }
+    },
+    {
+      "label": "start moved along the line, with a skip",
+      "course": {
+        "v": 1,
+        "island": "simonet",
+        "sky": "int_01_hoverJet",
+        "vehicle": "hoverjet",
+        "mode": "ringAttack",
+        "path": {
+          "points": [
+            [-761.6, 149.6, 2008.2],
+            [62.6, 195.1, 1598.9],
+            [1009, 619, 1003],
+            [784.8, 407.6, 301.8],
+            [660.2, 252, -434.8],
+            [464.6, 741, -1138],
+            [462, 877.6, -1619.8],
+            [77.2, 829.4, -1622.2],
+            [-696.8, 178, -751.4],
+            [-1102, 620, 838]
+          ],
+          "gap": 400
+        },
+        "rings": [
+          {
+            "t": 0.6,
+            "skip": true
+          }
+        ],
+        "start": {
+          "t": 0.3
+        },
+        "finish": {
+          "t": 0.9
+        },
+        "timeLimit": 180,
+        "name": ["Amber", "Kestrel"]
+      },
+      "id": "pc_183479eb9118",
+      "token": "ffc1.PdDbasMwDAbgd9G1YiTH8emut9veIISStd7itTkQe4VR8u7DHuz2k37Qryc8wDNCTPdxuYKHFOd1CRkQ0u0HPMQln4nP0_oI-0v1R5ji5R7AQ8WvivN6LbLH5fOU83i5AcI25gn8E7Y1LjmB7_vGaBYaWTmhURJZIQfstSzmOsHInbPCDdgzkUPNDpmoHbA3VgmLiozQ2BILW3KahETZSWxUqyoprYRGoxgb5vZPJFpTYg1rdnXLGCHRSidUQSnrFY12WlhkY7ExHQtVjJkkakloWzsMCJ_jBl4RHVirllJPyOBJ6PKwuIHP-3c4BoSUxz2X-nXcHggfcYlp-id3IOQ4h7c4xwyeLSEs4xzA93Ca38MOCK8h5T3cYTh-AQ",
+      "file": "RkZDT1VSU0UBAR4BAAA90NtqwzAMBuB30bViJMfx6a63294ghJK13uK1ORB7hVHy7sMe7PaTftCvJzzAM0JM93G5gocU53UJGRDS7Qc8xCWfic_T-gj7S_VHmOLlHsBDxa-K83otssfl85TzeLkBwjbmCfwTtjUuOYHv-8ZoFhpZOaFRElkhB-y1LOY6wcids8IN2DORQ80OmagdsDdWCYuKjNDYEgtbcpqERNlJbFSrKimthEajGBvm9k8kWlNiDWt2dcsYIdFKJ1RBKesVjXZaWGRjsTEdC1WMmSRqSWhbOwwIn-MGXhEdWKuWUk_I4Eno8rC4gc_7dzgGhJTHPZf6ddweCB9xiWn6J3cg5DiHtzjHDJ4tISzjHMD3cJrfww4IryHlPdxhOH4B",
+      "draft": {
+        "course": {
+          "v": 1,
+          "island": "simonet",
+          "sky": "int_01_hoverJet",
+          "vehicle": "hoverjet",
+          "mode": "ringAttack",
+          "path": {
+            "points": [
+              [-761.6, 149.6, 2008.2],
+              [62.6, 195.1, 1598.9],
+              [1009, 619, 1003],
+              [784.8, 407.6, 301.8],
+              [660.2, 252, -434.8],
+              [464.6, 741, -1138],
+              [462, 877.6, -1619.8],
+              [77.2, 829.4, -1622.2],
+              [-696.8, 178, -751.4],
+              [-1102, 620, 838]
+            ],
+            "gap": 400
+          },
+          "rings": [
+            {
+              "t": 0.6,
+              "skip": true
+            }
+          ],
+          "start": {
+            "t": 0.3
+          },
+          "finish": {
+            "t": 0.9
+          },
+          "timeLimit": 180,
+          "name": ["Amber", "Kestrel"]
+        },
+        "selection": null,
+        "authorLap": null,
+        "remixedFrom": null
+      },
+      "expanded": {
+        "spawn": [926.4762939990408, 520.8955358439871, 594.999178401818],
+        "rings": [
+          [773.1977803390981, 393.4905405644345, 251.07287069478954],
+          [712.704761109101, 269.43933033537263, -124.16569170551648],
+          [642.0539908393322, 277.3984925189377, -509.72947938094626],
+          [547.0110395915204, 499.2581333300234, -827.0602965644792],
+          [465.07987197266164, 739.4888216731995, -1135.2149912089967],
+          [207.93452990247548, 887.679298229926, -1693.6340928964632],
+          [-80.14756711069089, 699.984797435176, -1497.460885241682],
+          [-317.03595005876474, 464.6238914551111, -1277.5062828605294],
+          [-539.1718176181381, 263.1389972722313, -1014.0292385306503],
+          [-729.1587293789864, 176.18736986439177, -678.1946453796251],
+          [-851.2533567638228, 237.50785116059836, -303.30859779297094]
+        ],
+        "finish": [-935.2435463891226, 339.34873797161276, 40.94238240586133]
+      }
+    }
+  ]
+}

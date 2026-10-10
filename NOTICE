@@ -1,0 +1,57 @@
+Faceted Flight: 10th Anniversary Edition: licensing at a glance
+================================================================
+
+This repository is licensed in two halves, and a third category is neither
+half. Read this before reusing anything.
+
+
+CODE: MIT (see LICENSE)
+    The three.js + WebXR game engine and everything built with it: src/,
+    tools/, tests/, functions/, workers/, migrations/, .githooks/, and the
+    build configuration.
+
+    GitHub labels the repository from that file. The label describes the CODE
+    only.
+
+
+CONTENT: CC BY-NC 4.0 (see CONTENT-LICENSE.md)
+    The game's first-party creative work: the level designs and gameplay data
+    in content/, the flight tuning in src/generated/, the recorded flights in
+    content/ghosts/, and the first-party models, terrain maps and fonts in the
+    open content pack.
+
+    This is a deliberate split. A mission's ring layout is design work
+    expressed as numbers, and a permissive code license would let anyone ship
+    those missions commercially. You may remix, learn from and build
+    non-commercial projects on the content, with credit. For a commercial
+    grant, open an issue and ask.
+
+
+THIRD-PARTY MATERIAL WITH ITS OWN TERMS (see THIRD-PARTY-NOTICES.md)
+    three.js (MIT), the Bitter and Roboto Condensed typefaces (SIL Open Font
+    License 1.1), the CRYSTAL typeface (CC BY-SA 4.0) and six music tracks by
+    HoliznaCC0 (CC0 1.0). Each keeps its own license, which may be stricter or
+    looser than the two above. THIRD-PARTY-NOTICES.md lists them, with versions.
+
+    The live game at facetedflight.net also uses 3D models from commercial
+    asset packs, under licenses that allow use inside a finished game and do
+    not allow handing the models to someone else. NONE of that material is in
+    this repository or in the content pack, and none of it may be added. The
+    denylist in .githooks/check-denylist.mjs enforces that on every commit.
+    A clone of this repository runs without those models.
+
+
+NAME AND BRANDING: not licensed
+    "Faceted Flight", "Uncle Matt Makes", "The Department of Silly Stuff", and
+    the game's logo and branding identify this project and its author. Forks
+    and derived games must ship under their own name and branding. Code and
+    content may be used under the terms above; the name and the look of the
+    brand may not.
+
+
+FILES
+    NOTICE                  this summary
+    LICENSE                 the code license (MIT)
+    CONTENT-LICENSE.md      the content terms (CC BY-NC 4.0)
+    THIRD-PARTY-NOTICES.md  who made the things that are not ours
+    docs/assets.md          what the content pack holds and what it leaves out

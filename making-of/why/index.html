@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>Soaring out of Early Access · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="why">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        <em>Faceted Flight</em> went into Early Access on Steam on October 5th, 2016. It's a
+        retro-stunt flyer: you fly a little jet through rings over low-poly islands. It was built
+        for the Oculus DK1, which only tracked rotation, and I'd been on it for roughly three years
+        as a solo developer. Then the DK2 added positional tracking, the Vive brought room-scale,
+        so the cobwebs started to form, and Faceted Flight stayed in Early Access limbo...
+      </p>
+      <p>
+        Fast forward to 2026. I've been porting my old Unity projects to the web, and I realized
+        the timing was a perfect excuse to revisit it with a 10th Anniversary Edition. It runs in a browser now, on three.js
+        and WebXR, and on phones too. Claude did most of the digging through the old Unity project
+        to work out what the 2016 game actually did, and these chapters are where that gets written
+        down.
+      </p>
+
+      <h2>What's in it</h2>
+      <p>
+        All of the 2016 game: thirteen missions, two vehicles and three game modes. Plus things it
+        never had. There are AI racers to fly against. You can host a race and send friends a link,
+        and anyone who just wants to watch gets a spectator link. There's a course editor, so you can
+        lay out your own ring course over one of the islands, fly it and share it. Laps go on
+        leaderboards. The original look is still in there as Classic, and you can swap between it
+        and the anniversary look mid-flight.
+      </p>
+
+      <h2>Built for WebXR</h2>
+      <p>
+        It's built for WebXR, the web's standard for VR, and not for one particular headset. A
+        headset whose browser supports WebXR can fly it, and the same page plays flat on a laptop or
+        a phone.
+      </p>
+
+      <h2>Examples you can play with</h2>
+      <p>
+        Because the game is made for the web, the examples on these pages can run the exact same code
+        the game runs. The flight bench flies
+        the real HoverJet physics, the cheat demo runs laps through the lap server's own checks, and the
+        sound demo drives the real engine audio. None of them is a copy written for the page, so when
+        the game changes, the examples change with it. Numbers in the text that the game knows are
+        filled in from the game when the site is built; hover one to see where it came from.
+      </p>
+      <p>
+        This first one is a seeded island built by the new course creator's terrain generator, lit by the sun, sky
+        and fog of one of the game's Simonet Islands missions. It downloads nothing, so it shows up right away.
+      </p>
+      <div data-toy="island-flyover"></div>
+      <p>
+        <strong>Try it:</strong> press <em>new island</em> a few times, and untick <em>orbit</em> to
+        hold the view still.
+      </p>
+      <p>
+        The whole game can run in the page too, the same build facetedflight.net serves, with a few
+        development switches set so it starts in the air instead of at the title screen. It takes a
+        while to load, because it loads everything the game loads.
+      </p>
+      <div data-toy="live-window"></div>
+      <p>
+        <strong>Try it:</strong> watch the autopilot fly a lap, then switch the look to Classic and
+        load it again. It's the same race with the same rules, dressed the way it looked in 2016.
+      </p>
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

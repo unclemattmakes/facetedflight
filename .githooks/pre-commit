@@ -1,0 +1,78 @@
+#!/bin/sh
+# pre-commit — refuse to commit bought (or bought-derived) content.
+#
+# Faceted Flight 2 is a port of a 2016 Unity game built on ~55 third-party Asset Store packs.
+# Those licences permit use inside a BUILT PRODUCT and forbid redistribution as extractable
+# files; several packs ship no licence at all; the `MM_*` meshes are Matt's own bakes of BOUGHT
+# geometry. Git history is forever and a rewrite after the fact is not a reliable remedy — so
+# the check happens HERE, before the object exists. See ASSET-PROVENANCE.md and DECISIONS D12/D26.
+#
+# INSTALL (git does NOT clone hooks — this is one command per clone):
+#     git config core.hooksPath .githooks
+#   or, equivalently and idempotently:
+#     node .githooks/install.mjs
+# Wire that second form into package.json as `"prepare": "node .githooks/install.mjs"` and
+# `pnpm install` does it for every clone. Verify with:
+#     git config --get core.hooksPath      # -> .githooks
+#
+# HONEST LIMITATION: a hook is ADVISORY. `git commit --no-verify` skips it, and a clone that
+# never ran the config line never had it. It protects against accident, not intent. The
+# guarantee lives in .github/workflows/asset-denylist.yml, which re-runs the same checker over
+# the whole tree — and over the whole history — on every push and pull request.
+#
+# POSIX sh. Works in Git Bash on Windows, and in bash/dash/zsh on Linux and macOS.
+
+set -u
+
+# Repo root, so the hook works from any subdirectory and from GUI clients.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  printf '%s\n' 'pre-commit: not inside a git work tree — aborting.' >&2
+  exit 1
+}
+checker="$root/.githooks/check-denylist.mjs"
+
+if [ ! -f "$checker" ]; then
+  printf '%s\n' "pre-commit: missing $checker — refusing to commit blind." >&2
+  printf '%s\n' 'pre-commit: restore the file, or use `git commit --no-verify` if you are sure.' >&2
+  exit 1
+fi
+
+# FAIL CLOSED. If node is not on PATH we cannot check, and "cannot check" must never read as
+# "nothing wrong" for a licensing gate. Node is a hard requirement of this repo anyway (.nvmrc).
+if ! command -v node >/dev/null 2>&1; then
+  printf '%s\n' 'pre-commit: `node` not found on PATH, so the asset denylist cannot run.' >&2
+  printf '%s\n' 'pre-commit: install Node (see .nvmrc) or bypass deliberately with --no-verify.' >&2
+  exit 1
+fi
+
+node "$checker" --staged --quiet
+status=$?
+
+# No em-dash in anything a commit adds (Matt, 2026-09-30). Runs whatever the
+# denylist said, so one commit reports both. See check-em-dash.mjs for what it
+# lets through (moved lines, merges, the generated trees). The checker is found
+# BESIDE THIS HOOK, not in the worktree being committed: core.hooksPath is
+# shared, and a branch cut before the rule has no copy of its own.
+here=$(cd "$(dirname "$0")" && pwd)
+node "$here/check-em-dash.mjs" --staged
+dash=$?
+if [ "$dash" -ne 0 ]; then
+  exit "$dash"
+fi
+
+if [ "$status" -eq 0 ]; then
+  exit 0
+fi
+
+if [ "$status" -ne 1 ]; then
+  printf '%s\n' "pre-commit: the denylist checker itself failed (exit $status). Not committing." >&2
+  exit "$status"
+fi
+
+# Deliberate override: still print the full report, then allow the commit. CI gets a vote later.
+if [ "${FF2_ALLOW_ASSETS:-}" != "" ]; then
+  printf '%s\n' 'pre-commit: FF2_ALLOW_ASSETS is set — committing anyway. CI will re-run this.' >&2
+  exit 0
+fi
+
+exit 1

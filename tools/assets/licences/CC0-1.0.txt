@@ -1,0 +1,8 @@
+Creative Commons Zero 1.0 Universal (CC0 1.0)
+
+SPDX identifier: CC0-1.0
+Full legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+Human-readable deed: https://creativecommons.org/publicdomain/zero/1.0/
+
+Applies to the HoliznaCC0 music tracks listed in CONTENT-MANIFEST.json. Dedicated
+to the public domain by the author; no credit is required, and it is given anyway.

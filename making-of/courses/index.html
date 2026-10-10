@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>The course editor · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="courses">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        I'm a sucker for level editors. Excitebike was the first game I played that had one, and
+        building my own tracks in it helped spark my curiosity about making games. In 2016 I had
+        an experiment where you edited a course's line live in VR, and it never shipped. The
+        anniversary edition has a course editor. It's still early days, but it gives anyone who
+        wants one a way to add to the game.
+      </p>
+
+      <h2>What you can make</h2>
+      <p>
+        You can lay a new route over any of the four 2016 islands, or open one of the seven 2016
+        HoverJet missions and change it. You can make a new island too, from a seed and a few sliders
+        or from a height map you bring yourself. Then you set the start pad, the finish and the
+        time limit, move the sun, raise or lower the water, and place props from the game's own
+        islands: the trees, rocks and cactus the 2016 missions use.
+      </p>
+      <p>
+        There are two ways to work. At a desk, you use a mouse over the island. In a headset, the
+        island sits on a table in the hangar in front of your seat, and you grab the line and pull
+        it around with your hands. That's where my 2016 VR experiment ended up. Both are the same
+        editor underneath: one core holds the course and every change you can make to it, with
+        undo and redo, and the desk and the headset are two ways of driving it.
+      </p>
+
+      <h2>Points, a spacing, a start and a finish</h2>
+      <p>
+        A 2016 mission is a scene file with every ring placed by hand. That's fine for thirteen
+        missions made by one developer. It's no good for a player who wants to make a course and
+        send it to a friend in a chat message. So a player's course is stored as the few things
+        you'd need to rebuild it, not as a list of rings.
+      </p>
+      <p>
+        You place a handful of control points. The game draws a smooth line through them and hangs
+        a ring on it every so many meters, and you choose how many. Add a start pad, a finish
+        somewhere along the line and a time limit, and the course is done.
+      </p>
+      <div data-toy="pocket-editor"></div>
+      <p>
+        <strong>Try it:</strong> tap the stage a few times to lay a line out from the green pad.
+        Watch the rings appear and the link grow by a few characters a point. Drag a point to make
+        a hairpin and the editor warns you about the turn. Change <em>ring spacing</em> and every
+        ring moves while the points stay where they are. <em>delete last point</em> takes the
+        newest one off, and <em>start again</em> clears the lot.
+      </p>
+      <p>
+        The real editor goes a step further than this toy. It loads the island and judges every
+        ring against the ground: a ring sunk into a hillside, or a line that dives under one, gets
+        flagged before you share it. This page loads no terrain, so those ground warnings can't
+        fire here.
+      </p>
+
+      <h2>Flying it</h2>
+      <p>
+        Press <em>fly</em> and you're in the course, flying it in the real game. When you finish or
+        back out, you're in the editor where you left it, with the same point selected and the
+        camera where it was. You can also start from any point along the line, to try one tricky
+        turn without flying the whole thing. A clean lap from the start pad that takes every ring
+        is kept as the author lap: proof that the course can be flown.
+      </p>
+
+      <h2>New islands from a seed</h2>
+      <p>
+        An island from a seed is made by a function, the same way every time. The course keeps the
+        seed and four sliders, plus the version of the generator that made it, and wherever the
+        course is opened, the game builds the island again from those numbers. The island flying
+        around at the top of the prologue is one of these.
+      </p>
+      <div data-toy="island-maker"></div>
+      <p>
+        <strong>Try it:</strong> press <em>new seed</em> a few times. Drag <em>rugged</em> from
+        smooth hills to sharp ridges, and <em>how much sea</em> from a big island to a small one in
+        open water. Then try the sizes. Everything under <em>what the course stores</em> is all a
+        link needs to make that island again.
+      </p>
+
+      <h2>How the island generator works</h2>
+      <p>
+        When I made the 2016 islands, I followed generic terrain tutorials and tweaked them until
+        they looked right, probably with a little extra height for more verticality. The
+        generator works the same way, in a few layers, each one built from noise.
+      </p>
+      <p>
+        <strong>Noise from a seed.</strong> Picture a grid of random numbers, one at every corner,
+        with smooth blends between them. That's one layer of noise. Stack a few more on top, each
+        one twice as fine and half as strong, and you get the lumpy-at-every-scale look of real
+        ground. The seed decides which random numbers go on the grid. They're made with whole-number
+        math and plain arithmetic only, so every computer and every browser builds the same island
+        from the same seed, down to the last bit.
+      </p>
+      <p>
+        <strong>Bending.</strong> Before anything else, every point gets pushed sideways by another
+        layer of noise, and then pushed again. That's what makes the coast and the ridges wander and
+        braid instead of lining up with the grid.
+      </p>
+      <p>
+        <strong>The coast.</strong> The island is a circle in the middle of the square, with its
+        edge pushed in and out by noise about every 1.4 km to make bays and headlands. Past the
+        coast, the sea floor shelves off and then drops to the bottom.
+      </p>
+      <p>
+        <strong>The land.</strong> Three layers add up inside the coast: a dome that rises toward the
+        middle, rolling hills about a kilometer across, and ridges. Ridges come from the same noise
+        folded over where it crosses zero, which turns smooth bumps into sharp crests.
+      </p>
+      <p>
+        <strong>Low land, tall peaks.</strong> To make new islands look like they came from 2016, we
+        measured the 2016 height maps for Simonet and Kauai. Their land sits low, with peaks that
+        stand up tall. The generator gets that by squaring the height, which presses the lowlands
+        toward the sea and leaves the peaks standing.
+      </p>
+      <p>
+        <strong>Crags and beaches.</strong> A last layer of fine ridges, 120 meters across and
+        smaller, breaks up the high ground into crags and leaves the shore smooth. Then the lowest
+        bit of land above the water is flattened toward it, which is the sandy ring you see around
+        every island in the demo.
+      </p>
+      <pre data-snippet="src/sim/terrain/island-synth.ts#elevationV2" data-caption="the generator, all of it"></pre>
+      <p>What each slider does:</p>
+      <ul>
+        <li>
+          <strong>Seed</strong> picks the random numbers. Two seeds with the same sliders are two
+          different islands with the same character.
+        </li>
+        <li>
+          <strong>Size</strong> is how wide the square is, from about 1 km to about 8 km. The hills
+          and ridges are laid out in meters, so a bigger island gets more of them, not bigger ones.
+        </li>
+        <li>
+          <strong>Highest point</strong> is how many meters the summit stands above the sea. It
+          stretches the island taller without changing its shape. In the demo it only changes the
+          shading.
+        </li>
+        <li>
+          <strong>Rugged</strong> sets how much of the island is ridges, from a fifth of the
+          height when it's smooth to more than two-thirds when it's rugged. It makes the crags
+          stronger too.
+        </li>
+        <li>
+          <strong>How much sea</strong> moves the coast in: at 0 the island fills nearly the whole
+          square, and at 1 it's a small island in open water.
+        </li>
+      </ul>
+      <p>
+        That's the shape. The game then makes it look like it belongs. A new island wears one of
+        the four 2016 islands: its colors are painted from that island's colors by height and
+        slope, its forest is scattered the way that island's forest sits on its own hills, and it's
+        folded into facets the same size as the 2016 islands'. The generator has a version number
+        because the first version didn't look enough like 2016. Islands made with the first one
+        still name it, so they come out the same as the day they were made.
+      </p>
+
+      <p>
+        An island from your own height map is different. The map is an image, far too big for a
+        link, so a course on one saves as a file you send instead, with the map inside it. The
+        course names the map by a fingerprint of its bytes, so a course can't be opened on the
+        wrong map.
+      </p>
+
+      <h2>Sharing a course</h2>
+      <p>
+        A course on a 2016 island or a seeded one, with up to 128 placed props, fits in a link.
+        Everything else saves as a file. There's no server holding anybody's courses: the link or
+        the file is the course.
+      </p>
+      <p>
+        Every course from a player, whether it was made in the editor, opened from a link or read
+        from a file, becomes a playable level through one function, and that function won't run on
+        a course that doesn't validate. There's no second path for "trusted" courses.
+      </p>
+      <pre data-snippet="src/content/player-course.ts#expandPlayerCourse" data-caption="the only way a course becomes a level"></pre>
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

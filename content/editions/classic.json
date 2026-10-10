@@ -1,0 +1,847 @@
+{
+  "$schema": "./_schema.json",
+  "id": "classic",
+  "title": "Classic",
+  "note": "2016, as the ledger keeps it. Every flag off and every number the shipped one — this file is what the port already was before the presets existed, written down so that it stays that way.",
+  "render": {
+    "toneMapping": "none",
+    "exposure": 1,
+    "haze": {
+      "enabled": false,
+      "startDistance": 0,
+      "range": 1,
+      "strength": 0,
+      "desaturate": 0,
+      "tint": [0, 0, 0],
+      "note": "the mission fog only, thinned as DEV-018b settled it. Strength and desaturate are 0, which is the identity at every distance even if the flag were flipped by hand; range is 1 rather than 0 only because the shader is handed its reciprocal"
+    },
+    "illustrative": {
+      "enabled": false,
+      "note": "the Marmoset shader's own diffuse response, which is `saturate(N.L)` and nothing else — 2016 had no warp, no ramp and no wrap. Belt and braces like everything in this file, and here the braces are exact rather than merely small: `strength` is 0, and GLSL's `mix(x, y, 0.0)` is `x * 1.0 + y * 0.0`, so a warp mixed in at 0 is the stock term bit for bit. The stops below are a plain Half-Lambert — black, mid grey, white, gain 1 — so that a hand-flipped flag shows the mechanism rather than a colour nobody chose, and so a diff against anniversary.json is the three colours that differ",
+      "shadow": [0, 0, 0],
+      "terminator": [0.5, 0.5, 0.5],
+      "lit": [1, 1, 1],
+      "overbright": 1,
+      "strength": 0
+    },
+    "shadows": {
+      "enabled": false,
+      "mapSize": 1024,
+      "boxHalfSize": 384,
+      "castDistance": 0,
+      "bias": 0,
+      "normalBias": 0,
+      "radius": 1,
+      "note": "no cast shadows at all, which is where the port has always been and is NOT where 2016 was: it ran soft shadows on LOD-0 casters out to a shadowDistance of 384, and 384 is written here so the one number 2016 had is not lost on a disabled block. Nothing reads any of it while enabled is false — the renderer's shadowMap stays off, the sun never gets castShadow, and no object is given a flag (DEV-086)",
+      "edgeFade": 80
+    },
+    "shipShadow": {
+      "enabled": false,
+      "note": "no. 2016 deactivates Art/ThirdPerson while you are in the cockpit, so the hull is not in the scene and casts nothing, and that is transcribed rather than chosen. Inert anyway while render.shadows.enabled is false -- boot/app.ts composes this with shadowsEnabled, so Classic never draws the extra hull and never writes a material flag. DEV-305"
+    },
+    "cockpitShadow": {
+      "enabled": false,
+      "note": "no. ShadowRole's `ship-cockpit` is \"Neither\" in 2016 and stays that way here. Inert while render.shadows.enabled is false: shadowReceiversFor composes shadowsEnabled, so a tier or a preset with no map cannot report a receiver of it. DEV-306"
+    },
+    "cockpitSelfShadow": {
+      "enabled": false,
+      "mapSize": 1024,
+      "bias": 0,
+      "normalBias": 0,
+      "radius": 1,
+      "note": "no. 2016's cockpit neither cast nor received, and nothing here is constructed while this is false: no render target, no pass, no patch on the shell's material, so Classic's cockpit compiles the program it always has. The numbers are inert placeholders the validator requires. Anniversary ships it TRUE. DEV-323"
+    },
+    "nearShadow": {
+      "enabled": false,
+      "mapSize": 1024,
+      "boxHalfSize": 80,
+      "edgeFade": 0,
+      "bias": 0,
+      "normalBias": 0,
+      "radius": 1,
+      "note": "no. Classic has no cast shadows at all, so there is nothing for a near map to sharpen and nothing is built while this is false. The numbers are inert placeholders the validator requires. DEV-582."
+    },
+    "smoothSky": {
+      "enabled": false,
+      "note": "no. The faceted dome is 2016's own sky -- SkyJ is a low-poly sky pack (sim/sky-dome.ts) -- so FALSE is the faithful answer here as everywhere else in this file, and for once that is true of the flag rather than merely of the numbers under it. Anniversary ships it TRUE (Matt: \"faceted sky off by default\"). DEV-320"
+    },
+    "sunHeight": {
+      "enabled": false,
+      "softMetres": 0,
+      "note": "no far-field terrain shadow: Classic has no cast shadows of any kind (DEV-086's block above). The number is carried so the block validates; nothing reads it while enabled is false - the uniform branch skips the fetch (DEV-116). 0 to match Anniversary's since DEV-133, so the two blocks differ only in enabled"
+    },
+    "cloudShadow": {
+      "enabled": false,
+      "strength": 0,
+      "minSunElevation": 1.5,
+      "note": "no. 2016 drew no cloud shadows, and Matt, 2026-10-03: \"Classic no.\" strength is 0 as well as enabled false, so no reader takes a number as live; minSunElevation is an inert placeholder the validator requires. DEV-585."
+    },
+    "canopyShade": {
+      "enabled": false,
+      "radiusScale": 1.6,
+      "saturation": 6,
+      "strength": 0,
+      "note": "no baked canopy darkening: Classic is the ledger, and 2016 had nothing of the kind — its scatter either cast real shadow-map shadows or cast none, never a baked term. strength is 0 as well as enabled false, so the two agree and no reader comes away thinking the number is live; radiusScale and saturation are carried at the Anniversary values only so the block validates. DEV-295."
+    },
+    "skyVisibility": {
+      "enabled": false,
+      "sky": 0,
+      "bounce": 0,
+      "note": "no sky visibility and no terrain bounce: Classic is the ledger, and 2016's indirect light was the Skyshop probe at the face normal and nothing else. Both strengths are 0 as well as enabled false, so no reader takes a number as live. DEV-333."
+    },
+    "horizonGeo": {
+      "enabled": false,
+      "note": "2016's horizon: the faceted sky dome down to a hard line where the matte sea plate vanishes into the fog, no geometry at all (gameplay video 9:25, f0565; every Simonet frame 9:50-15:00). Belt and braces like the rest of this file: the flag is off AND peakMetres is 0, so a hand-flipped flag builds a ring that is entirely under the sea, and silhouette 1 is the identity multiplier. radius is carried so the block validates and a diff against anniversary.json shows the three things that differ. DEV-119",
+      "radius": 5200,
+      "peakMetres": 0,
+      "silhouette": 1
+    },
+    "coast": {
+      "enabled": false,
+      "note": "2016's join: a flat blue water_color, a 256 m plate, and a hard line where it meets the land. Belt and braces, as everywhere else in this file — the flag is off AND both strengths are zero, and with both strengths at zero the shader returns before it reads the height map at all, so a hand-flipped flag changes nothing and costs nothing. The depths are 1 rather than 0 only because the shader is handed their reciprocals; the colours are black because they are never mixed toward",
+      "shallowDepth": 1,
+      "shallowStrength": 0,
+      "shallowColor": [0, 0, 0],
+      "foamDepth": 1,
+      "foamStrength": 0,
+      "foamColor": [0, 0, 0],
+      "foamBreakup": 0
+    },
+    "seaReflection": {
+      "enabled": false,
+      "resolutionScale": 0.5,
+      "note": "no. Matt, 2026-10-03, on docs/plan/ULTRA.md: \"Classic no\", read as Classic gets none of the ultra work, the mirror included. 2016 DID have this reflection (DEV-021), so putting it on Classic later is this one flag. resolutionScale is an inert placeholder the validator requires. DEV-583."
+    },
+    "flatFov": {
+      "enabled": false,
+      "note": "one lens at every speed, the renderer's 70 vertical, which is where the port has always been AND where 2016 was: `Boost_FOV.cs` exists in the project and its guid appears in exactly one text file, its own .cs.meta, so no prefab ever carried it and no shipped camera ever changed fov. Belt and braces like the rest of this file: the flag is off AND the curve is flat at zero, so a hand-flipped flag adds nothing at any speed. The two time constants are kept real rather than zeroed — they are divisors, and a diff against anniversary.json should show the two things that differ (the flag and the curve) and not a wall of zeros. `base` is null in both presets for the same reason: 55-60 would change every A/B frame ever taken and is Matt's call (DEV-093)",
+      "base": null,
+      "addBySpeed": [
+        [90, 0],
+        [340, 0]
+      ],
+      "attackSeconds": 0.22,
+      "releaseSeconds": 0.55
+    },
+    "clouds": {
+      "enabled": false,
+      "note": "2016's sky: nineteen placements at the scale and altitude the level-art prefab authored, still, opaque, and lit by N.L alone with the 0.22 emissive floor that is FF2's own (DEV-028). Belt and braces as everywhere else here — the flag is off AND wrap and rimStrength are zero, and at zero the shader returns before it reads anything, so a hand-flipped flag changes nothing and costs nothing. emissive is 0.22 rather than 0 because 0.22 is the IDENTITY: it is what both presets have rendered since the clouds landed. scaleMultiplier 1 and altitudeLift 0 are the identity in the exact sense (a multiply by 1, an add of 0), which is what 'faithful placement stays in Classic' has to mean. rimPower is 1 rather than 0 only because x^0 is 1 (DEV-090)  --  singleSided: 2016's answer as the port has always drawn it: DoubleSide, so a lobed blob at a grazing angle does not show holes between its knots. Belt and braces - false IS the existing behaviour, so a hand-flipped preset still draws what Classic has always drawn. Note this is the one field in this block that is read even though `enabled` is false, because it is not part of V5's look: it is which faces the mesh has, and Classic has a mesh. DEV-276",
+      "wrap": 0,
+      "rimStrength": 0,
+      "rimPower": 1,
+      "sunTint": 0,
+      "emissive": 0.22,
+      "scaleMultiplier": 1,
+      "altitudeLift": 0,
+      "driftSpeed": 0,
+      "driftDirection": [1, 0, 0],
+      "singleSided": false,
+      "whiteout": 0,
+      "whiteoutRelease": 0.6,
+      "poolSize": 12,
+      "tintSpread": 0.08
+    },
+    "bloom": {
+      "enabled": false,
+      "note": "no post pass, which is where the port has been since PORT_PLAN section 6.1 cut it — and, on the path a headset takes, is also where 2016 was: the BloomOptimized component sat on Main Camera under Mono_Cam, and CameraMode.cs boots with a private static vrMode = true, so the VR rig was on and the mono camera off. What 2016's FLAT camera had, one V keypress away, was threshold 0.63 / intensity 0.53 / blurSize 1.2 / blurIterations 1 / blurType 0, and 0.63 is written here so the one number that transfers domains unchanged is not lost on a disabled block. Nothing reads any of it while enabled is false: no EffectComposer is constructed for the life of a Classic session, no render target is allocated, and boot/app.ts takes the same single renderer.render it always took. DEV-091",
+      "threshold": 0.63,
+      "strength": 0,
+      "radius": 0,
+      "resolutionScale": 1,
+      "vrHalo": {
+        "studRadius": 0,
+        "studIntensity": 0,
+        "sunAngleDeg": 0,
+        "sunIntensity": 0
+      }
+    },
+    "thirdPerson": {
+      "enabled": false,
+      "note": "2016's own third person, and nothing more: the CHANGE VIEW toggle (pad X, `Input_Ship.cs:312`; V here; the CAM chip) parents the camera RIGIDLY at `CamRoot_3rdPerson` — 8.89 m behind, 1.73 m above, 10.9 degrees down on the HoverJet, off the sheet — with no lag, no probe, no bank follow and no lens term, exactly as `CamChanger.ChangeCam()` did. The flag is off because the spring is the deviation. The numbers are kept real rather than zeroed so a diff against anniversary.json is the flag and this note (DEV-128)",
+      "armLength": 24,
+      "minArmLength": 4,
+      "pivotOffset": [0, 1.5, 0],
+      "armPitchDeg": 9,
+      "aimPitchDeg": -6,
+      "positionLagSeconds": 0.06,
+      "rotationLagSeconds": 0.28,
+      "maxLagMetres": 6,
+      "pitchFollow": 0.6,
+      "rollFollow": 0.35,
+      "probeRadius": 1.5,
+      "fovAddBySpeed": [[90, 0], [120, 1], [180, 5], [240, 8], [340, 10]],
+      "hudOffset": [0, -0.5, -1],
+      "hudScale": 1.5
+    },
+    "racerLivery": {
+      "enabled": false,
+      "note": "DEV-350. FALSE: the racers wear the translucent emissive hologram (racerMaterial), one blue for all of them -- 2016's opponents were playback GHOSTS, and Classic keeps them looking like one. The palette is still read at load: it is each racer's colour on its spec, and what a flip to Anniversary paints.",
+      "palette": [
+        [
+          1,
+          0.12,
+          0.296
+        ],
+        [
+          0.9347,
+          0.9775,
+          0.1225
+        ],
+        [
+          0.1012,
+          0.8188,
+          0.1969
+        ],
+        [
+          0.0705,
+          0.6231,
+          0.8695
+        ],
+        [
+          0.06,
+          0.3909,
+          0.74
+        ],
+        [
+          0.5882,
+          0.217,
+          0.913
+        ]
+      ],
+      "shadow": {
+        "enabled": false,
+        "note": "DEV-350. FALSE: a hologram casts nothing, and Classic racers never did."
+      }
+    },
+    "sceneTint": {
+      "enabled": false,
+      "note": "DEV-446. FALSE: 2016 had no scene-wide tint on any camera in any shipped scene (DEV-446 has the walk), so Classic has none. The value below is the neutral one either way.",
+      "default": {
+        "color": [
+          1,
+          1,
+          1
+        ],
+        "strength": 0
+      },
+      "missions": {}
+    }
+  },
+  "fx": {
+    "speedLines": {
+      "enabled": false,
+      "note": "the 2016 tube drawn exactly as authored: 5-8 cm streaks, additive white",
+      "widthScale": 1,
+      "alphaScale": 1,
+      "softEdge": false,
+      "coreDarkness": 0,
+      "tubeLift": 0
+    },
+    "speedRamp": {
+      "enabled": false,
+      "note": "2016's three cuts, to the bit: `Ship_HoverShip.Update()` plays exactly one boost system and stops the other two, at the prefab's 120 / 240 / 350 m/s, and with this flag off `game/particle-fx.ts` runs that code path and never drives a field. Unlike most of this file there is no set of numbers that would make the ramp a no-op on its own - a ramp cannot express a step - so the flag is the whole switch, and the numbers mirror anniversary.json so a diff between the two shows the one key that matters. DEV-351",
+      "onsetSpeed": 60,
+      "alphaFloor": 0.35,
+      "speedFloor": 0.6
+    },
+    "wingTrails": {
+      "enabled": false,
+      "note": "2016 has no wing-tip trails: the one TrailRenderer in the shipped game is GhostRacer's engine trail (DEV-311), and PlayerShip_SR14_Photon has none. Off by the flag and by an alpha of nothing, a no-op twice over; the other numbers mirror anniversary.json so a diff shows the keys that matter. DEV-358",
+      "seconds": 0.3,
+      "startWidth": 0.3,
+      "endWidth": 0.8,
+      "alpha": 0,
+      "minVertexDistance": 0.5,
+      "nearFade": 2,
+      "tint": 0.35,
+      "glow": 4,
+      "core": 0.3,
+      "halo": 0.35,
+      "maxWidthDeg": 0.8,
+      "fromCockpit": false
+    },
+    "motes": {
+      "enabled": false,
+      "note": "2016's flight_particles only — ten a second, twenty-five alive. A pool of NONE, at no alpha: the two numbers that make this a no-op twice over, whatever the flag says.",
+      "count": 0,
+      "innerRadius": 3.5,
+      "outerRadius": 55,
+      "size": 0.07,
+      "stretchSeconds": 0.006,
+      "alpha": 0,
+      "minSpeed": 20,
+      "fullSpeed": 160,
+      "aheadBias": 0.8,
+      "colorLight": [0.85, 0.89, 0.96],
+      "colorDark": [0.12, 0.14, 0.18]
+    },
+    "gatePulse": {
+      "enabled": false,
+      "note": "2016 has no such thing. The gate's one-shot burst and the CollectRing cue are the whole event, and they are drawn and played on both presets. A strength of NONE against a gain curve that is flat zero: the two numbers that make this a no-op twice over, whatever the flag says. Everything else mirrors the Anniversary block on purpose, so a diff between the two files shows the two keys that matter and not eight that do not.",
+      "strength": 0,
+      "seconds": 0.4,
+      "decayShape": 1,
+      "innerRadius": 0.42,
+      "feather": 0.2,
+      "streaks": 14,
+      "streakDepth": 0.55,
+      "tint": 0.35,
+      "gainBySpeed": [
+        [0, 0],
+        [340, 0]
+      ]
+    },
+    "ringBurst": {
+      "enabled": false,
+      "randomDirection": 1,
+      "note": "2016, as the port has always read it. Unity 5 serialises ShapeModule.randomDirection as a BOOL and the raw YAML on Checkpoint_Ring.prefab says `randomDirection: 1` with no randomDirectionAmount field in the file at all, so 1 here reproduces the existing sampling path to the bit - the same three rand() calls in the same order, the same vector, no pixel moves. Belt and braces like the rest of this file: the flag is OFF and the value is the identity, so a hand-flipped flag still draws 2016. Whether Unity's bool really meant a uniform sphere cannot be settled from the project and would need Unity itself; that uncertainty is exactly why Classic does not move. DEV-272"
+    },
+    "waterSpray": {
+      "enabled": false,
+      "note": "2016 threw no spray: the sea had no particle system and the ship none that read the water. Off; the numbers mirror anniversary.json so a diff shows the keys that matter. DEV-429",
+      "heightMetres": 8,
+      "minSpeed": 30,
+      "fullSpeed": 120,
+      "rate": 400,
+      "carry": 1,
+      "lift": 20,
+      "angleDeg": 40,
+      "radius": 3,
+      "lifetime": 0.8,
+      "size": 0.45,
+      "gravity": 1,
+      "drag": 1,
+      "colour": [0.92, 0.96, 0.97],
+      "shade": 0.8
+    },
+    "propBurst": {
+      "enabled": false,
+      "note": "2016 threw nothing when the ship met a prop, and Classic has no prop collision at all. Off; the numbers mirror anniversary.json so a diff shows the keys that matter. DEV-428. DEV-464: the burst is on the RULES side of D35's key table (it goes where the strike goes), so a Classic-LOOK run throws Anniversary's; this block is read only when Classic is the rules preset (`?rules=classic`), where nothing is solid and nothing is struck.",
+      "count": 40,
+      "carry": 0.8,
+      "spread": 12,
+      "radius": 1.5,
+      "lifetime": 1.4,
+      "size": 0.45,
+      "gravity": 0.35,
+      "drag": 1,
+      "shade": 0.9,
+      "colourBand": 0.2,
+      "maxMetres": 400
+    },
+    "splash": {
+      "enabled": false,
+      "note": "2016 threw no splash: no shipped scene or prefab carries a water particle system (Standard Assets' Water Surface Splash is in the project and only its sample scene uses it), and WaterHack.cs only swaps the fog under the sea. Off; the numbers mirror anniversary.json. DEV-613",
+      "emitters": 10,
+      "maxMetres": 700,
+      "refSpeed": 8,
+      "minScale": 0.4,
+      "maxScale": 8,
+      "jetBody": 1.6,
+      "dolphinBody": 1.3,
+      "outScale": 0.6,
+      "exitMetres": 3,
+      "minSeconds": 0.5,
+      "carry": 0.15,
+      "gravity": 1,
+      "drag": 0.6,
+      "shade": 0.85,
+      "crown": {
+        "count": 36,
+        "lift": 11,
+        "angleDeg": 18,
+        "radius": 1.4,
+        "lifetime": 1.1,
+        "size": 0.7,
+        "colour": [0.94, 0.97, 0.98]
+      },
+      "drops": {
+        "count": 20,
+        "lift": 15,
+        "angleDeg": 28,
+        "radius": 0.6,
+        "lifetime": 1.3,
+        "size": 0.4,
+        "colour": [0.8, 0.91, 0.94]
+      }
+    }
+  },
+  "cockpit": {
+    "shake": {
+      "enabled": false,
+      "startSpeed": 40,
+      "fullSpeed": 200,
+      "amplitude": 0,
+      "angle": 0,
+      "stageGain": [1, 1, 1, 1],
+      "frequency": [4.7, 7.3, 11.1],
+      "note": "the Rotator_Input lean and nothing else. Belt and braces: the flag is off AND both amplitudes are zero, so a hand-flipped flag still draws nothing. The speeds and frequencies are kept real so the file reads as a configuration rather than a pile of zeros, and so a diff against anniversary.json shows the two numbers that actually differ"
+    },
+    "lighting": {
+      "enabled": false,
+      "note": "2016's cabin, which is the Skyshop probe at 0.5974 and a sun 4 degrees above the horizon that never gets inside the canopy. Belt and braces like the shake: the flag is off AND all three intensities are zero. The placements and colours are kept real so a diff against anniversary.json is the four numbers that differ and not a wall of zeros. NOTE what this does NOT switch off — `render/lambert1.ts` puts the shipped material's `_Color` on the ship in BOTH presets, because the glTF carrying Maya's 0.5 grey instead was a bug (DEV-088, DEV-043's precedent)",
+      "fill": {
+        "color": [0.72, 0.8, 1.0],
+        "intensity": 0,
+        "distance": 3,
+        "decay": 2,
+        "offset": [0, 0.1, 0.3]
+      },
+      "dash": {
+        "color": [1.0, 0.86, 0.62],
+        "intensity": 0,
+        "distance": 1.8,
+        "decay": 2,
+        "offset": [0, -0.3, -0.4]
+      },
+      "emissive": {
+        "color": [0.6, 0.68, 0.85],
+        "intensity": 0
+      }
+    },
+    "body": {
+      "enabled": false,
+      "note": "an empty seat, which is what the port has always rendered. 2016 had a pilot and a chair and BOTH are bought art that cannot ship (CLAUDE.md rule 7), so Classic's fidelity here is a deviation it cannot undo — DEV-088 says so, and `enabled` is the single switch between this and the stand-in",
+      "hands": true,
+      "offset": [0, 0, 0],
+      "palette": {
+        "seat": [0.055, 0.062, 0.075],
+        "trim": [0.26, 0.06, 0.016],
+        "suit": [0.105, 0.115, 0.135],
+        "glove": [0.03, 0.031, 0.035]
+      }
+    },
+    "placement": {
+      "note": "where the cockpit readout sits, from the EYE of the vehicle flying (DEV-129), one block per vehicle since DEV-362. `hud` is the HoverJet's: 2016's own upper screen, composed out of `PlayerShip_SR14_Photon.prefab`'s `Ship_HUD/panel_shipUI`, which sets it into the dash's recess 14-36 mm proud of the glass (`render/hud-dash.ts`; `tests/unit/hud-recess.test.ts` measures it against the cockpit mesh and fails if it leaves). It was (0, -0.3, -0.72) tilted -0.42, a plate floating in front of the dash nose. `jumpSeatHud` is the JumpSeat's, unchanged: 2016's JumpSeat gauge stood free in front of the shell, and it keeps its pose. Identical in both presets: a placement is not a preset feature and has no off",
+      "hud": {
+        "offset": [-0.00443, -0.37397, -0.84614],
+        "tilt": -0.891079,
+        "scale": 1
+      },
+      "jumpSeatHud": {
+        "offset": [0, -0.3, -0.72],
+        "tilt": -0.42,
+        "scale": 1
+      }
+    }
+  },
+  "audio": {
+    "speedCurves": {
+      "enabled": false,
+      "note": "loop swaps at fixed pitch, with the two shipped wind bugs. The curves below are NO-OPS — gain 1, a transparent cutoff, rate 1, and a silent whoosh — so that flipping the flag by hand to hear the difference cannot change the mix by accident. The one thing that is not a curve is `windLoopsNeverStop`, which the engine turns off whenever curves are installed at all, because a layer whose gain curve reaches zero must be allowed to stop.",
+      "aircraftWindGain": [
+        [0, 1],
+        [340, 1]
+      ],
+      "flightWindGain": [
+        [0, 1],
+        [340, 1]
+      ],
+      "windCutoffHz": [
+        [0, 20000],
+        [340, 20000]
+      ],
+      "thrustRate": [
+        [0, 1],
+        [1, 1]
+      ],
+      "afterburnerRate": [
+        [0, 1],
+        [1, 1]
+      ],
+      "afterburnerStep": 1,
+      "gateWhooshGain": [
+        [0, 0],
+        [340, 0]
+      ],
+      "gateWhooshPitch": [
+        [0, 1],
+        [340, 1]
+      ],
+      "windRate": [
+        [0, 1],
+        [340, 1]
+      ]
+    },
+    "engine": {
+      "rumble": {
+        "enabled": false,
+        "note": "2016 has no rumble layer and no runtime pitch modulation of any kind. The numbers below are NO-OPS — a silent rumble, a transparent cutoff, no growl — so flipping the flag by hand cannot change the mix by accident (DEV-137).",
+        "gainByThrottle": [
+          [0, 0],
+          [1, 0]
+        ],
+        "cutoffHz": 20000,
+        "boostGain": 1,
+        "boostCutoffHz": 20000,
+        "growlGain": 0
+      },
+      "pitchTracking": {
+        "enabled": false,
+        "note": "rate 1 at every speed: the loops sit at their authored pitch from 0 to 350 m/s, which is what 2016 does (DEV-137)",
+        "rateBySpeed": [
+          [0, 1],
+          [350, 1]
+        ],
+        "slewPerSecond": 1
+      }
+    },
+    "lift": {
+      "enabled": false,
+      "note": "2016's ride is a servo, a loop that ships muted (AUD-1 plays it on both editions) and eight positional whooshes; nothing follows the platform and nothing marks the arrival. The numbers below are NO-OPS — a silent motor at rate 1 and a silent clunk — so flipping the flag by hand cannot change the mix by accident (DEV-424).",
+      "rateBySpeed": [
+        [0, 1],
+        [16, 1]
+      ],
+      "gainBySpeed": [
+        [0, 0],
+        [16, 0]
+      ],
+      "stoppedBelow": 0.25,
+      "arriveGain": 0
+    }
+  },
+  "terrain": {
+    "ocean": {
+      "subdivisionByLod": [8, 8, 8, 8, 8, 8],
+      "note": "DEV-183. Eight at every level, which is the sea this port has drawn since DEV-023 and is UNCHANGED by DEV-183 — `edition-content.test.ts` asserts the ladder is flat and asserts the number. Note that Classic is NOT 2016 here and never has been: 2016's ocean is one quad per 32 mesh units (256 m at the plate's 8x scale), and 8 is Matt's call of 2026-09-10 after measuring three densities ('ocean=4 as the default (or if we can go 1 lvl of subdivision higher)' — it is 8). That deviation predates this row and belongs to DEV-023; what it would take to revert it is `[1]` here, and `?ocean=1` is that without editing anything."
+    },
+    "detailRing": {
+      "enabled": false,
+      "note": "one grain size at every distance, 8 m, and a LOD ladder that only goes coarser — which is the shipped world and the thing ANNIVERSARY.md section 1.4 is about. Belt and braces, three ways over: the flag is off, the RADIUS is zero (so `detailBand` returns null and LOD -1 is unreachable even if the flag were flipped by hand), and `baseResolution` is 8, which is not finer than the terrain's own and is refused as a ring for that reason alone. Classic posts no detail message to the terrain worker and builds no second vertex grid.",
+      "baseResolution": 8,
+      "radius": 0,
+      "jitterScale": 1,
+      "maxInFlight": 1,
+      "smoothMetres": 0
+    },
+    "lodFade": {
+      "enabled": false,
+      "durationScale": 0,
+      "note": "the pop 2016 shipped. FacetedTerrain authored a 1 s cross-fade on Simonet (LODTransitionTime, on the sheet) but faded through a material whose shader is opaque — on the Simonet prefab TerrainAlphaMaterial IS TerrainMaterial — so both LODs drew for a second and the old one switched off. A swap in one frame is what the player saw (video 0:55, 13:20), and it is what this draws. Belt and braces: the flag is off and durationScale is 0, which `lodFadeSeconds` reads as no fade even with the flag flipped by hand."
+    },
+    "bakedLight": {
+      "enabled": false,
+      "rung": 3,
+      "note": "off, and not a candidate here. Classic is the ledger as it stands and this is a deviation by construction -- it deletes the view-dependent specular and both shadow multiplies from the land. DEV-232. The rung mirrors Anniversary so a diff between the two presets shows the one key that matters, the flag; 3 is the rung that drops everything and is what DEV-232 measured. DEV-237."
+    },
+    "diagonalFix": {
+      "enabled": false,
+      "note": "DEV-831. Off: 2016's own diagonals, bug included (faceted.ts faithfulDiagonalBug). The oracle sweep and every 2016 comparison read this."
+    },
+    "surfaceGloss": {
+      "enabled": false,
+      "note": "one roughness for the whole island, transcribed from the material's _Shininess (5.01 on Simonet, GGX 0.17; DEV-008) — 2016 had no gloss map and no classes. The list is empty so that a hand-flipped flag mixes toward a table with nothing in it, which the shader reads as the identity.",
+      "classes": []
+    },
+    "oceanRings": {
+      "enabled": false,
+      "note": "DEV-339. The same five rings as Anniversary, because Classic's ladder is 8 at every level (above) and level k of the rings is the plate's LOD k at that split: the rings reproduce Classic's sea vertex for vertex where the plate and the rings share a band, and differ only in WHERE a band changes (distance from the eye, not an 8 km chunk's footprint). OFF until measured and seen, as in Anniversary.",
+      "cells": 64,
+      "innerCell": 32,
+      "levels": 5,
+      "faceNormals": false
+    }
+  },
+  "hud": {
+    "speedUnit": "ms",
+    "nextGateArrow": {
+      "enabled": false,
+      "note": "2016 had no such instrument; its 2016 answer to 'where do I fly' is the turn indicators, which both presets draw. Every number mirrors the Anniversary block so a diff shows the one key that matters",
+      "coneDegrees": 10,
+      "featherDegrees": 4,
+      "lengthMetres": 0.08,
+      "offset": [0, -0.16, -0.8],
+      "color": [1, 0.623, 0.194],
+      "emissive": 0.8
+    },
+    "raceMap": {
+      "enabled": false,
+      "note": "2016 drew no map and no place: HUD_Ship.cs's labels are gates, distance, speed, time, score and medal, and no script in the project orders the field. Every number mirrors the Anniversary block so a diff shows the one key that matters",
+      "widthMetres": 0.11,
+      "gapMetres": 0.03,
+      "dotMetres": 0.006,
+      "playerDotMetres": 0.009
+    },
+    "bars": {
+      "enabled": false,
+      "note": "2016's panel_shipUI and panel_speedUI drew no bars at all: five words in five places. Anniversary draws the gate combo's countdown and the boost tank (DEV-615); the JumpSeat's fuel gauge is 2016's own and is not this flag's (DEV-791)"
+    }
+  },
+  "props": {
+    "enabled": false,
+    "note": "Classic's scenery is 2016's: 1,241 palms on Simonet from one density map and one palette, and nothing else on the ground. An empty list here is not a placeholder — it is the ledger (DEV-089)",
+    "seed": 0,
+    "clearance": 0,
+    "variants": 1,
+    "scale": {
+      "note": "EMPTY on purpose (DEV-134): Classic multiplies nothing and draws 2016's own scatter scales - alpine's Tree_Organic pass at 1.4..5.5 (15-83 m tall through its wrapper), desert's cacti at 4..12 (15-46 m). A key here with a 1 in it would say the same thing less clearly; a key with anything else would be a deviation."
+    },
+    "groundSnap": {
+      "enabled": false,
+      "note": "2016's placement rule, exactly (DEV-134): height map minus the pass's ObjectHeightOffset, never the rendered mesh. On Classic that is alpine's shipped pass at heightOffset 5 - every tree buried five metres, which is how 2016 hid the jitter - and desert's at 0. The sink is a zero because nothing reads it while enabled is false.",
+      "sink": 0
+    },
+    "scatterShadows": {
+      "enabled": false,
+      "note": "Inert. render.shadows.enabled is false on Classic, so no object is given a cast flag at all and this could say anything; it says false because Classic's meaning is every flag off (DEV-224)."
+    },
+    "meshLod": {
+      "enabled": false,
+      "note": "Off, with no rungs, so no coarser mesh is ever built: Classic draws 2016's full meshes out to 2016's LODDistance and hides them past it, DEV-225's reveal exactly. 2016's own Tree Pack prefabs did carry a LODGroup; the packs the desert and the islands drew from had none, and Classic keeps the one reading that is true of all four environments.",
+      "rungs": []
+    },
+    "maxSlope": {
+      "enabled": false,
+      "note": "DEV-356. Off: 2016's GenerateObjects() had no slope rule -- one roll per density texel and nothing else -- and the clones it baked stand on steep ground as often as the port's re-roll does, so Classic keeps them there. `sin` is inert while this is false.",
+      "sin": 1
+    },
+    "scatter": [],
+    "unbakedPasses": {
+      "enabled": false,
+      "note": "2016 scattered props in TWO environments, and those two are baked into the source file one GameObject each (alpine 6,097, desert 5,948). The other three passes serialised zero objects, so the shipped 2016 build drew none of them and neither does Classic. DEV-102, and the Anniversary block carries the argument."
+    },
+    "birds": {
+      "enabled": false,
+      "note": "2016 had no birds. The radius and the size are ones rather than zeros because a zero radius divides into the angular rate; nothing reads them while `enabled` is false",
+      "flocks": 0,
+      "birdsPerFlock": 0,
+      "altitude": 0,
+      "radius": 1,
+      "speed": 0,
+      "size": 1,
+      "palette": []
+    }
+  },
+  "gates": {
+    "passedFade": {
+      "enabled": false,
+      "note": "OFF means 2016: hold props.checkpointRing.passedHideDelay (2 s) from OnTriggerEnter, then the whole gate goes in one frame — TriggerCheckpoint.Deactivate(), for the player's pass only. The keys below are ignored while the flag is off and mirror the Anniversary block so a diff shows the one key that matters — with the exception of waitForExit, which is FALSE here and true there: 2016 counts from the entry and Classic has to count from the entry or it is not 2016 (DEV-195)",
+      "waitForExit": false,
+      "delaySeconds": 0,
+      "seconds": 0
+    },
+    "finishBanner": {
+      "enabled": false,
+      "note": "2016's finish is the ring's own frame in orange at three times a ring's scale, and nothing else. Classic draws exactly that. Numbers mirror the Anniversary block",
+      "columns": 12,
+      "rows": 2,
+      "cellMetres": 12,
+      "gap": 0.3,
+      "lift": 4,
+      "light": [0.9, 0.9, 0.9],
+      "dark": [0.03, 0.03, 0.035],
+      "emissive": 0.6
+    }
+  },
+  "menu": {
+    "holoTerrainColours": {
+      "enabled": false,
+      "brightness": 1,
+      "holoMix": 0,
+      "rim": 0,
+      "scanline": 0,
+      "note": "2016's holotable island: a full-colour, vertex-painted shrunken copy of the level (art_levelSel_*.prefab, Faceted Terrain_miniMaps.mat - Marmoset/Vertex Color/Specular IBL, _Color 0.941, emission black, no texture; the 2016 gameplay video at 7:15-7:25 shows the ALPINE FOREST table green with grey peaks). The palette is drawn here too, plain: brightness 1 is the colour map's own byte, shaded by the relief light baked into the faces (DEV-579), and the three tells are zero, so a hand-flipped flag changes nothing (DEV-140). The menus wear Anniversary (D35), so this block reaches a table only if one is built while a Classic mission is worn; it draws the same colours either way"
+    },
+    "medalOutline": {
+      "enabled": false,
+      "widthFraction": 0,
+      "colour": [0, 0, 0],
+      "opacity": 0,
+      "note": "2016 hung the title emblem over the table in the tier's own _Color (medal_<tier>.mat, DEV-113) with no border, over a full-colour terrain miniature - and four of its five tiers are pale, so 2016's own platinum over white Simonet rock was as hard to read as the port's. Measured across all four palettes, every tier but bronze is under WCAG 3:1 over most of every island and bronze fails over Simonet (DEV-151). That is 2016's problem and Classic keeps it: zeroed twice over, so a hand-flipped flag draws nothing"
+    }
+  },
+  "gameplay": {
+    "note": "2016 has none of this. Every flag off AND every number that could still do something zeroed: maxBonus 0 is the shipped score exactly, and cleanCentredness 1 is a gate taken through the mathematical centre, which nothing achieves. A no-op twice over, whatever the flags say. DEV-110.",
+    "proximity": {
+      "enabled": false,
+      "note": "maxBonus 0 - the bonus pool stays at zero however low you fly, so the score is 2016's. perSecond 0 does the same for the LINE channel DEV-154 added: both inlets to the pool are shut, so it is a no-op three times over (the flag, the gate bonus, the rate). awardStep 0 announces nothing, and the banner is behind the flag anyway.",
+      "nearMetres": 12,
+      "farMetres": 90,
+      "maxBonus": 0,
+      "minSpeed": 60,
+      "attackSeconds": 0.25,
+      "releaseSeconds": 0.9,
+      "perSecond": 0,
+      "awardStep": 0
+    },
+    "gateEvents": {
+      "enabled": false,
+      "note": "cleanCentredness 1 is the exact centre of the gate, which no swept segment reaches. nearMissPoints 0 - a near miss banks nothing (DEV-112), and the banner is behind `enabled` as well, so the 8 m threshold below is inert twice over.",
+      "cleanCentredness": 1,
+      "minSpeed": 90,
+      "nearMissMetres": 8,
+      "nearMissCooldown": 1.5,
+      "nearMissPoints": 0
+    },
+    "chainMeter": {
+      "enabled": false,
+      "note": "2016 draws no chain bar. The mechanic still runs - it is 2016's - it is just not shown."
+    },
+    "gateBullseye": {
+      "enabled": false,
+      "note": "2016 drew NOTHING inside a gate: all 19 of Checkpoint_Ring.prefab's MeshRenderers are on the rim, and the one object at the centre is a ParticleSystem with its emission switched off. So Classic's gates are the open frames that shipped. Zeroed twice over like everything else in this block - cleanCentredness above is 1, which makes the reticle's radius 0 whatever this flag says - and the fractions below are the Anniversary ones so that a flipped boolean alone still draws nothing. DEV-153.",
+      "markLength": 0.45,
+      "markThickness": 0.15,
+      "pipSize": 0.16,
+      "emissive": 2
+    },
+    "racers": {
+      "enabled": false,
+      "note": "2016 raced the two recordings that stood on the two AI pads (DEV-026 put AI racers on those same pads; `?opponents=ghosts` keeps the recordings). Off, so the slot list is never read and the grid is exactly 2016's opposition - two racers on every Ring Attack course: on the two AI pads where the course authored them, and on the two rookie courses, which authored none, where 2016's two recordings began (level ghosts[].start, 17 m off each shoulder; DEV-442 - this note said 'none' there until then, and 2016 raced them). The list is empty as well, so it is a no-op twice over.",
+      "usePads": true,
+      "slots": [],
+      "separation": {
+        "enabled": false,
+        "note": "DEV-364. 2016's opposition was two recordings, each its own run down its own line; nothing steered them off each other. Off, and the numbers mirror Anniversary's so a preset flip mid-run changes the rule and nothing else. Off is the one racing line every racer flew before DEV-364.",
+        "laneSpacing": 6,
+        "laneEaseMetres": 1000,
+        "gateFraction": 0.5,
+        "gateFunnel": 0.02,
+        "avoidReach": 100,
+        "avoidClearance": 8,
+        "avoidGain": 16
+      },
+      "contact": {
+        "enabled": false,
+        "note": "DEV-364. 2016's opposition was a playback (GhostRacer) with no collider the ship could meet, so Classic keeps the racers intangible. The numbers mirror Anniversary's and are inert behind the flag.",
+        "restitution": 0.5,
+        "restingSpeed": 5,
+        "passes": 3
+      },
+      "hit": {
+        "enabled": false,
+        "note": "DEV-364 follow-up. Nothing can touch 2016's ghosts, so nothing can hit you: off, and inert twice over behind `contact`. The numbers mirror Anniversary's so a preset flip mid-run changes the rule and nothing else.",
+        "minSpeed": 5,
+        "fullSpeed": 30,
+        "scrub": 0.12,
+        "headingKick": 0.4,
+        "attitudeKick": 0.6,
+        "shakeSeconds": 0.45,
+        "shakeGain": 5
+      }
+    },
+    "crash": {
+      "enabled": false,
+      "note": "2016 never crashed - endOnCollide is 0 on the shipped prefab and a contact is Flash() and a bounce. Off, and the numbers below are inert behind it; they mirror Anniversary's so a preset flip mid-run changes the rule and nothing else.",
+      "minImpactSpeed": 45,
+      "resetBackMetres": 120,
+      "clearanceMetres": 40,
+      "resetSpeed": 40,
+      "holdSeconds": 0.55,
+      "resetClearStepMetres": 10
+    },
+    "propCollision": {
+      "enabled": false,
+      "note": "2016 had no prop collision: the trees were LOD-toggled art and the ship flew through the forest (DEV-136). Classic keeps that. The numbers are zeros because nothing reads them while enabled is false; cellMetres is a 1 because a zero cell divides positions by zero and the validator refuses it.",
+      "breakSpeed": 0,
+      "breakSlowdown": 0,
+      "bounceRestitution": 0,
+      "radiusFraction": 0,
+      "cellMetres": 1,
+      "fractureSeconds": 0,
+      "racerStuckSeconds": 0,
+      "strike": {
+        "enabled": false,
+        "note": "2016's rock stood and nothing burst (DEV-214), and Classic has no prop collision at all, so this is never read. DEV-428"
+      }
+    },
+    "energy": {
+      "enabled": false,
+      "note": "2016 charges nothing for boost, and the number here says so rather than zeroing it: rechargeScale 1 is the shipped rechargeRate of 100/s against a 32/s boost burn, recharging WHILE boosting, which is +68/s net (derived.energy.netWhileBoosting on the sheet, whose derived.energy.secondsOfBoostFromFull is null and says `boost never runs out`). So this is a no-op twice over the way every other Classic block is - off by its flag, and inert by its number - except that here the inert value is 1 and not 0. A 0 would be a tank that never refills, which is the OPPOSITE of what 2016 does; the Classic rule is `flip the flag by hand and nothing changes`, not `flip it and everything stops`. DEV-143. DEV-410's two numbers take their identity values: lockoutScale 1 is 2016's RebootTime (unreachable anyway, because this tank never empties), and ringRefill 0 is a ring that pays nothing, as in 2016's shipped tank, which a ring could not fill further in any case.",
+      "rechargeScale": 1,
+      "lockoutScale": 1,
+      "ringRefill": 0,
+      "reengage": 0,
+      "startFill": 1
+    },
+    "energyRace": {
+      "enabled": false,
+      "note": "2016 never shipped this mode - `Energy_System.cs` is a prototype class on no prefab, and the component that DID ship recharges faster than it burns. Off, and unreachable twice over: the flag is what makes the mode selectable at all, and no level names it. The numbers MIRROR Anniversary's rather than being zeroed, the way `crash` does and for the same reason - a preset flip mid-run should change the rule and nothing else - and because the validator refuses a zero here: a zero drain is Ring Attack wearing a gauge and a zero gate pay is a fixed timer no flying can extend. DEV-144.",
+      "drainScale": 0.2,
+      "gatePayFraction": 0.35
+    },
+    "ambientTraffic": {
+      "enabled": false,
+      "note": "2016 never put another mission's ships in your sky (DEV-146). A mission scene loads its own course and nothing else; the only other craft in a 2016 run are the two GhostRacer recordings on the AI pads, and those are opponents in YOUR race. Classic keeps that. maxCount is 0 as well, so it is a no-op twice over — the level's own `ambientTraffic` is never read, and if the flag were flipped by hand the count would still clamp to nothing.",
+      "maxCount": 0,
+      "recycleClearMetres": 0
+    },
+    "variants": {
+      "enabled": false,
+      "note": "2016 had one of each aircraft (DEV-380). The step does not exist, and resolveVariant returns standard whatever is stored or in ?variant=, so a Classic flight is built from the sheet itself: a no-op twice over."
+    },
+    "glider": {
+      "enabled": false,
+      "note": "2016 authored a glider at every level of the game and shipped it switched off at every level (DEV-145): six mission scenes enabled 0 in the build list, both level-select tables m_IsActive 0, Input_Ship_Glider m_Enabled 0. So Classic's hangar has two aircraft and never lists a glider course (DEV-399)."
+    },
+    "rooms": {
+      "enabled": false,
+      "note": "DEV-389. 2016 had no working multiplayer to port (D21). Anniversary rooms first, Classic once the plumbing exists (plan/MULTIPLAYER.md section 11 call 4). A switch and nothing else since DEV-477: a room's people stand on the racers' own starts, which gameplay.racers lays out."
+    },
+    "editor": {
+      "enabled": false,
+      "note": "DEV-466. 2016 shipped no course editor (its live spline editing in VR was an experiment, docs/plan/EDITOR.md section 1). The menus wear Anniversary (D35), so no menu reads this block; it mirrors Anniversary's shape so a flip changes nothing else."
+    },
+    "tv": {
+      "enabled": false,
+      "note": "DEV-480. 2016 had nothing to watch. The menus wear Anniversary (D35), so no menu reads this block; it mirrors Anniversary's shape so a flip changes nothing else.",
+      "headsetCuts": {
+        "enabled": false,
+        "note": "DEV-481 follow-up. Mirrors Anniversary's shape; the menus and TV wear Anniversary (D35)."
+      }
+    }
+  },
+  "boundary": {
+    "note": "2016 has none of this. PlayerBoundary shows a HUD panel and counts down; the screen is untouched. DEV-127.",
+    "fuzz": {
+      "enabled": false,
+      "note": "A strength of NONE behind a flag that is off: the two numbers that make this a no-op twice over, whatever the flag says.",
+      "strength": 0
+    }
+  },
+  "life": {
+    "note": "2016 has none of this: its seas and shores are empty. Every flag off; the numbers are Anniversary's so a flip by hand shows the same harbour.",
+    "boats": {
+      "enabled": false,
+      "note": "DEV-447. 2016 bought these boats and never placed one.",
+      "minQuality": "medium",
+      "seed": 447,
+      "alongRoute": 8,
+      "atStart": 3,
+      "routeReach": [80, 900],
+      "startReach": [110, 450],
+      "depth": [3, 40],
+      "startOpenWater": true,
+      "spacing": 70,
+      "swing": 25,
+      "search": { "step": 10, "angles": 24 },
+      "kinds": [
+        { "id": "rowboat", "mesh": "assets/life/boat-row.glb", "weight": 3, "scale": [1.4, 1.8], "draft": 0.3 },
+        { "id": "sailboat", "mesh": "assets/life/boat-sail.glb", "weight": 2, "scale": [3, 3.8], "draft": 0.25 }
+      ]
+    },
+    "dolphins": {
+      "enabled": false,
+      "note": "DEV-449. 2016's seas are empty.",
+      "minQuality": "medium",
+      "mesh": "assets/life/dolphin.glb",
+      "gravity": 9.81,
+      "seed": 449,
+      "alongRoute": 6,
+      "atStart": 1,
+      "routeReach": [60, 900],
+      "startReach": [60, 600],
+      "depth": 8,
+      "spacing": 250,
+      "perPod": [2, 5],
+      "podRadius": 14,
+      "swing": 12,
+      "period": [5, 9],
+      "height": [1.2, 2.4],
+      "length": [5, 8],
+      "scale": [13, 16],
+      "search": { "step": 10, "angles": 24 }
+    }
+  }
+}

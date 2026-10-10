@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Faceted Flight</title>
+  <!--
+    The tab icon. Referenced RELATIVELY from index.html so Vite emits it into
+    the bundle with a hash — `public/` would be the obvious home and is the
+    wrong one, because `vite.config.ts` sets `publicDir: false` whenever
+    `VITE_ASSET_BASE_URL` points off-origin, which is every real deploy. An icon
+    that only existed on a local build is worse than none.
+
+    Every colour is 2016's, not invented (hard rule 3's spirit — a colour typed
+    into this repo is indistinguishable from an extracted one six months later):
+
+      #facf63  logo_gold.mat   _Color (0.978, 0.809, 0.388)   `render/title.ts`
+      #c2c8e5  medal_Silver.mat, which is what `logo_bottom` wears
+      #070b12  --ground, index.html's own page colour
+
+    Two flat faces and a hard crease between them, which is the register
+    (ART_DIRECTION pillar 2) and also the only thing that survives 16 px. The
+    shape is the logo's own descending stack read down to its silhouette
+    (pillar 1) — gold wing, silver chevron.
+
+    The marks run y=6..26 inside a 32 box, with equal air top and bottom. The
+    first cut had them at 9..29 and it was WRONG at the size that matters: a
+    third of a 16 px tab icon was empty plate above the wing, and the silver
+    chevron was down to two mushy pixels. Nobody would have caught that from
+    the 128 px render, where both versions look fine — which is the
+    too-small-to-review rule, so it was shot at 16/24/32/64/128 on both a light
+    and a dark tab strip before it landed.
+  -->
+  <rect width="32" height="32" rx="7" fill="#070b12"/>
+  <path d="M3 6h26L16 18Z" fill="#facf63"/>
+  <path d="M8 20h16l-8 6Z" fill="#c2c8e5"/>
+</svg>

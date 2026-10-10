@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>What stayed from 2016, and what got fixed · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="bugs">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        Porting Faceted Flight meant deciding, over and over, whether something it does is a bug or part of
+        how it feels. Every one of those calls gets a row in the deviations ledger. Here are two that
+        went opposite ways: something 2016 did that the port got wrong at first and had to put back,
+        and a 2016 bug the port fixed.
+      </p>
+
+      <h2>The out-of-bounds countdown</h2>
+      <p>
+        In 2016 the play area is a sphere, and it's a <strong>trigger</strong>. Leave it and a
+        countdown starts, which runs for
+        <span data-const="boundary.resetDelay" data-unit="s"></span> on every shipped mission, and
+        then the run restarts. Turn back inside and it cancels. (The C# source disagrees with the
+        scenes about how long. The scenes are what shipped.)
+      </p>
+      <p>
+        The problem was in how Unity reports leaving. It fires an <em>exit</em> event for
+        something that was inside and went out. A ship that spawns outside the sphere was never
+        inside, so there's no exit to fire, and nothing happens. The port's first version asked a
+        different question every tick: <em>are you outside right now?</em> Those two questions agree
+        almost everywhere. They disagree on the two missions that spawn outside their own play area,
+        where the countdown started on the first frame and reset the run again and again, forever.
+        Two of the thirteen missions were unplayable, and none of the unit tests caught it, because
+        every one of them started the ship in the middle of the sphere. An automated test that flies
+        all thirteen missions in a browser is what found it.
+      </p>
+      <div data-toy="edge-vs-level"></div>
+      <p>
+        <strong>Try it:</strong> the ship starts outside. On the 2016 setting, leave it alone and
+        nothing happens. Fly into the sphere and back out and the countdown starts. Then switch to
+        the level test and watch the loop. The only difference between the two is one flag, set the
+        first time the ship is inside:
+      </p>
+      <pre data-snippet="src/sim/boundary.ts#createBoundary" data-caption="the state that remembers"></pre>
+
+      <h2>A platinum nobody could earn</h2>
+      <p>
+        <code>rookie_01_hoverJet</code> has a platinum threshold that sits above the most its rings
+        can pay out, so nobody could earn it. That one was an arithmetic bug and not part of the
+        feel, so it's fixed: Anniversary puts platinum at the ring ceiling. The rule lives in the
+        data, and the toy reads it.
+      </p>
+      <div data-toy="medal-calculator"></div>
+      <p>
+        <strong>Try it:</strong> slide to every ring on the 2016 setting. You get gold, with a
+        platinum line sitting past the dashed ceiling. Switch to Anniversary and every clean run
+        earns it.
+      </p>
+      <pre data-snippet="src/game/mission.ts#awardMedal" data-caption="the same function judges both"></pre>
+
+      <h2>What stayed</h2>
+      <p>
+        Some of 2016's quirks stayed because they're part of how it flies. The HoverJet still
+        doesn't level itself out when you let go of the stick, same as in 2016. Each of these has a
+        row in the deviations ledger saying what it was and why it went the way it did, so if one
+        changes later there's a record of the reason.
+      </p>
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

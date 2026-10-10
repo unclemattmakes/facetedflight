@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/making-of/shared/site.css" />
+    <title>Rebuilding the islands from height maps · Making of Faceted Flight</title>
+  </head>
+  <body data-chapter="terrain">
+    <!--ff2:nav-->
+    <!--ff2:header-->
+    <article>
+      <p>
+        The 2016 game's islands are made of triangles, and the triangles were baked: gigabytes of
+        mesh files that only Unity can read, and that can't ship with a web game. So the port carries the
+        <em>recipe</em> instead. A generator reads the same grayscale height maps and builds the
+        same facets, and it gets checked against the baked files, chunk by chunk, until the two
+        agree.
+      </p>
+
+      <h2>Reproducing a bug on purpose</h2>
+      <p>
+        A height map gives a height for each point on a grid spaced
+        <span data-const="terrain.simonet.islands.baseResolution" data-unit="m"></span> apart. To
+        make a landscape, every vertex gets nudged by a small random amount, and then each square
+        is cut into two triangles. The original does this and has one clever step: for each square
+        it picks the diagonal that fits the map better, which should make the slopes read more
+        naturally.
+      </p>
+      <p>
+        It doesn't work. When the code works out where to look in the map for the middle of the
+        square, it uses the point's <em>height</em> where it means its depth. The test still
+        returns a yes or a no, so every square gets a diagonal, nothing looked wrong, and the
+        game shipped looking like itself. The pattern of those diagonals is part of the silhouette, so
+        fixing the bug changes every square in the game. The generator keeps it behind a switch.
+        Classic keeps 2016's diagonals. After flying both, I liked the fixed ones better, so the
+        anniversary look uses those.
+      </p>
+      <div data-toy="facet-island"></div>
+      <p>
+        <strong>Try it:</strong> tick <em>show flipped quads</em> to see where the bug and the
+        intended rule disagree. Untick <em>2016 diagonal bug</em> and the outlines vanish, and the
+        island changes everywhere at once. Slide <em>jitter</em>: the shipped Simonet value is
+        <span data-const="terrain.simonet.islands.randomOffset" data-unit="m"></span>.
+        <em>new island</em> rolls a different one.
+      </p>
+      <pre data-snippet="src/sim/terrain/faceted.ts#diagonalTopLeftToBottomRight" data-caption="the function that carries the bug"></pre>
+
+      <h2>Two ground surfaces</h2>
+      <p>
+        The collision surface is the map on the grid, with no jitter. What you see is the jittered,
+        triangulated mesh. The notes used to say the gap between the two was the jitter, which is
+        small. Measuring it over thousands of placed objects said otherwise: most of the gap is the
+        triangles themselves, a smooth reading of the map against a triangulation of it. On flat
+        ground there's almost nothing between the two, so a spot check there passes. On a steep
+        face it doesn't.
+      </p>
+      <div data-toy="flat-vs-steep"></div>
+      <p>
+        <strong>Try it:</strong> click <em>flattest</em> to put the probe on the flattest dry ground on
+        the section and read a tiny gap. Then click <em>steepest</em>, or slide the <em>probe</em> up a face yourself,
+        and the gap and the slope rise together. Set <em>jitter</em> to zero and the gap is still
+        there.
+      </p>
+    </article>
+    <!--ff2:pagenav-->
+    <!--ff2:footer-->
+    <script type="module" src="/src/making-of/pages/chapter.ts"></script>
+  </body>
+</html>

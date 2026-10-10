@@ -1,0 +1,43 @@
+// workers/rooms/wrangler.jsonc — the rooms Worker (DEV-386, docs/rooms.md).
+//
+// NOT the site's configuration, and it must never gain `pages_build_output_dir`:
+// that key makes a file the Pages project's config and turns the dashboard's
+// bindings read-only (docs/lap-server.md). It lives here, beside the Worker it
+// deploys, and names no account id, no secret and no database.
+//
+//   npx wrangler@4.139.0 deploy --env preview   ->  ff10yr-rooms-preview  (main and branches)
+//   npx wrangler@4.139.0 deploy                 ->  ff10yr-rooms          (release)
+//
+// Two Workers, so a push to `main` never shares rooms with production — the
+// rule the two D1 databases already follow.
+{
+  "name": "ff10yr-rooms",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  // The fallback route (plan/MULTIPLAYER.md §6.2). The game connects through the
+  // Pages binding first; this stays on so the fallback needs no redeploy.
+  "workers_dev": true,
+  "preview_urls": false,
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }]
+  },
+  // SQLite-backed: the only kind the Free plan offers (§6.2).
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],
+  "vars": {
+    // Origins the DIRECT route admits. The Pages route is same-origin and needs none.
+    // facetedflight.net and www are custom domains on the Pages project (2026-09-30).
+    "ROOM_ORIGINS": "^https://ff-10yr\\.pages\\.dev$|^https://(www\\.)?facetedflight\\.net$"
+  },
+  "observability": { "enabled": true },
+  "env": {
+    "preview": {
+      // Not inherited from the top level: every environment names its own.
+      "durable_objects": {
+        "bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }]
+      },
+      "vars": {
+        "ROOM_ORIGINS": "^https://([a-z0-9-]+\\.)?ff-10yr\\.pages\\.dev$|^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
+      }
+    }
+  }
+}

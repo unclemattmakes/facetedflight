@@ -1,0 +1,29 @@
+[
+  {
+    "name": "01-baseline",
+    "env": { "E2E_PORT": "5360", "SCALE_GROUPS": "world-terrain/chunks,world-ocean,particle-fx" }
+  },
+  {
+    "name": "02-msaa-off",
+    "env": { "E2E_PORT": "5360", "SCALE_GROUPS": "", "SCALE_PARAMS": "aa=0" }
+  },
+  {
+    "name": "03-ocean-2016-density",
+    "env": { "E2E_PORT": "5360", "SCALE_GROUPS": "world-ocean", "SCALE_PARAMS": "ocean=1" }
+  },
+  {
+    "name": "04-shadow-knobs",
+    "env": {
+      "E2E_PORT": "5360",
+      "SCALE_GROUPS": "",
+      "SCALE_STEPS": "1258,2516",
+      "SCALE_FLAGS": "render.shadows",
+      "SCALE_KNOBS": "render.shadows.boxHalfSize=450,render.shadows.mapSize=1024"
+    }
+  },
+  {
+    "name": "05-fill-vs-scale-disagreement",
+    "env": { "E2E_PORT": "5360" },
+    "spec": "tests/e2e/perf-fill.spec.ts"
+  }
+]
