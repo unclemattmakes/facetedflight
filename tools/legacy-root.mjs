@@ -150,7 +150,11 @@ export const relativeToLegacy = (absolute) => {
  * Returns the forward-slashed absolute target so a caller can write to what it checked.
  */
 export const assertOutsideLegacy = (target, root = legacyRootOrNull()) => {
-  const abs = toForward(path.resolve(String(target)))
+  // An already-absolute target, in EITHER convention, is normalised as a string and never
+  // resolved: on Linux `path.resolve('C:/...')` prepends the working directory (trap 25), and
+  // the guard then never matched a Windows-shaped root. Found by the public repo's Linux CI.
+  const t = toForward(String(target))
+  const abs = /^([A-Za-z]:)?\//.test(t) ? path.posix.normalize(t) : toForward(path.resolve(t))
   // No root configured: there is no project to be inside of.
   if (!root) return abs
   const base = toForward(root).replace(/\/+$/, '').toLowerCase()
