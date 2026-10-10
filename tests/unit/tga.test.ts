@@ -15,7 +15,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 // Types come from the sibling `tga.d.mts`, as they do for bmp.mjs and png.mjs.
-import { legacyPath } from '../../tools/legacy-root.mjs'
+import { legacyAvailable, legacyPath } from '../../tools/legacy-root.mjs'
 import { decodeTga, readTgaHeader } from '../../tools/terrain/tga.mjs'
 
 /** Write a tiny uncompressed true-colour TGA and return its path. */
@@ -101,6 +101,7 @@ describe('the TGA decoder', () => {
   it('reads the real title-valley map, and it is a grayscale height field', () => {
     // The file this decoder exists for. Skipped where the read-only 2016
     // project is not mounted, so the suite still runs on a fresh clone.
+    if (!legacyAvailable()) return
     const p = legacyPath(
       'Assets/Faceted Flight/World Machine Content/forest_02/forest_02_height.tga',
     )

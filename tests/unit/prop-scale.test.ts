@@ -49,6 +49,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { MAINTAINER_CHECKOUT } from './helpers/checkout'
 import { REPO as ROOT } from './helpers/repo-root'
 
 const ENV_DIR = path.join(ROOT, 'content', 'environments')
@@ -136,7 +137,9 @@ describe('every scattered prop is a plausible size', () => {
             const file = path.join(PUBLIC, p.meshAsset as string)
             // Inside the `it`, deliberately. See the header.
             if (!fs.existsSync(file)) {
-              oversized.push(`${env.id}: ${p.meshAsset} is not on disk`)
+              // The public clone's content pack carries only the first-party props; the
+              // bought ones are absent there by design. In the maintainer tree it is a fault.
+              if (MAINTAINER_CHECKOUT) oversized.push(`${env.id}: ${p.meshAsset} is not on disk`)
               continue
             }
             const { metres, meshes } = longestEdge(file)
@@ -157,8 +160,9 @@ describe('every scattered prop is a plausible size', () => {
       }
       expect(oversized, `tallest was ${tallest.what} at ${tallest.metres.toFixed(1)} m`).toEqual([])
       // And the sweep really swept: a bug that made every asset resolve to
-      // nothing would otherwise pass with an empty list.
-      expect(tallest.metres).toBeGreaterThan(1)
+      // nothing would otherwise pass with an empty list. The public clone's pack
+      // holds no scatter prop (they are all bought), so there it has nothing to sweep.
+      if (MAINTAINER_CHECKOUT) expect(tallest.metres).toBeGreaterThan(1)
     })
 
     it('resolves a CONTAINER file down to one prefab, one mesh', () => {
