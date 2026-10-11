@@ -434,9 +434,17 @@ export const createTitleWorld = (ctx: TitleWorldCtx) => {
     // for where it hangs and why it is the pause plate. The index a ghost
     // link's race (and TV) picks from is fetched now, so a press does not wait.
     ctx.titleMenu = createPause(TITLE_MENU_PLATE)
-    placeTitleMenu(ctx.titleMenu.object, undefined, !render.renderer.xr.isPresenting)
+    // DEV-901: placed for the rows it will hold, not for the default three.
+    // `titleRows()` caches, and re-places the plate only when the count it
+    // CACHED changes, so a read before this plate existed left the count
+    // cached and a plate placed for three here was never re-placed for five:
+    // its last row ran off a flat frame's lower edge. `__ff2.titleMenu()`
+    // polled from load was that read, so every spec that waited on the rows
+    // that way measured a plate no player sees.
+    const rows = titleRows()
+    placeTitleMenu(ctx.titleMenu.object, rows.length, !render.renderer.xr.isPresenting)
     ctx.titleMenu.update({
-      options: titleRows(),
+      options: rows,
       selected: ctx.titleAim,
       // The device the page STARTS with (DEV-396): the frame loop rewords it
       // for the one in use, and `flatDevice` is not declared yet at this point.

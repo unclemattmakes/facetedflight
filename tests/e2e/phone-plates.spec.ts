@@ -96,22 +96,22 @@ const noOverlap = async (page: Page, stop: string): Promise<void> => {
  * take half the pitch between rows.
  */
 const titleNoOverlap = async (page: Page, stop: string): Promise<void> => {
-  const line = (await uiText(page)).find((p) => p.onGlass && p.name === 'title-screen')?.box
-  const rowsAt = (await titleMenu(page))?.rowsAt
+  // DEV-902: as RECTANGLES. The phone's rows stand beside the emblem now, so a row's
+  // height band alone meets the line it sits beside; `phone-title.spec.ts` holds every
+  // other pair of the title's elements at four phone sizes.
+  const layout = await page.evaluate(() => (globalThis as unknown as Ff2Global).__ff2.titleLayout())
+  const line = layout?.edition
   if (!line) {
     failures.push(`${stop}: the edition line is not on the glass`)
     return
   }
-  if (!rowsAt || rowsAt.length < 2) {
+  if (!layout || layout.rows.length < 2) {
     failures.push(`${stop}: the title's rows were not reported`)
     return
   }
-  const pitch = ((rowsAt[rowsAt.length - 1]?.y ?? 0) - (rowsAt[0]?.y ?? 0)) / (rowsAt.length - 1)
-  for (const [i, row] of rowsAt.entries()) {
-    const t = row.y - pitch / 2
-    const b = row.y + pitch / 2
-    if (line.t < b && t < line.b)
-      failures.push(`${stop}: the edition line overlaps row ${i} ${JSON.stringify({ line, t, b })}`)
+  for (const [i, row] of layout.rows.entries()) {
+    if (line.t < row.b && row.t < line.b && line.l < row.r && row.l < line.r)
+      failures.push(`${stop}: the edition line overlaps row ${i} ${JSON.stringify({ line, row })}`)
   }
 }
 

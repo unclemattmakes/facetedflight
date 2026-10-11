@@ -57,7 +57,7 @@ import {
   START_PAD_MESH,
   type StartGridSpec,
 } from '@/render/start-grid'
-import { MAINTAINER_CHECKOUT } from './helpers/checkout'
+import { HYDRATED_MAINTAINER_CHECKOUT } from './helpers/checkout'
 
 const DECK_FILE = `public/${START_DECK_MESH}`
 const PAD_FILE = `public/${START_PAD_MESH}`
@@ -436,14 +436,18 @@ describe.skipIf(!AVAILABLE)("2016's deck on the six decks (DEV-549)", () => {
   }, 120_000)
 })
 
-// The loud counterpart asserts only in the maintainer checkout: these are BOUGHT assets,
+// The loud counterpart asserts only in a HYDRATED maintainer checkout: these are BOUGHT assets,
 // which the public export and its content pack never carry (plan/PUBLIC-REPO-facetedflight.md
-// §4.3, Matt M4), so a public clone skips both halves. tests/unit/helpers/checkout.ts.
-describe.skipIf(AVAILABLE || !MAINTAINER_CHECKOUT)("2016's deck: the GLBs are not hydrated", () => {
-  it('says so, rather than passing quietly', () => {
-    expect(
-      fs.existsSync(DECK_FILE) && fs.existsSync(PAD_FILE),
-      `pnpm assets:pull (or node tools/assets/convert-start-deck.mjs) to measure ${DECK_FILE} and ${PAD_FILE}`,
-    ).toBe(true)
-  })
-})
+// §4.3, Matt M4), and a plain clone of this repo (its CI runner) never pulls them: both
+// skip both halves. tests/unit/helpers/checkout.ts.
+describe.skipIf(AVAILABLE || !HYDRATED_MAINTAINER_CHECKOUT)(
+  "2016's deck: the GLBs are not hydrated",
+  () => {
+    it('says so, rather than passing quietly', () => {
+      expect(
+        fs.existsSync(DECK_FILE) && fs.existsSync(PAD_FILE),
+        `pnpm assets:pull (or node tools/assets/convert-start-deck.mjs) to measure ${DECK_FILE} and ${PAD_FILE}`,
+      ).toBe(true)
+    })
+  },
+)

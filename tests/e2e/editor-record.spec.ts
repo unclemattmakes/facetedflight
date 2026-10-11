@@ -105,14 +105,7 @@ const toLine = (p: V3, line: readonly V3[]): number => {
   }
   return best
 }
-/** The most either polyline strays from the other, metres. */
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-const twoWay = (a: readonly V3[], b: readonly V3[]): number => {
-  let d = 0
-  for (const p of a) d = Math.max(d, toLine(p, b))
-  for (const p of b) d = Math.max(d, toLine(p, a))
-  return d
-}
 
 test.describe('@gpu fly-to-author (DEV-491)', () => {
   test.setTimeout(900_000)
@@ -165,7 +158,12 @@ test.describe('@gpu fly-to-author (DEV-491)', () => {
     // 2.2 km; the empty-tank one went 1.9 km and its fit kept only the pad's
     // two points. Fly the straight longer, and the last leg too, so the line
     // still has points past the pad's stretch (point 2, DEV-501).
-    await page.waitForTimeout(4_000)
+    // DEV-853 (2026-10-08): Free Flight's tank never runs out now, so boost is
+    // lit from the lift-off and the 4 s straight that the empty tank needed
+    // reached the ridge ahead of int_01's pad before the climb: a crash at
+    // about 4.9 s, the fit cut there (`flightOfClip`), and 5.1 s recorded
+    // against 8. Climb after 2 s, before the ridge. DEV-901.
+    await page.waitForTimeout(2_000)
     await hold(page, 's', 700) // nose up: climb away from the ground
     await hold(page, 'a', 900) // bank left
     await page.waitForTimeout(2_500)
@@ -216,8 +214,21 @@ test.describe('@gpu fly-to-author (DEV-491)', () => {
       })
       return best
     }
+    // DEV-901: each side from point 2 is measured against the OTHER from point 1.
+    // Slicing both at their own sample nearest point 2 cut them at different
+    // places: the flight's samples are about 23 m apart since DEV-853's endless
+    // boost, so its first kept sample could sit up to half that BEFORE point 2,
+    // where the sliced line did not reach, and read 6 to 11 m off a line the
+    // fit held to 4 (worst at that first sample in every red run).
+    const p1 = made.points[1] as V3
     const p2 = made.points[2] as V3
-    const off = twoWay(flight.slice(nearestIn(flight, p2)), line.slice(nearestIn(line, p2)))
+    const flightFrom2 = flight.slice(nearestIn(flight, p2))
+    const lineFrom2 = line.slice(nearestIn(line, p2))
+    const flightFrom1 = flight.slice(nearestIn(flight, p1))
+    const lineFrom1 = line.slice(nearestIn(line, p1))
+    let off = 0
+    for (const p of flightFrom2) off = Math.max(off, toLine(p, lineFrom1))
+    for (const p of lineFrom2) off = Math.max(off, toLine(p, flightFrom1))
     console.log(`[DEV-491] line vs flight, two-way: ${off.toFixed(2)} m (tolerance ${TOLERANCE} m)`)
     // 0.3 m: the fit sees the flight resampled every 10 m (its own sagitta).
     expect(off).toBeLessThanOrEqual(TOLERANCE + 0.3)

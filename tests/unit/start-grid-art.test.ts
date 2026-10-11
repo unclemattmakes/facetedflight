@@ -54,7 +54,7 @@ import {
 } from '@/render/start-grid'
 import { hangarSpecFor } from '@/sim/hangar'
 import { hullFromColliders } from '@/sim/terrain-collision'
-import { MAINTAINER_CHECKOUT } from './helpers/checkout'
+import { HYDRATED_MAINTAINER_CHECKOUT } from './helpers/checkout'
 import { fieldFor, groundUnder, haveMaps } from './helpers/terrain-field'
 
 const ROOM_FILE = `public/${HANGAR_ROOM_MESH}`
@@ -690,10 +690,11 @@ describe.skipIf(!AVAILABLE)('the start deck from the seat, and the pads on it', 
   })
 })
 
-// The loud counterpart asserts only in the maintainer checkout: these are BOUGHT assets,
+// The loud counterpart asserts only in a HYDRATED maintainer checkout: these are BOUGHT assets,
 // which the public export and its content pack never carry (plan/PUBLIC-REPO-facetedflight.md
-// §4.3, Matt M4), so a public clone skips both halves. tests/unit/helpers/checkout.ts.
-describe.skipIf(AVAILABLE || !MAINTAINER_CHECKOUT)(
+// §4.3, Matt M4), and a plain clone of this repo (its CI runner) never pulls them: both
+// skip both halves. tests/unit/helpers/checkout.ts.
+describe.skipIf(AVAILABLE || !HYDRATED_MAINTAINER_CHECKOUT)(
   'the start deck from the seat: the GLBs are not hydrated',
   () => {
     it('says so, rather than passing quietly', () => {

@@ -25,7 +25,15 @@
 
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { HEADLESS_TITLE_M, panelHeight, pickLocal, rowCentreLocalY } from '@/render/pause'
+import {
+  HEADLESS_TITLE_M,
+  panelHeight,
+  pickLocal,
+  rowCentreLocalY,
+  TOP_LOCAL_Y,
+  WIDTH,
+} from '@/render/pause'
+import { phoneUi } from '@/render/phone-floor'
 import {
   COURSE_REFUSED_ROW_ID,
   courseRefusedRow,
@@ -44,6 +52,7 @@ import {
   TITLE_MENU_PLATE,
   type TitleInput,
   titleMenuExtent,
+  titleMenuPose,
   titleMenuScale,
   titleOpeningAim,
   titleRows,
@@ -256,5 +265,45 @@ describe('what a ray from the eye hits', () => {
       plate.localToWorld(centre)
       expect(hit(centre.sub(eye)), `row ${i}`).toBe(i)
     })
+  })
+})
+
+// DEV-902: a phone's plate stands in the right half of the view, beside the emblem,
+// and stays inside the narrowest phone the sweep knows (667 x 375, an iPhone SE held
+// sideways) at the most rows a phone's title holds (a shared lap's RACE and WATCH,
+// START, OPTIONS, THE MAKING-OF and the newsletter). The e2e sweep
+// (`phone-title.spec.ts`) measures the rest on the glass.
+describe('on a phone (DEV-902)', () => {
+  const PHONE_ROWS = 6
+  const tanHalfV = Math.tan(((FLAT_VFOV / 2) * Math.PI) / 180)
+  const tanHalfH = tanHalfV * (667 / 375)
+  const pose = (rows: number) => {
+    phoneUi.on = true
+    try {
+      return titleMenuPose(rows, true)
+    } finally {
+      phoneUi.on = false
+    }
+  }
+
+  it('stands right of the view axis, clear of it, and inside the narrowest glass', () => {
+    for (const rows of [4, PHONE_ROWS]) {
+      const { position, scale } = pose(rows)
+      const d = -position[2]
+      const left = (position[0] - (WIDTH / 2) * scale) / d
+      const right = (position[0] + (WIDTH / 2) * scale) / d
+      const top = (position[1] + TOP_LOCAL_Y * scale) / d
+      const bottom =
+        (position[1] + (TOP_LOCAL_Y - panelHeight(rows, TITLE_MENU_BAND_M)) * scale) / d
+      expect(left, `${rows} rows: left of the plate is right of centre`).toBeGreaterThan(0.1)
+      expect(right, `${rows} rows: inside the right edge`).toBeLessThan(tanHalfH * 0.95)
+      expect(top, `${rows} rows: inside the top`).toBeLessThan(tanHalfV * 0.8)
+      expect(-bottom, `${rows} rows: inside the bottom`).toBeLessThan(tanHalfV * 0.8)
+    }
+  })
+
+  it('leaves a desktop and a headset centred, as they were', () => {
+    expect(titleMenuPose(3, true).position[0]).toBe(0)
+    expect(titleMenuPose(3, false).position[0]).toBe(0)
   })
 })

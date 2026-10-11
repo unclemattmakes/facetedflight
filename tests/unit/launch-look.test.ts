@@ -31,7 +31,7 @@ import {
 } from '@/render/hangar-art'
 import { acesFilmic, type ToneLook, toneColoursFor, toneLookOf } from '@/render/tone'
 import { hangarSpecFor } from '@/sim/hangar'
-import { MAINTAINER_CHECKOUT } from './helpers/checkout'
+import { HYDRATED_MAINTAINER_CHECKOUT } from './helpers/checkout'
 
 const FILE = `public/${HANGAR_ROOM_MESH}`
 const AVAILABLE = fs.existsSync(FILE)
@@ -231,10 +231,11 @@ describe.skipIf(!AVAILABLE)("2016's launch rig, on Classic, wears the hangar's c
   })
 })
 
-// The loud counterpart asserts only in the maintainer checkout: these are BOUGHT assets,
+// The loud counterpart asserts only in a HYDRATED maintainer checkout: these are BOUGHT assets,
 // which the public export and its content pack never carry (plan/PUBLIC-REPO-facetedflight.md
-// §4.3, Matt M4), so a public clone skips both halves. tests/unit/helpers/checkout.ts.
-describe.skipIf(AVAILABLE || !MAINTAINER_CHECKOUT)(
+// §4.3, Matt M4), and a plain clone of this repo (its CI runner) never pulls them: both
+// skip both halves. tests/unit/helpers/checkout.ts.
+describe.skipIf(AVAILABLE || !HYDRATED_MAINTAINER_CHECKOUT)(
   "the launch rig's look: hangar-room.glb is not hydrated",
   () => {
     it('says so, rather than passing quietly', () => {

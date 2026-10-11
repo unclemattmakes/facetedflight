@@ -1300,7 +1300,11 @@ test.describe('turning a phone (DEV-566) @gpu', () => {
     const upright = await titleMenu(page)
     const startAt = upright?.rowsAt?.[upright.rows.indexOf(TITLE_ROW.hangar)]
     expect(startAt, 'the title says where START is').toBeTruthy()
-    if (startAt) await page.touchscreen.tap(startAt.x, startAt.y)
+    // DEV-902: a phone's rows stand in the right half of a SIDEWAYS view, which an
+    // upright one does not reach, so START is off the glass here; a finger goes as
+    // near it as the glass allows. (A tap off the page is no finger at all, and it
+    // left the hangar's aim on a point no screen has.)
+    if (startAt) await page.touchscreen.tap(Math.min(startAt.x, UPRIGHT.width - 2), startAt.y)
     // A key (a phone with a keyboard paired) is stopped at the window.
     await page.keyboard.down('Enter')
     await page.waitForTimeout(200)

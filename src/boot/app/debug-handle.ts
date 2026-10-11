@@ -67,7 +67,7 @@ import { hudFontState } from '@/render/hud-font'
 import { type HudGauges, parseHudGauges } from '@/render/hud-gauges'
 import type { LoadingScene } from '@/render/loading-scene'
 import type { PauseOption, PausePage } from '@/render/pause'
-import { panelHeight, rowCentreLocalY, TOP_LOCAL_Y } from '@/render/pause'
+import { panelHeight, rowBand, rowCentreLocalY, TOP_LOCAL_Y, WIDTH } from '@/render/pause'
 import type { PerfPlate } from '@/render/perf-plate'
 import { isPointLightScoped, pointLightScopeOf } from '@/render/point-light-scope'
 import type { Renderer } from '@/render/renderer'
@@ -729,6 +729,151 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
         })
       }
       return { up: optionsPlate.up(), selected: pause.pauseAim, rowsAt }
+    },
+    /**
+     * DEV-902: every element of the title on the glass, as a css-px rectangle, and the
+     * size its type is set at, so a spec can hold "nothing overlaps, everything is over
+     * the phone floor" (`tests/e2e/phone-title.spec.ts`). The emblem is the box of its
+     * projected vertices; the edition line is its ink, not its plane; each row is its
+     * band across the plate; the version line and the mascot are their DOM boxes, null
+     * while hidden. Null while the title's rows are down.
+     */
+    titleLayout: () => {
+      const plate = handles.titleMenu
+      const title = handles.title
+      if (!titleMenuUp() || plate === null || title === null) return null
+      const rect = canvas.getBoundingClientRect()
+      type Box = { l: number; r: number; t: number; b: number }
+      const v = new THREE.Vector3()
+      const grow = (box: Box, p: THREE.Vector3): void => {
+        p.project(render.camera)
+        const x = rect.left + ((p.x + 1) / 2) * rect.width
+        const y = rect.top + ((1 - p.y) / 2) * rect.height
+        box.l = Math.min(box.l, x)
+        box.r = Math.max(box.r, x)
+        box.t = Math.min(box.t, y)
+        box.b = Math.max(box.b, y)
+      }
+      const empty = (): Box => ({
+        l: Number.POSITIVE_INFINITY,
+        r: Number.NEGATIVE_INFINITY,
+        t: Number.POSITIVE_INFINITY,
+        b: Number.NEGATIVE_INFINITY,
+      })
+      title.object.updateMatrixWorld(true)
+      // The emblem: 2016's logo where it loaded, else the stand-in's wordmark.
+      let logo: Box | null = null
+      title.object.traverseVisible((o) => {
+        const mesh = o as THREE.Mesh
+        if (!mesh.isMesh) return
+        let inLogo = false
+        for (let n: THREE.Object3D | null = mesh; n !== null; n = n.parent) {
+          if (n.name === 'title-logo' || n.name === 'title-monument') inLogo = true
+        }
+        if (!inLogo) return
+        const pos = mesh.geometry.getAttribute('position')
+        if (!pos) return
+        const box = logo ?? empty()
+        for (let i = 0; i < pos.count; i++) {
+          grow(box, v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld))
+        }
+        logo = box
+      })
+      // The edition line: its ink, as `paintPrompt` measured it.
+      let edition: Box | null = null
+      let editionTextPx = 0
+      title.object.traverseVisible((o) => {
+        const mesh = o as THREE.Mesh
+        const line = mesh.userData.titleEdition as
+          | { text: string; fontPx: number; maxWidthPx: number }
+          | undefined
+        if (!mesh.isMesh || line === undefined) return
+        // Measured on the line's own canvas, which keeps the font its last paint set.
+        const image = (mesh.material as THREE.MeshBasicMaterial).map?.image as
+          | HTMLCanvasElement
+          | undefined
+        const m = image?.getContext('2d')?.measureText(line.text)
+        if (!image || !m) return
+        const ink = {
+          w: Math.min(line.maxWidthPx, m.width) / image.width,
+          h: (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) / image.height,
+          fontPx: line.fontPx,
+        }
+        const g = mesh.geometry as THREE.PlaneGeometry
+        const { width, height } = g.parameters
+        const box = empty()
+        for (const [sx, sy] of [
+          [-1, -1],
+          [1, -1],
+          [1, 1],
+          [-1, 1],
+        ] as const) {
+          grow(
+            box,
+            v
+              .set((sx * ink.w * width) / 2, (sy * ink.h * height) / 2, 0)
+              .applyMatrix4(mesh.matrixWorld),
+          )
+        }
+        edition = box
+        // The font's size on the glass: the plane is `height` metres over the canvas's pixels.
+        editionTextPx = ((box.b - box.t) / Math.max(1e-6, ink.h)) * (ink.fontPx / image.height)
+      })
+      // The rows: each one's band across the plate, and the plate's own card.
+      plate.object.updateWorldMatrix(true, false)
+      const count = titleRows().length
+      const band = rowBand(count)
+      const rows = titleRows().map((r, i) => {
+        const c = rowCentreLocalY(i, count, TITLE_MENU_BAND_M)
+        const box = empty()
+        for (const [x, y] of [
+          [-WIDTH / 2, c - band / 2],
+          [WIDTH / 2, c - band / 2],
+          [WIDTH / 2, c + band / 2],
+          [-WIDTH / 2, c + band / 2],
+        ] as const) {
+          grow(box, plate.object.localToWorld(v.set(x, y, 0)))
+        }
+        return { id: r.id, ...box }
+      })
+      const card = empty()
+      for (const [x, y] of [
+        [-WIDTH / 2, TOP_LOCAL_Y],
+        [WIDTH / 2, TOP_LOCAL_Y],
+        [WIDTH / 2, TOP_LOCAL_Y - panelHeight(count, TITLE_MENU_BAND_M)],
+        [-WIDTH / 2, TOP_LOCAL_Y - panelHeight(count, TITLE_MENU_BAND_M)],
+      ] as const) {
+        grow(card, plate.object.localToWorld(v.set(x, y, 0)))
+      }
+      const dom = (id: string, text: boolean): (Box & { fontPx: number }) | null => {
+        const el = document.getElementById(id)
+        if (!el || getComputedStyle(el).display === 'none') return null
+        let r: DOMRect
+        if (text) {
+          const range = document.createRange()
+          range.selectNodeContents(el)
+          r = range.getBoundingClientRect()
+        } else r = el.getBoundingClientRect()
+        if (r.width === 0 && r.height === 0) return null
+        return {
+          l: r.left,
+          r: r.right,
+          t: r.top,
+          b: r.bottom,
+          fontPx: Number.parseFloat(getComputedStyle(el).fontSize),
+        }
+      }
+      return {
+        glass: { w: rect.width, h: rect.height },
+        logo,
+        edition: edition === null ? null : { ...(edition as Box), fontPx: editionTextPx },
+        plate: card,
+        rows,
+        version: dom('title-line', true),
+        mascot: dom('uncle-matt-link', false),
+        // DEV-842's add-to-home-screen card, where a phone shows it: its chip, or the card once opened.
+        guide: dom('home-screen-guide', false),
+      }
     },
     titleMenu: () => {
       const up = titleMenuUp()

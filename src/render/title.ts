@@ -39,7 +39,7 @@
 // title screen is the first thing anyone wears. See `levelGaze` and DEV-068.
 
 import * as THREE from 'three'
-import { PROMPT_PHONE_BELOW_DEG, PROMPT_PHONE_SCALE, phoneUi } from '@/render/phone-floor'
+import { PROMPT_PHONE_SCALE, phoneUi, TITLE_PHONE_GAZE_YAW_DEG } from '@/render/phone-floor'
 import { UI_ACCENT as ACCENT, UI_INK as INK, uiFont } from '@/render/ui-tokens'
 import { hudFace, whenHudFontSettles } from './hud-font'
 import { disposeTree } from './scene-walk'
@@ -871,7 +871,11 @@ export const createTitle = (opts: TitleOptions): Title => {
     logo.name = 'title-logo'
     paintLogo(logo)
     logo.position.copy(opts.logoAt ?? centre)
-    logo.rotation.y = opts.logoYaw ?? 0
+    // DEV-902: a phone's view turns right of the emblem (`TITLE_PHONE_GAZE_YAW_DEG`, below),
+    // and the emblem turns with it, so it stays square to the glass: seen 20 degrees off its
+    // face, its wordmark ran downhill.
+    logo.rotation.y =
+      (opts.logoYaw ?? 0) - (phoneUi.on ? (TITLE_PHONE_GAZE_YAW_DEG * Math.PI) / 180 : 0)
     const k = opts.logoScale ?? 1
     logo.scale.setScalar(k)
     object.add(logo)
@@ -892,6 +896,15 @@ export const createTitle = (opts: TitleOptions): Title => {
       const key = new THREE.SpotLight(0xffffff, opts.logoLight.intensity)
       key.name = 'title-logo-key'
       key.position.copy(opts.logoLight.position)
+      // DEV-902: a phone turns the emblem (above), and its key light goes round with it,
+      // so the emblem is lit as 2016 lit it, from where 2016 put the light relative to it.
+      if (phoneUi.on) {
+        const at = opts.logoAt ?? centre
+        key.position
+          .sub(at)
+          .applyAxisAngle(new THREE.Vector3(0, 1, 0), (-TITLE_PHONE_GAZE_YAW_DEG * Math.PI) / 180)
+          .add(at)
+      }
       key.distance = opts.logoLight.distance
       key.angle = opts.logoLight.angle
       key.penumbra = 0.35
@@ -1025,6 +1038,13 @@ export const createTitle = (opts: TitleOptions): Title => {
     // The one line of type on the screen. Not tone-mapped — DEV-081.
     new THREE.MeshBasicMaterial({ map: promptTexture, transparent: true, toneMapped: false }),
   )
+  // DEV-902: what a probe needs to say where the words are on the glass
+  // (`__ff2.titleLayout()` measures them on this canvas, in the font it was left in).
+  prompt.userData.titleEdition = {
+    text: opts.prompt.toUpperCase(),
+    fontPx: TITLE_SUBTITLE_PX,
+    maxWidthPx: 980,
+  }
   // Between the wordmark and the monument's top, with clearance from both. The
   // first build sat it at 0.36 of the height, which is 12 m against a plinth
   // that tops out at 10 — close enough to read as part of the stone.
@@ -1053,12 +1073,9 @@ export const createTitle = (opts: TitleOptions): Title => {
   const promptRange = flatRange * PROMPT_RANGE_FRACTION
   prompt.position.set(
     opts.eye.x + (toAnchor.x / flatRange) * promptRange,
-    opts.eye.y +
-      Math.tan(
-        sightPitch -
-          (phoneUi.on ? (PROMPT_PHONE_BELOW_DEG * Math.PI) / 180 : PROMPT_BELOW_SIGHTLINE),
-      ) *
-        promptRange,
+    // DEV-902: a phone's too, since its rows moved beside the emblem (DEV-895 had
+    // lifted the line into the gap between the emblem and a plate hung under it).
+    opts.eye.y + Math.tan(sightPitch - PROMPT_BELOW_SIGHTLINE) * promptRange,
     opts.eye.z + (toAnchor.z / flatRange) * promptRange,
   )
   object.add(prompt)
@@ -1101,7 +1118,20 @@ export const createTitle = (opts: TitleOptions): Title => {
   // Both paths get the same pose. The stand-in monument used to be aimed at
   // `0.55 * MONUMENT_HEIGHT` up its own plinth; two poses for two paths is two
   // things to keep level, and the fallback is not the screen anyone ships.
-  const quaternion = levelGaze(forward)
+  //
+  // DEV-902: a phone's title is two columns, the emblem on the left and the rows
+  // on the right (`phone-floor.ts`), so a phone looks `TITLE_PHONE_GAZE_YAW_DEG`
+  // to the right of the emblem: still level, and the emblem stands left of centre.
+  const quaternion = levelGaze(
+    phoneUi.on
+      ? forward
+          .clone()
+          .applyAxisAngle(new THREE.Vector3(0, 1, 0), (-TITLE_PHONE_GAZE_YAW_DEG * Math.PI) / 180)
+      : forward,
+  )
+  // And the edition line stands square to the glass, as the emblem does: faced at the eye
+  // from 20 degrees off the view's axis and below it, its baseline ran downhill too.
+  if (phoneUi.on) prompt.quaternion.copy(quaternion)
 
   let clock = 0
   /**

@@ -191,6 +191,14 @@ export interface BootOptions {
   readonly reportBug?: ReportBugHook
 }
 
+/** DEV-902: a box on the glass, css px from the page's top left. */
+export interface TitleBox {
+  l: number
+  r: number
+  t: number
+  b: number
+}
+
 export interface App {
   readonly capabilities: Capabilities
   readonly render: Renderer
@@ -456,6 +464,21 @@ export interface App {
    * plate is handed it, and whether it is painted in the accent — the
    * first-visit note is text on a canvas, and this is how a spec reads it.
    */
+  /**
+   * DEV-902: the title's elements on the glass, css px (`debug-handle.ts` says how each
+   * is measured), and the size each one's type is set at. Null while the rows are down.
+   */
+  titleLayout(): {
+    glass: { w: number; h: number }
+    logo: TitleBox | null
+    edition: (TitleBox & { fontPx: number }) | null
+    plate: TitleBox
+    rows: (TitleBox & { id: string })[]
+    version: (TitleBox & { fontPx: number }) | null
+    mascot: (TitleBox & { fontPx: number }) | null
+    /** The add-to-home-screen card (DEV-842), null where it is not shown. */
+    guide: (TitleBox & { fontPx: number }) | null
+  } | null
   titleMenu(): {
     up: boolean
     selected: number

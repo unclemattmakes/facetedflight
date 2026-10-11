@@ -2,6 +2,7 @@
   "name": "ff10yr-rooms",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@10.33.4",
   "type": "module",
   "description": "The rooms Worker for live multiplayer (DEV-386): one partyserver Durable Object per room, bound to the Pages project as ROOMS. See docs/rooms.md.",
   "license": "MIT",
