@@ -1,0 +1,139 @@
+[
+  {
+    "name": "c-cockpit",
+    "kind": "mission",
+    "mission": "int_01_hoverJet",
+    "query": "&edition=classic",
+    "from": 10,
+    "dur": 10
+  },
+  {
+    "name": "a-cockpit-alpine",
+    "kind": "mission",
+    "mission": "int_02_hoverJet",
+    "from": 14,
+    "dur": 12
+  },
+  {
+    "name": "a-fast-desert",
+    "kind": "mission",
+    "mission": "rookie_02_hoverJet",
+    "query": "&view=chase&chase=fast",
+    "from": 8,
+    "dur": 12
+  },
+  {
+    "name": "a-third-alpine",
+    "kind": "mission",
+    "mission": "rookie_01_hoverJet",
+    "query": "&camera=third",
+    "from": 10,
+    "dur": 12
+  },
+  { "name": "a-jumpseat", "kind": "mission", "mission": "int_01_jumpSeat", "from": 4, "dur": 14 },
+  {
+    "name": "a-fast-alpine",
+    "kind": "mission",
+    "mission": "int_02_hoverJet",
+    "query": "&view=chase&chase=fast",
+    "from": 20,
+    "dur": 12
+  },
+  { "name": "tv-director", "kind": "exhibition", "course": "adv_02_hoverJet", "dur": 30 },
+  { "name": "title-end", "kind": "title", "dur": 24, "hide": ["title-menu"] },
+  {
+    "name": "editor2",
+    "kind": "editor",
+    "mission": "int_02_hoverJet",
+    "dur": 12,
+    "rec": "screen",
+    "clicks": [
+      [1, 700, 520],
+      [1.8, 820, 380],
+      [2.6, 1020, 330],
+      [3.4, 1220, 420],
+      [4.2, 1300, 560],
+      [5, 1180, 720],
+      [5.8, 950, 780],
+      [6.6, 740, 700]
+    ]
+  },
+  {
+    "kind": "mission",
+    "name": "a-cockpit-simonet",
+    "mission": "int_01_hoverJet",
+    "from": 10,
+    "dur": 10
+  },
+  {
+    "kind": "mission",
+    "name": "c3-alpine",
+    "mission": "int_02_hoverJet",
+    "query": "&camera=third&edition=classic",
+    "from": 14,
+    "dur": 8
+  },
+  {
+    "kind": "mission",
+    "name": "c3-desert",
+    "mission": "adv_01_hoverJet",
+    "query": "&camera=third&edition=classic",
+    "from": 12,
+    "dur": 8
+  },
+  {
+    "kind": "mission",
+    "name": "c3-simonet2",
+    "mission": "adv_02_hoverJet",
+    "query": "&camera=third&edition=classic",
+    "from": 18,
+    "dur": 8
+  },
+  {
+    "kind": "mission",
+    "name": "a-ride-alpine",
+    "mission": "int_02_hoverJet",
+    "from": -1,
+    "dur": 24
+  },
+  {
+    "kind": "mission",
+    "name": "a3-desert",
+    "mission": "adv_01_hoverJet",
+    "query": "&camera=third",
+    "from": 12,
+    "dur": 10
+  },
+  {
+    "kind": "mission",
+    "name": "a3-desert2",
+    "mission": "rookie_02_hoverJet",
+    "query": "&camera=third",
+    "from": 8,
+    "dur": 10
+  },
+  {
+    "kind": "mission",
+    "name": "a3-simonet2",
+    "mission": "adv_02_hoverJet",
+    "query": "&camera=third",
+    "from": 18,
+    "dur": 10
+  },
+  {
+    "kind": "mission",
+    "name": "a3-kauai",
+    "mission": "hoverJet_kauai_beg",
+    "query": "&camera=third",
+    "from": 2,
+    "dur": 8,
+    "keys": [[0, "Space", 9000]]
+  },
+  {
+    "kind": "mission",
+    "name": "a-cockpit-rookie1",
+    "mission": "rookie_01_hoverJet",
+    "from": 12,
+    "dur": 10
+  }
+]

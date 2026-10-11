@@ -1,0 +1,211 @@
+{
+  "length": 52,
+  "fadeIn": 0.5,
+  "fadeOut": 1.5,
+  "music": {
+    "file": "public/assets/audio/music/retro-synths.opus",
+    "ranges": [[8, 48], [196, 212]],
+    "fadeOut": 3,
+    "gain": 1
+  },
+  "overlays": [
+    {
+      "file": "docs/private/trailer/logo.png",
+      "at": 0.3,
+      "to": 9.8,
+      "w": 230,
+      "x": 1640,
+      "y": 846,
+      "fade": 0.5,
+      "opacity": 0.95
+    }
+  ],
+  "shots": [
+    {
+      "clip": "c3-simonet2",
+      "in": 0,
+      "dur": 2
+    },
+    {
+      "clip": "c3-alpine",
+      "in": 3.3,
+      "dur": 2
+    },
+    {
+      "clip": "c3-desert",
+      "in": 4.7,
+      "dur": 2
+    },
+    {
+      "clip": "a-cockpit-simonet",
+      "wipeFrom": "c-cockpit",
+      "in": 6,
+      "dur": 4,
+      "wipeAt": 2,
+      "wipe": 1
+    },
+    {
+      "clip": "a-ride-alpine",
+      "in": 14.65,
+      "dur": 4
+    },
+    {
+      "clip": "a3-simonet2",
+      "in": 5.5,
+      "dur": 2
+    },
+    {
+      "clip": "a3-kauai",
+      "in": 1,
+      "dur": 2
+    },
+    {
+      "clip": "a-third-alpine",
+      "in": 3,
+      "dur": 2
+    },
+    {
+      "clip": "a-fast-desert",
+      "in": 4.5,
+      "dur": 2
+    },
+    {
+      "clip": "a-fast-alpine",
+      "in": 5.5,
+      "dur": 2
+    },
+    {
+      "clip": "a3-desert",
+      "in": 4.6,
+      "dur": 2
+    },
+    {
+      "clip": "a-jumpseat",
+      "in": 2.5,
+      "dur": 2
+    },
+    {
+      "clip": "tv-director",
+      "in": 1.5,
+      "dur": 4
+    },
+    {
+      "clip": "editor2",
+      "in": 1,
+      "dur": 4,
+      "speed": 1.5
+    },
+    {
+      "clip": "a3-desert2",
+      "in": 2.4,
+      "dur": 1
+    },
+    {
+      "clip": "a-cockpit-rookie1",
+      "in": 4.6,
+      "dur": 1
+    },
+    {
+      "clip": "a-cockpit-alpine",
+      "in": 4.3,
+      "dur": 1
+    },
+    {
+      "clip": "a-fast-desert",
+      "in": 10.4,
+      "dur": 1
+    },
+    {
+      "clip": "title-end",
+      "in": 4,
+      "dur": 12
+    }
+  ],
+  "cards": [
+    {
+      "text": "2016",
+      "at": 0.4,
+      "to": 3.8,
+      "size": 44,
+      "y": "h*0.33",
+      "color": "0xffcf7a"
+    },
+    {
+      "text": "\"One of our favourite demos for DK2\"",
+      "at": 0.5,
+      "to": 3.8,
+      "size": 64,
+      "y": "(h-text_h)/2"
+    },
+    {
+      "text": "The Rift Arcade",
+      "at": 0.7,
+      "to": 3.8,
+      "size": 38,
+      "y": "h*0.58",
+      "color": "0xdfe8ee"
+    },
+    {
+      "text": "Ten years later",
+      "at": 4.3,
+      "to": 7.5,
+      "y": "h*0.14"
+    },
+    {
+      "text": "All thirteen original missions",
+      "at": 14.2,
+      "to": 17.8,
+      "y": "h*0.14"
+    },
+    {
+      "text": "Now with AI racers",
+      "at": 18.2,
+      "to": 21.8,
+      "y": "h*0.14"
+    },
+    {
+      "text": "Race your friends online",
+      "at": 22.2,
+      "to": 25.8,
+      "y": "h*0.14"
+    },
+    {
+      "text": "Watch races on FF-TV",
+      "at": 28.2,
+      "to": 31.8,
+      "y": "h*0.14"
+    },
+    {
+      "text": "Build your own courses",
+      "at": 32.2,
+      "to": 35.8,
+      "y": "h*0.14"
+    },
+    {
+      "text": "Play it in your browser",
+      "at": 43,
+      "to": 52,
+      "size": 56,
+      "y": "820",
+      "fade": 0.6
+    },
+    {
+      "text": "facetedflight.net",
+      "at": 43.6,
+      "to": 52,
+      "size": 84,
+      "y": "895",
+      "color": "0xffcf7a",
+      "fade": 0.6
+    },
+    {
+      "text": "On a screen, a phone, or in VR",
+      "at": 44.4,
+      "to": 52,
+      "size": 38,
+      "y": "1000",
+      "color": "0xdfe8ee",
+      "fade": 0.6
+    }
+  ]
+}
