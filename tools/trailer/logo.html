@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Logo render</title>
+<style>html, body { margin: 0; background: transparent; } canvas { display: block; }</style>
+</head>
+<body>
+<script type="module">
+// tools/trailer/logo.html: renders title-logo.glb alone, painted as
+// render/title.ts paintLogo paints it, on a transparent canvas, for a
+// trailer's corner bug. Driven by logo.spec.ts; tools/trailer/README.md.
+// side=-1 is the FRONT: the glb's face points down -z (side=1 reads mirrored).
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+
+const params = new URLSearchParams(location.search)
+const side = Number(params.get('side') ?? '-1')
+const W = 1600, H = 1200
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
+renderer.setPixelRatio(1)
+renderer.setSize(W, H)
+renderer.setClearColor(0x000000, 0)
+renderer.outputColorSpace = THREE.SRGBColorSpace
+document.body.appendChild(renderer.domElement)
+
+const scene = new THREE.Scene()
+const gltf = await new GLTFLoader().loadAsync('/assets/props/title-logo.glb')
+const logo = gltf.scene
+logo.traverse((node) => {
+  if (!node.isMesh) return
+  const silver = /bottom/i.test(node.name)
+  node.material = new THREE.MeshStandardMaterial({
+    color: silver ? 0xc2c8e5 : 0xfacf63,
+    metalness: silver ? 0.25 : 0.18,
+    roughness: silver ? 0.42 : 0.3,
+    emissive: silver ? 0x191c26 : 0x241c0c,
+    flatShading: true,
+  })
+})
+scene.add(logo)
+const box = new THREE.Box3().setFromObject(logo)
+const c = box.getCenter(new THREE.Vector3())
+const size = box.getSize(new THREE.Vector3())
+logo.position.sub(c)
+
+const camera = new THREE.PerspectiveCamera(20, W / H, 0.1, 1000)
+const dist = (Math.max(size.x, size.y) / 2) / Math.tan((10 * Math.PI) / 180) * 1.15
+camera.position.set(0, 0, side * dist)
+camera.lookAt(0, 0, 0)
+
+scene.add(new THREE.HemisphereLight(0xfff4e0, 0x404858, 1.1))
+const key = new THREE.DirectionalLight(0xffffff, 2.6)
+key.position.set(-0.6 * dist, 0.8 * dist, side * dist)
+scene.add(key)
+const rim = new THREE.DirectionalLight(0xffe2a8, 1.2)
+rim.position.set(0.8 * dist, 0.3 * dist, side * dist * 0.5)
+scene.add(rim)
+
+renderer.render(scene, camera)
+window.__done = JSON.stringify({ size: size.toArray().map((v) => v.toFixed(2)), meshes: logo.children.length })
+</script>
+</body>
+</html>
