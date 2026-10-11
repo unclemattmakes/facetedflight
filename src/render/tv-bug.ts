@@ -18,6 +18,17 @@
 //     (an opaque solid), so it haloes the mark and darkens nothing on it. The
 //     first version laid one offset silhouette OVER the logo with the depth test
 //     off, which tinted the gold it was meant to sit behind.
+//     DEV-903 (Matt, 2026-10-10: *"FFTV logo's drop shadow is 'up and left' when
+//     it should be 'down and right'"*): the blob's plane stood BEHIND the gem's
+//     back face, and the parallax that put item 2 on the wrong side did the same
+//     here. The bug sits low and right, so a plane further away projects toward
+//     the screen's centre, and that pull (about 7 px left and 3 px up at 1080p,
+//     photographed) outweighed the blob's own down-right fall: measured on screen
+//     the blob sat 5 px LEFT of the logo. Now the plane stands at the logo's own
+//     middle depth (`tvBlobZ`), so what is painted down and right is seen down
+//     and right, and it is kept behind the gold by DRAW ORDER instead of by
+//     depth: an opaque-pass material (custom blending, so its alpha still
+//     blends) at a lower `renderOrder` than the emblem, which then draws over it.
 //  2. The WORD's drop shadow, a child of the TV plane at its own depth, falling
 //     down and to the right. On a plane behind the word it landed on the wrong
 //     side of the letters: the bug is a real object a metre from the camera, so
@@ -48,7 +59,11 @@ export const TV_WORD = 'TV'
 /** The word's cap height as a share of the wordmark's height. */
 export const TV_WORD_SIZE = { cap: 0.85 } as const
 
-/** The shadow: how far down and right (as shares of the logo's size) it falls, and its blur. */
+/**
+ * The shadow: how far down and right (as shares of the logo's size) it falls, and its blur.
+ * `dx` and `dy` are CANVAS offsets, where y points DOWN: both positive is down and right on
+ * screen, which `tests/unit/tv-bug-shadow.test.ts` pins (DEV-903).
+ */
 export const TV_SHADOW = {
   /** The word's drop shadow, as shares of the ink's height: down and right, tight. */
   dx: 0.07,
@@ -65,6 +80,30 @@ export const TV_SHADOW = {
   blobFall: 1.7,
   pad: 0.12,
 } as const
+
+/**
+ * DEV-903: the depth the blob's plane stands at, the middle of the logo's own depth. Not behind
+ * the back face: the bug is a real object a metre from the camera in a corner of the frame, so a
+ * plane any deeper than what casts it is pulled toward the screen's centre, which from the
+ * bottom-right corner is UP and LEFT.
+ */
+export const tvBlobZ = (logo: {
+  readonly min: { z: number }
+  readonly max: { z: number }
+}): number => (logo.min.z + logo.max.z) / 2
+
+/**
+ * DEV-903: the draw order that keeps the blob behind the gold. The blob is an opaque-pass plane at
+ * the logo's middle depth, so it must sort BEFORE the emblem (`tv-panel.ts` gives the emblem's
+ * meshes `emblem`), which then draws over it.
+ */
+export const TV_BUG_ORDER = { blob: 19, emblem: 20 } as const
+
+/** A shadow and what casts it, as alpha-weighted centres in the logo's own units (DEV-903). */
+export interface TvShadowFall {
+  readonly caster: readonly [number, number, number]
+  readonly shadow: readonly [number, number, number]
+}
 
 /** Where the word's plane stands, in the logo's own units. Pure. */
 export interface TvWordPlane {
@@ -119,6 +158,11 @@ export interface TvBugParts {
     readonly tvBottom: number
     readonly z: number
   }
+  /**
+   * DEV-903: where each shadow's ink stands against its caster's, logo units (y UP), as painted.
+   * A spec projects both through the camera to read the fall on screen.
+   */
+  falls(): { readonly blob: TvShadowFall; readonly word: TvShadowFall }
   /** Everything the word and its shadow occupy, logo units, for the bug's aspect. */
   box(): THREE.Box3
   dispose(): void
@@ -156,6 +200,25 @@ const fillSilhouette = (
     ctx.lineWidth = grow * 2
     ctx.stroke()
   }
+}
+
+/** The alpha-weighted centre of a canvas, as shares of its width and height (y DOWN). */
+const alphaCentre = (c: HTMLCanvasElement): readonly [number, number] => {
+  const g = ctx2d(c)
+  if (!g || c.width === 0 || c.height === 0) return [0.5, 0.5]
+  const d = g.getImageData(0, 0, c.width, c.height).data
+  let sx = 0
+  let sy = 0
+  let sw = 0
+  for (let y = 0; y < c.height; y++) {
+    for (let x = 0; x < c.width; x++) {
+      const a = d[(y * c.width + x) * 4 + 3] as number
+      sx += a * (x + 0.5)
+      sy += a * (y + 0.5)
+      sw += a
+    }
+  }
+  return sw > 0 ? [sx / sw / c.width, sy / sw / c.height] : [0.5, 0.5]
 }
 
 /** A mesh's positions as a flat triangle list (indexed or not). */
@@ -207,19 +270,31 @@ export const buildTvBugParts = (spin: THREE.Mesh, wordmark: THREE.Mesh | null): 
   // at a metre from the camera, so a plane even a few millimetres nearer lands several pixels
   // further from the screen's centre at 1080p, and the V would overshoot the T.
   const zFront = wordmark ? wordBox.max.z : logo.max.z
-  const zBack = logo.min.z
+  const zBlob = tvBlobZ(logo)
 
   // ── the shadow ──
   const shadowCanvas = document.createElement('canvas')
   const shadowTexture = new THREE.CanvasTexture(shadowCanvas)
   shadowTexture.colorSpace = THREE.SRGBColorSpace
-  // DEPTH-TESTED (DEV-849): the emblem is opaque and writes depth, so a shadow
-  // behind its back face is hidden by the logo itself. With the test off, a
-  // transparent plane always draws after the opaque pass and laid its darkness
-  // OVER the gem.
+  // BEHIND BY DRAW ORDER (DEV-903). The plane stands at the logo's middle depth
+  // (`tvBlobZ`), so parallax cannot move it off the way it falls, and it is drawn
+  // BEFORE the emblem, which then covers it: nothing is darkened on the gold.
+  // DEV-849 kept it behind by depth instead, on a plane past the back face, and
+  // the parallax of that depth threw it up and left. A `transparent` material
+  // always draws after the opaque pass (the gem is opaque), so this one is
+  // opaque-pass (`transparent: false`) with CUSTOM blending: three switches
+  // blending off for an opaque material only when it is `NormalBlending`, and
+  // adds `OPAQUE` (alpha forced to 1) under the same test, so a custom blend
+  // keeps the texture's alpha. `renderOrder` 19 sorts it ahead of the emblem's 20.
   const shadowMaterial = new THREE.MeshBasicMaterial({
     map: shadowTexture,
-    transparent: true,
+    transparent: false,
+    blending: THREE.CustomBlending,
+    blendEquation: THREE.AddEquation,
+    blendSrc: THREE.SrcAlphaFactor,
+    blendDst: THREE.OneMinusSrcAlphaFactor,
+    blendSrcAlpha: THREE.OneFactor,
+    blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
     toneMapped: false,
     depthTest: true,
     depthWrite: false,
@@ -227,7 +302,7 @@ export const buildTvBugParts = (spin: THREE.Mesh, wordmark: THREE.Mesh | null): 
   })
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMaterial)
   shadow.name = 'tv-bug-shadow'
-  shadow.renderOrder = 19
+  shadow.renderOrder = TV_BUG_ORDER.blob
   shadow.frustumCulled = false
 
   // The word's own drop shadow: a child of the word's plane (see `place`).
@@ -263,6 +338,8 @@ export const buildTvBugParts = (spin: THREE.Mesh, wordmark: THREE.Mesh | null): 
     margin: 0,
   })
   const everything = new THREE.Box3()
+  const still: TvShadowFall = { caster: [0, 0, 0], shadow: [0, 0, 0] }
+  let falls: { blob: TvShadowFall; word: TvShadowFall } = { blob: still, word: still }
 
   const place = (): void => {
     // The word's canvas, cut to its ink.
@@ -354,8 +431,8 @@ export const buildTvBugParts = (spin: THREE.Mesh, wordmark: THREE.Mesh | null): 
     // The BLOB (DEV-849): the logo's whole silhouette (gem and wordmark), grown a
     // little, blurred wide and laid straight behind it, only a hair low, so the
     // mark lifts off a bright picture all round instead of wearing a hard offset
-    // copy. It stands behind the emblem and is depth-tested, so the logo hides
-    // the part under it and nothing is darkened ON the gold.
+    // copy. It draws before the emblem (`TV_BUG_ORDER`, DEV-903), so the logo
+    // covers the part under it and nothing is darkened ON the gold.
     const blur = (px: number): void => {
       if ('filter' in s) s.filter = `blur(${Math.max(1, Math.round(px))}px)`
     }
@@ -406,8 +483,30 @@ export const buildTvBugParts = (spin: THREE.Mesh, wordmark: THREE.Mesh | null): 
     wordShadow.position.set(0, 0, -0.0001)
     shadowTexture.dispose() // the canvas was resized: GL storage is immutable, so the texture is rebuilt
     shadowTexture.needsUpdate = true
-    shadow.position.set(x0 + w / 2, y0 + h / 2, zBack - 0.0005)
+    shadow.position.set(x0 + w / 2, y0 + h / 2, zBlob)
     shadow.scale.set(w, h, 1)
+
+    // DEV-903: the centres a spec projects to read each fall on screen.
+    // The caster is the unshifted silhouette (`tmp`, the same pixels the blob is blurred from)
+    // at the logo's middle depth; the shadow stands where its plane does, so a plane moved off
+    // that depth shows up here as the parallax it adds.
+    const [bu, bv] = alphaCentre(shadowCanvas)
+    const [cu, cv] = alphaCentre(tmp)
+    const casterZ = (logo.min.z + logo.max.z) / 2
+    const [su, sv] = alphaCentre(wordShadowCanvas)
+    const [iu, iv] = alphaCentre(wordCanvas)
+    const spanX = plane.width * (sw / wordCanvas.width)
+    const spanY = plane.height * (sh / wordCanvas.height)
+    falls = {
+      blob: {
+        caster: [x0 + cu * w, y0 + h - cv * h, casterZ],
+        shadow: [x0 + bu * w, y0 + h - bv * h, shadow.position.z],
+      },
+      word: {
+        caster: [plane.x + (iu - 0.5) * plane.width, plane.y + (0.5 - iv) * plane.height, zFront],
+        shadow: [plane.x + (su - 0.5) * spanX, plane.y + (0.5 - sv) * spanY, zFront],
+      },
+    }
   }
   place()
   // CRYSTAL may land after this: re-cut the word to its real ink then.
@@ -423,6 +522,7 @@ export const buildTvBugParts = (spin: THREE.Mesh, wordmark: THREE.Mesh | null): 
       tvBottom: inkBottomWorld,
       z: zFront,
     }),
+    falls: () => falls,
     box: () => everything.clone().union(logo),
     dispose() {
       for (const mesh of [shadow, word, wordShadow]) {

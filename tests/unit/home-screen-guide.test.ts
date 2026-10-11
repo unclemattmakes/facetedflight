@@ -9,6 +9,9 @@ import { describe, expect, it } from 'vitest'
 import {
   createHomeScreenGuide,
   GUIDE_ANDROID_STEPS,
+  GUIDE_CHIP,
+  GUIDE_DISMISS,
+  GUIDE_HIDE,
   GUIDE_IOS_STEPS,
   GUIDE_LEAD,
   GUIDE_ROOT_ID,
@@ -134,13 +137,34 @@ describe('the card', () => {
     const s = store()
     const guide = createHomeScreenGuide({ doc, win: win(), enabled: true, storage: s })
     guide.frame(true, false)
-    const button = (card(body) as FakeNode).all().find((n) => n.tag === 'button') as FakeNode
+    const button = (card(body) as FakeNode)
+      .all()
+      .find((n) => n.tag === 'button' && n.textContent === GUIDE_DISMISS) as FakeNode
     button.listeners.get('click')?.()
     expect(card(body)).toBeUndefined()
     expect(s.map.get(GUIDE_STORAGE_KEY)).toBe('1')
     expect(s.map.get(HOME_HINT_STORAGE_KEY)).toBe('1')
     guide.frame(true, false)
     expect(card(body)).toBeUndefined()
+  })
+
+  it('opens as a chip; the chip opens the card and LATER folds it back (DEV-902)', () => {
+    const { doc, body } = fakeDoc()
+    const guide = createHomeScreenGuide({ doc, win: win(), enabled: true, storage: store() })
+    guide.frame(true, false)
+    const root = card(body) as FakeNode
+    const press = (words: string) =>
+      root
+        .all()
+        .find((n) => n.tag === 'button' && n.textContent === words)
+        ?.listeners.get('click')?.()
+    expect(root.className).toBe('')
+    expect(root.children[0]?.className).toBe('chip')
+    press(GUIDE_CHIP)
+    expect(root.className).toBe('open')
+    press(GUIDE_HIDE)
+    expect(root.className).toBe('')
+    expect(guide.showing).toBe(true)
   })
 
   it('does not come back on a later load once dismissed', () => {

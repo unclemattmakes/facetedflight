@@ -40,10 +40,31 @@ export const PHONE_MIN_TAP_PX = 32
  * plate is CENTRED on the view instead of hung under its title line.
  */
 export const PAUSE_PHONE_SCALE = 1.8
-/** The title's rows plate on a phone: x1.7 over a desktop's (rows 21 px apart, text 9 px). */
-export const TITLE_PHONE_BOOST = 1.67
-/** Where the title's rows plate's top edge hangs on a phone, degrees below the eye (a desktop: 12.5; negative is above). */
-export const TITLE_PHONE_TOP_DEG = 1
+/**
+ * DEV-902: a phone's title is its own layout, two columns. Matt, 2026-10-10: *"titlescreen
+ * could use a re-work on mobile, lots of overlapping and hard to read elements. it's ok if
+ * mobile has a different title."* A sideways phone is twice as wide as it is tall, and the
+ * desktop's one column (emblem, edition line, rows, version line) stacked four things into
+ * 360 px, where each fix to one pair (DEV-895, the plate's lift) pushed into the next. So
+ * the emblem and its edition line stand in the LEFT half and the rows in the RIGHT, side
+ * by side and both clear of the version line along the foot; the add-to-home-screen card
+ * is a chip in the top right corner until it is opened (`input/home-screen-guide.ts`).
+ *
+ * The view turns this far right of the emblem (still level), which puts the emblem's right
+ * edge about 4 degrees left of centre.
+ */
+export const TITLE_PHONE_GAZE_YAW_DEG = 20
+/**
+ * The rows plate's scale on a phone (on the pause plate's own metres, at
+ * `TITLE_MENU_DISTANCE`): a row 0.145 of the lens's half-height tall, which is 37 px on a
+ * 360 px phone, so a row's note (two thirds of a label) is 9.5 px, over the small floor.
+ * A flat plane square to the view, so every row is the same size on the glass.
+ */
+export const TITLE_PHONE_SCALE = 3.45
+/** How far right of centre the phone's plate stands: its centre's bearing, degrees. */
+export const TITLE_PHONE_BEARING_DEG = 33.4
+/** And its centre's height, degrees from the eye line (negative is below). */
+export const TITLE_PHONE_CENTRE_DEG = -1.2
 /** A hangar table's label (name, detail, ghost line) on a phone. */
 export const LABEL_PHONE_SCALE = 1.8
 /** The aimed table's detail strip (the lines a phone label leaves out). */
@@ -67,14 +88,12 @@ export const LOBBY_PHONE_BOOST = 1.35
 export const LOBBY_PHONE_BEARING_DEG = 28
 /** The join-code keypad on a phone: x1.7 over the title's scale, centred on the eye line. */
 export const CODE_PLATE_PHONE_BOOST = 1.7
-/** The title's edition line under the emblem. */
-export const PROMPT_PHONE_SCALE = 1.25
 /**
- * DEV-895: how far below the sightline to the emblem the edition line hangs on a phone,
- * degrees (a desktop: 17.5). The phone's rows plate is larger and hangs under the line,
- * so the line rides in the gap between the emblem and the plate's top edge.
+ * The title's edition line under the emblem. DEV-902: x1.55, 14 px on a 360 px phone (x1.25
+ * set it at 11.5). It hangs where a desktop's does, under the emblem, since the rows moved
+ * beside it (DEV-895 had lifted it into the gap above a plate hung underneath).
  */
-export const PROMPT_PHONE_BELOW_DEG = 9.5
+export const PROMPT_PHONE_SCALE = 1.55
 
 /**
  * Whether the page is on a phone (the game's touch mode on a screen whose short

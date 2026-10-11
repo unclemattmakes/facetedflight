@@ -1,6 +1,6 @@
 {
   "name": "facetedflight2",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.4",
@@ -47,6 +47,8 @@
     "extract:check:full": "pnpm extract:check && node tools/extract/check-content.mjs --check --full",
     "bake:placements": "node tools/assets/bake-placements.mjs",
     "assets:pull": "rclone copy r2-ff2:ff2-content/assets public/assets --transfers 16 --checkers 16",
+    "assets:pull:https": "node tools/assets/pull-https.mjs",
+    "machine:check": "node tools/agent/machine-check.mjs",
     "assets:check": "node tools/assets/check-assets-present.mjs --verify-hashes",
     "content:pack": "node tools/assets/build-content-pack.mjs",
     "content:pull": "node tools/assets/pull-content-pack.mjs",

@@ -40,7 +40,7 @@ import {
 } from '@/render/shaft-paint'
 import { trimAbove } from '@/render/start-grid'
 import { hangarSpecFor, plinthTopY } from '@/sim/hangar'
-import { MAINTAINER_CHECKOUT } from './helpers/checkout'
+import { HYDRATED_MAINTAINER_CHECKOUT } from './helpers/checkout'
 
 const FILES = [HANGAR_ROOM_MESH, HANGAR_SHAFT_PAINTED_MESH, HANGAR_CHAIR_MESH, HANGAR_TABLE_MESH]
 const AVAILABLE = FILES.every((f) => fs.existsSync(`public/${f}`))
@@ -260,10 +260,11 @@ describe.skipIf(!AVAILABLE)("the shaft in the hangar's colours, from the files",
   })
 })
 
-// The loud counterpart asserts only in the maintainer checkout: these are BOUGHT assets,
+// The loud counterpart asserts only in a HYDRATED maintainer checkout: these are BOUGHT assets,
 // which the public export and its content pack never carry (plan/PUBLIC-REPO-facetedflight.md
-// §4.3, Matt M4), so a public clone skips both halves. tests/unit/helpers/checkout.ts.
-describe.skipIf(AVAILABLE || !MAINTAINER_CHECKOUT)(
+// §4.3, Matt M4), and a plain clone of this repo (its CI runner) never pulls them: both
+// skip both halves. tests/unit/helpers/checkout.ts.
+describe.skipIf(AVAILABLE || !HYDRATED_MAINTAINER_CHECKOUT)(
   "the shaft in the hangar's colours: the GLBs are not hydrated",
   () => {
     it('says so, rather than passing quietly', () => {

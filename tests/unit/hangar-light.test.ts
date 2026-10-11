@@ -26,7 +26,7 @@ import {
 } from '@/render/hangar-light'
 import { marmosetShLookup, marmosetSunIntensity } from '@/render/skyshop-ibl'
 import { hangarSpecFor } from '@/sim/hangar'
-import { MAINTAINER_CHECKOUT } from './helpers/checkout'
+import { HYDRATED_MAINTAINER_CHECKOUT } from './helpers/checkout'
 
 const sheet = HANGAR_LIGHT_SHEET
 const spec = hangarSpecFor()
@@ -273,10 +273,11 @@ describe.skipIf(!haveRoom)("the light, in 2016's room", () => {
   })
 })
 
-// The loud counterpart asserts only in the maintainer checkout: these are BOUGHT assets,
+// The loud counterpart asserts only in a HYDRATED maintainer checkout: these are BOUGHT assets,
 // which the public export and its content pack never carry (plan/PUBLIC-REPO-facetedflight.md
-// §4.3, Matt M4), so a public clone skips both halves. tests/unit/helpers/checkout.ts.
-describe.skipIf(haveRoom || !MAINTAINER_CHECKOUT)(
+// §4.3, Matt M4), and a plain clone of this repo (its CI runner) never pulls them: both
+// skip both halves. tests/unit/helpers/checkout.ts.
+describe.skipIf(haveRoom || !HYDRATED_MAINTAINER_CHECKOUT)(
   "the light, in 2016's room: the GLB is not hydrated",
   () => {
     it('says so, rather than passing quietly', () => {

@@ -65,6 +65,9 @@
 // never head-locked, and the local reference space puts the head at the rig's
 // origin (`render/renderer.ts`).
 //
+// A PHONE is the exception (DEV-902): its title is two columns, the emblem on the
+// left and this plate on the right, centred on its own height (`phone-floor.ts`).
+//
 // Farther than the pause plate's 0.86 m and scaled to match: there is no
 // cockpit here to hang it inside, and a title plate an arm's length from a
 // stranger's face in a headset is a lot of plate. The angles below are what is
@@ -83,7 +86,12 @@ import {
   titleBandM,
   WIDTH,
 } from '@/render/pause'
-import { phoneUi, TITLE_PHONE_BOOST, TITLE_PHONE_TOP_DEG } from '@/render/phone-floor'
+import {
+  phoneUi,
+  TITLE_PHONE_BEARING_DEG,
+  TITLE_PHONE_CENTRE_DEG,
+  TITLE_PHONE_SCALE,
+} from '@/render/phone-floor'
 import { type TitleVrState, titleVrText } from '@/render/title-vr'
 
 /**
@@ -400,10 +408,23 @@ export const titleMenuPose = (
   readonly position: readonly [number, number, number]
   readonly scale: number
 } => {
-  // DEV-894: on a phone the plate is larger and hangs higher (`phone-floor.ts`).
-  const phone = flat && phoneUi.on
-  const top = topEdgeY(phone ? TITLE_PHONE_TOP_DEG : TITLE_MENU_TOP_DEG, TITLE_MENU_DISTANCE)
-  const scale = titleMenuScale(rows, flat, floorDeg) * (phone ? TITLE_PHONE_BOOST : 1)
+  // DEV-902: a phone's plate stands in the right half of the view, centred on its
+  // own height, one size for any row count (`phone-floor.ts`).
+  if (flat && phoneUi.on) {
+    const scale = TITLE_PHONE_SCALE
+    const centre = TITLE_MENU_DISTANCE * Math.tan((TITLE_PHONE_CENTRE_DEG * Math.PI) / 180)
+    const height = panelHeight(rows, TITLE_MENU_BAND_M) * scale
+    return {
+      position: [
+        TITLE_MENU_DISTANCE * Math.tan((TITLE_PHONE_BEARING_DEG * Math.PI) / 180),
+        centre + height / 2 - TOP_LOCAL_Y * scale,
+        -TITLE_MENU_DISTANCE,
+      ],
+      scale,
+    }
+  }
+  const top = topEdgeY(TITLE_MENU_TOP_DEG, TITLE_MENU_DISTANCE)
+  const scale = titleMenuScale(rows, flat, floorDeg)
   return {
     position: [0, top - TOP_LOCAL_Y * scale, -TITLE_MENU_DISTANCE],
     scale,

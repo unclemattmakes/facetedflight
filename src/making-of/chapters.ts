@@ -36,7 +36,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'Soaring out of Early Access',
     pitch:
       "What's in the anniversary edition, and why it's built for WebXR instead of one headset.",
-    status: 'draft',
+    status: 'published',
     toys: ['island-flyover', 'live-window'],
   },
   {
@@ -45,7 +45,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'Digging through the old Unity project',
     pitch:
       "What turned up in the 2016 Unity project: where the real numbers were hiding, two file formats that look alike, and a finish gate that wasn't in the scene.",
-    status: 'draft',
+    status: 'published',
     toys: ['constants-browser', 'tick-vs-frame'],
   },
   {
@@ -54,7 +54,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'The flight model',
     pitch:
       "The HoverJet flies with gravity switched off, so its speed is thrust against Unity's drag, plus the speed chain.",
-    status: 'draft',
+    status: 'published',
     toys: ['flight-bench'],
   },
   {
@@ -63,7 +63,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'Rebuilding the islands from height maps',
     pitch:
       "Gigabytes of baked Unity mesh replaced by a generator checked against it, and a bug that stayed because it's part of the silhouette.",
-    status: 'draft',
+    status: 'published',
     toys: ['facet-island', 'flat-vs-steep'],
   },
   {
@@ -72,7 +72,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'What stayed from 2016, and what got fixed',
     pitch:
       'A countdown that only starts when you leave the play area, and a platinum nobody could earn.',
-    status: 'draft',
+    status: 'published',
     toys: ['medal-calculator', 'edge-vs-level'],
   },
   {
@@ -81,7 +81,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'Classic and Anniversary',
     pitch:
       'Classic is a look only, and both looks fly the same rules, plus how Anniversary lights a flat-colored facet.',
-    status: 'draft',
+    status: 'published',
     toys: ['response-curve'],
   },
   {
@@ -89,7 +89,7 @@ export const CHAPTERS: readonly Chapter[] = [
     number: '06',
     title: 'AI racers and 2016 ghosts',
     pitch: 'Five autopilots replace the 2016 ghosts, and a ruler that measured the wrong thing.',
-    status: 'draft',
+    status: 'published',
     toys: ['route-ruler', 'ghost-scrubber'],
   },
   {
@@ -98,7 +98,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'Racing other people',
     pitch:
       'A room is a small server that runs none of the game. Each player flies their own time trial, the clocks agree on one GO, and a lap server checks every time.',
-    status: 'draft',
+    status: 'published',
     toys: ['room-clock', 'remote-ship', 'lap-judge'],
   },
   {
@@ -107,7 +107,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'The course editor',
     pitch:
       'New routes on the 2016 islands, new islands from a seed or a height map, flown in the real game and shared as a link.',
-    status: 'draft',
+    status: 'published',
     toys: ['pocket-editor', 'island-maker'],
   },
   {
@@ -116,7 +116,7 @@ export const CHAPTERS: readonly Chapter[] = [
     title: 'Building every sound in the browser',
     pitch:
       "Every sound is built in the browser from oscillators and filtered noise, so there's no file to license.",
-    status: 'draft',
+    status: 'published',
     toys: ['engine-voice'],
   },
 ]

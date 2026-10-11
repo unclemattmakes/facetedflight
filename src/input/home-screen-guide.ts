@@ -17,10 +17,12 @@
 // on a tablet, never in an XR session (a DOM card is invisible in a headset, and
 // the frame loop passes `titleUp` false while one is presenting).
 //
-// It never blocks the title: the whole card is click-through except its GOT IT
-// button, and it sits in the top-left corner at under half the width, so no
-// title row or touch chip is under it (a spec dismisses it as a player does, by
-// pressing GOT IT, and need not).
+// It never blocks the title: it opens as one chip, PLAY FULL SCREEN, in the top
+// right corner, clear of everything the phone's title shows (DEV-902; the open
+// card at the top left covered half the emblem and the rows on a 667 px phone,
+// photographed). A tap opens the card, and the card is click-through except its
+// two buttons: GOT IT, which dismisses it for good, and LATER, which folds it
+// back to the chip.
 //
 // Dismissable, and remembered: closing it writes `GUIDE_STORAGE_KEY` and the card
 // never comes back on that phone. It also writes the older hint's flag
@@ -54,6 +56,9 @@ export const GUIDE_ANDROID_STEPS: readonly string[] = [
   'Tap Install app, or Add to Home screen.',
 ]
 export const GUIDE_DISMISS = 'GOT IT'
+/** DEV-902: the chip the card folds into on the title, and the card's button that folds it. */
+export const GUIDE_CHIP = 'PLAY FULL SCREEN'
+export const GUIDE_HIDE = 'LATER'
 
 export interface HomeScreenGuideOptions {
   readonly doc: Document | null
@@ -105,14 +110,23 @@ const CSS = `
 #${GUIDE_ROOT_ID} {
   position: fixed;
   top: 0;
-  left: 0;
+  right: 0;
   z-index: 14;
-  max-width: min(420px, 46vw);
-  padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px calc(8px + env(safe-area-inset-left, 0px));
+  max-width: min(420px, 60vw);
+  padding: calc(8px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 8px 8px;
   pointer-events: none;
   font-family: ${UI_STACK};
 }
 #${GUIDE_ROOT_ID}[hidden] { display: none; }
+#${GUIDE_ROOT_ID}:not(.open) .card { display: none; }
+#${GUIDE_ROOT_ID}.open .chip { display: none; }
+#${GUIDE_ROOT_ID} .chip {
+  display: block;
+  margin: 0 0 0 auto;
+  font-size: 13px;
+  border-left: 6px solid ${UI_ACCENT};
+  background: ${UI_PLATE};
+}
 #${GUIDE_ROOT_ID} .card {
   pointer-events: none;
   width: 100%;
@@ -143,6 +157,7 @@ const CSS = `
   font-weight: 700;
   letter-spacing: 0.06em;
 }
+#${GUIDE_ROOT_ID} .card button + button { margin-left: 8px; }
 `
 
 export const createHomeScreenGuide = (o: HomeScreenGuideOptions): HomeScreenGuide => {
@@ -203,8 +218,23 @@ export const createHomeScreenGuide = (o: HomeScreenGuideOptions): HomeScreenGuid
     button.type = 'button'
     button.textContent = GUIDE_DISMISS
     button.addEventListener('click', () => api.dismiss())
-    card.append(title, lead, cols, button)
-    el.appendChild(card)
+    // DEV-902: the card folds back to its chip, for a player who wants it later.
+    const hide = doc.createElement('button')
+    hide.type = 'button'
+    hide.textContent = GUIDE_HIDE
+    hide.addEventListener('click', () => {
+      el.className = ''
+    })
+    card.append(title, lead, cols, button, hide)
+    // DEV-902: closed, the card is one chip in the corner; a tap opens it.
+    const chip = doc.createElement('button')
+    chip.type = 'button'
+    chip.className = 'chip'
+    chip.textContent = GUIDE_CHIP
+    chip.addEventListener('click', () => {
+      el.className = 'open'
+    })
+    el.append(chip, card)
     doc.body.appendChild(el)
     return el
   }

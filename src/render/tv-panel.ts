@@ -31,7 +31,7 @@ import { type PlaneHit, rayPlaneHit } from '@/render/ui-pick'
 import { readHeadPose, readHeadPosition, type XrCameraSource } from './head-pose'
 import { buildEmblem, LOADING_EMBLEM_WIDTH } from './loading-scene'
 import { disposeTree } from './scene-walk'
-import { buildTvBugParts, type TvBugParts } from './tv-bug'
+import { buildTvBugParts, TV_BUG_ORDER, type TvBugParts, type TvShadowFall } from './tv-bug'
 import { createTvGaps } from './tv-gaps'
 import { MAP_CANVAS, paintMapPlate, type TvMapCtx, tvMapKey } from './tv-map-plate'
 import {
@@ -110,6 +110,15 @@ export interface TvPanelReport {
   readonly map: boolean
   /** DEV-653: the wordmark's and the V's right edges on screen, CSS px, or null. */
   readonly bugEdges: { readonly wordRightPx: number; readonly tvRightPx: number } | null
+  /**
+   * DEV-903: how far each of the bug's shadows falls from what casts it ON SCREEN, CSS px, y DOWN
+   * (centre of the shadow's ink less the caster's), so both positive is down and right. Null while
+   * the bug is not showing.
+   */
+  readonly bugShadows: {
+    readonly blob: { readonly dx: number; readonly dy: number }
+    readonly word: { readonly dx: number; readonly dy: number }
+  } | null
   /** The lower third's rows as painted, canvas px (`LOWER_THIRD_CANVAS`): where a press lands. */
   readonly layout: {
     readonly top: number
@@ -356,6 +365,27 @@ export const createTvPanel = (o: TvPanelOptions): TvPanel => {
     return { wordRightPx: px(wordRight), tvRightPx: px(tvRight) }
   }
 
+  /** DEV-903: each shadow's fall from its caster as the camera sees it, CSS px, y down. */
+  const _fallA = new THREE.Vector3()
+  const _fallB = new THREE.Vector3()
+  const bugShadowsPx = (): TvPanelReport['bugShadows'] => {
+    if (!bugShown || !bugParts || !bugCentre) return null
+    const centre = bugCentre
+    const w = o.canvas.clientWidth
+    const h = o.canvas.clientHeight
+    bug.updateWorldMatrix(true, true)
+    o.camera.updateMatrixWorld(true)
+    const fall = (f: TvShadowFall): { dx: number; dy: number } => {
+      _fallA.fromArray(f.caster)
+      _fallB.fromArray(f.shadow)
+      centre.localToWorld(_fallA).project(o.camera)
+      centre.localToWorld(_fallB).project(o.camera)
+      return { dx: ((_fallB.x - _fallA.x) / 2) * w, dy: ((_fallA.y - _fallB.y) / 2) * h }
+    }
+    const falls = bugParts.falls()
+    return { blob: fall(falls.blob), word: fall(falls.word) }
+  }
+
   // ── a press on a name ────────────────────────────────────────────────────
   const downs = new Map<number, { x: number; y: number; t: number }>()
   const _o = new THREE.Vector3()
@@ -531,7 +561,7 @@ export const createTvPanel = (o: TvPanelOptions): TvPanel => {
       for (const m of [e.spin, e.word]) {
         if (!m) continue
         // The panels' own order: the menus' reticle (`OVER_ORDER`) draws over every plate.
-        m.renderOrder = 20
+        m.renderOrder = TV_BUG_ORDER.emblem
         m.frustumCulled = false
       }
       bug.add(centre)
@@ -554,6 +584,7 @@ export const createTvPanel = (o: TvPanelOptions): TvPanel => {
       banner: bannerLeft > 0 && feedNow !== null ? bannerLine : null,
       map: mapUp,
       bugEdges: bugEdgesPx(),
+      bugShadows: bugShadowsPx(),
       layout: layout
         ? {
             top: layout.top,

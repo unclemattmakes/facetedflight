@@ -20,6 +20,16 @@
 // `src/` reads it: the game runs the same in both trees. And this is not circular in the one
 // place it could rot: `tests/unit/release-profile.test.ts`, which exists only in the private
 // tree, asserts that MAINTAINER_CHECKOUT is true there.
+//
+// A BOUGHT asset is a third case, because it is not in the private tree either: it arrives in
+// `public/assets/` from R2 (`pnpm assets:pull`), and a plain `git clone` of the private repo
+// never has it. That clone is exactly what the private repo's CI runner makes
+// (.github/workflows/asset-denylist.yml: "a plain checkout is ALL a job here gets"), so a loud
+// counterpart keyed on MAINTAINER_CHECKOUT alone was red on every private run. Its premise is
+// "this tree was hydrated, so a missing GLB is a fault" (a partial pull, a conversion never
+// published), and the fact that states it is the asset folder, which only a pull (or a
+// worktree's junction to the main checkout's) creates. Such a counterpart keys on
+// HYDRATED_MAINTAINER_CHECKOUT instead.
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -32,3 +42,10 @@ export const MAINTAINER_CHECKOUT = fs.existsSync(
 
 /** True when `rel` (repo-relative) exists. Cheap: one stat, safe at collection time. */
 export const present = (rel: string): boolean => fs.existsSync(path.join(REPO, rel))
+
+/**
+ * True in a private checkout whose `public/assets/` has been hydrated at all. False in the
+ * public export and in a plain clone of the private repo (its CI runner). See the header.
+ */
+export const HYDRATED_MAINTAINER_CHECKOUT =
+  MAINTAINER_CHECKOUT && present(path.join('public', 'assets'))
