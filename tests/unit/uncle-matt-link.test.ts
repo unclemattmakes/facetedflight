@@ -8,7 +8,7 @@
 // index.html's rules and an import line as text were removed: they restated a stylesheet and
 // proved no behaviour. Nothing replaces them: the look is a photograph, and that the making-of
 // header calls the shared function rather than a copy is a review matter, not a gate.
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyUncleMattLink, UNCLE_MATT_LABEL, UNCLE_MATT_URL } from '@/render/uncle-matt-link'
 
 interface FakeImg {
@@ -39,7 +39,13 @@ const fakeAnchor = () => {
   }
 }
 
-afterEach(() => vi.unstubAllGlobals())
+// The portrait's URL comes from the asset base, which a plain clone (the public CI) has
+// no .env for; give it one, as splash.test.ts does.
+beforeEach(() => vi.stubEnv('VITE_ASSET_BASE_URL', '/'))
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+})
 
 describe('DEV-803: the Uncle Matt Makes portrait link', () => {
   it('makes an empty anchor a labelled new-tab link to the maker, with noopener and the splash portrait', () => {
