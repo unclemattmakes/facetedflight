@@ -19,7 +19,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BINDINGS, CONFIRM_KEYS } from '@/input/keyboard'
 import { type ControlsDevice, chooseWords, launchPromptFor } from '@/render/controls-menu'
-import { appFileThroughWith, appSourceThroughCtx } from './helpers/app-source'
+import { appFileThroughWith, appSourceThroughCtx, inOrder } from './helpers/app-source'
 
 const ROOT = join(__dirname, '..', '..')
 const LEVELS = join(ROOT, 'content', 'levels')
@@ -163,15 +163,24 @@ describe('boot/app.ts asks the device in the hands, on every screen', () => {
     // One update: a second copy in the mission branch is how the hangar's
     // Enter went unheard.
     expect(app.match(/flatDevice = latestFlatDevice\(/g)).toHaveLength(1)
-    // Order is a claim about ONE file: the one the frame body is in.
+    // Order is a claim about ONE file: the one the frame is in. The frame's body is
+    // its phases (DEV-975): the call sits at the top level of the input phase, the
+    // handler in the confirm phase, and `frame` runs the one before the other.
     const frame = appFileThroughWith('const frame = (time').text
+    const inputAt = frame.indexOf('const phaseInput = (')
+    const confirmAt = frame.indexOf('const phaseConfirm = (')
     const frameAt = frame.indexOf('const frame = (time')
     const callAt = frame.search(/^ {4}trackDevice\(pad, keys, thumbs\)$/m)
     const handlerAt = frame.indexOf('if (confirmPressed && (flight')
     expect(handlerAt, 'the confirm handler, in the frame body').toBeGreaterThan(-1)
-    expect(frameAt).toBeGreaterThan(0)
-    // At the frame body's own indentation, so no screen test encloses it.
-    expect(callAt).toBeGreaterThan(frameAt)
-    expect(callAt).toBeLessThan(handlerAt)
+    expect(inputAt).toBeGreaterThan(0)
+    expect(confirmAt).toBeGreaterThan(inputAt)
+    // At the phase body's own indentation, so no screen test encloses it.
+    expect(callAt).toBeGreaterThan(inputAt)
+    expect(callAt).toBeLessThan(confirmAt)
+    expect(handlerAt).toBeGreaterThan(confirmAt)
+    expect(frameAt).toBeGreaterThan(handlerAt)
+    // And the frame runs the input phase before the confirm phase.
+    inOrder(frame.slice(frameAt), ['phaseInput(', 'phaseConfirm('])
   })
 })

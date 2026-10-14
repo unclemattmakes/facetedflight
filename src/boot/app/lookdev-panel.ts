@@ -22,17 +22,6 @@ import type { Sky, SkyTuning } from '@/render/sky'
 import type { UnityFog } from '@/render/unity-fog'
 import { createLookdev, type Lookdev, type LookdevControl, type LookdevGroup } from '../lookdev'
 import { fogLookdevGroup } from '../lookdev-fog'
-import { params } from './pins'
-
-/**
- * `?lookdev=1` — the in-game tuning panel, `L` to toggle.
- *
- * Matt: *"stub out an in-game lookdev menu where i can tune tweakable settings
- * in realtime."* Off by default and never in a headset: it is DOM, and
- * `dom-overlay` is not reliably granted on Quest. Tune on the monitor, fly in
- * the headset.
- */
-export const LOOKDEV = params.get('lookdev') === '1'
 
 /**
  * What the lookdev panel can reach, and what it writes back.

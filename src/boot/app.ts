@@ -151,7 +151,7 @@ import { highestGroundUnder, PADS_SOLID } from '@/sim/terrain/height-field'
 import { createAtmosphere } from './app/atmosphere'
 import { createAppAudio } from './app/audio'
 import type { AutopilotState } from './app/autopilot-state'
-import { createDebugHandle } from './app/debug-handle'
+import type { DebugHandleCtx } from './app/debug-handle'
 import { createEditorHost } from './app/editor-host'
 import { createBriefing } from './app/flight/briefing'
 import { createLessonHost } from './app/flight/lesson'
@@ -164,6 +164,7 @@ import { createHangarRoom } from './app/hangar/room'
 import { _headQuat, cameraWorld } from './app/head-scratch'
 import { applyLighting, applySky, createSun, missionFog } from './app/lighting'
 import type { PlacementTuning } from './app/lookdev-panel'
+import { createPageHandle, type PageApp } from './app/page-handle'
 import type { PauseState } from './app/pause-state'
 import { createPerf } from './app/perf'
 import {
@@ -215,7 +216,8 @@ import { createPlayerCourses } from './app/title/player-courses'
 import { createTitleWorld } from './app/title/world'
 import { createTvPanelHost } from './app/tv/panel'
 import { createTv } from './app/tv/view'
-import type { App, BootOptions } from './app/types'
+import type { BootOptions } from './app/types'
+import { createUpdateRates } from './app/update-rates'
 import { createWorldBuild } from './app/world/build'
 import { createLoadingHost } from './app/world/loading'
 import { createWorldProps } from './app/world/props'
@@ -270,7 +272,7 @@ const SUN_HALO_METRES = 5000
 export const bootApp = async (
   canvas: HTMLCanvasElement,
   options: BootOptions = {},
-): Promise<App> => {
+): Promise<PageApp> => {
   // DEV-611: the developer splash, when one is up (`boot/dev-splash.ts`).
   const splash = options.splash ?? null
   // BEFORE anything builds a material. This says "env maps are specular only"
@@ -2192,6 +2194,8 @@ export const bootApp = async (
   } = atmosphere
   // DEV-937: what never moves stops being recomputed every render.
   const staticScene = createStaticScene(render.scene)
+  // DEV-976: how often the frame's far-field and bookkeeping work runs (`boot/app/update-rates.ts`).
+  const updateRates = createUpdateRates()
 
   // Load the world. The loop runs against an empty scene until it lands rather
   // than blocking boot behind two megapixel PNGs and 1.8 M vertices.
@@ -3991,6 +3995,7 @@ export const bootApp = async (
     codeClosePlate,
     codeFocus,
     staticScene,
+    updateRates,
     codeJoinFrame,
     codeKeysDown,
     codeNudgeEdge,
@@ -4391,11 +4396,12 @@ export const bootApp = async (
   const perfSurface: PerfSurface | null = perfSys.surface()
 
   // `__ff2` (APP-SPLIT phase 5, `boot/app/debug-handle.ts`).
-  return createDebugHandle({
+  const debugCtx: DebugHandleCtx = {
     get RUNNING_MODE() {
       return RUNNING_MODE
     },
     staticScene,
+    updateRates,
     audio,
     bakedLight,
     bloom,
@@ -4550,7 +4556,15 @@ export const bootApp = async (
     },
     worldProps,
     yourCourses,
-  })
+  }
+  // DEV-960: `__ff2` is a DEV-only handle (`main.ts` assigns it under the same
+  // flag), so a production build ships only the six members `main.ts` calls
+  // (`page-handle.ts`), and `debug-handle.ts` is a dev-only chunk.
+  if (import.meta.env.DEV) {
+    const { createDebugHandle } = await import('./app/debug-handle')
+    return createDebugHandle(debugCtx)
+  }
+  return createPageHandle(debugCtx)
 }
 
 /** Volatile. One shaft collar's world position, inside `audioShaft`. */

@@ -117,6 +117,23 @@ export const parseAdaptivePin = (
   return null
 }
 
+/** `?submit=`: the submit-early arms (DEV-971). `off` is today's frame. */
+export type SubmitPin = 'off' | 'flush' | 'reorder'
+
+/**
+ * `?submit=flush|reorder|off`. Anything else is ignored with a warning and
+ * reads as `off`, so a typo cannot silently change the frame being measured.
+ */
+export const parseSubmitPin = (
+  raw: string | null,
+  warn: (message: string) => void = () => {},
+): SubmitPin => {
+  if (raw === null || raw === 'off') return 'off'
+  if (raw === 'flush' || raw === 'reorder') return raw
+  warn(`?submit=${raw} is not flush, reorder or off; ignored`)
+  return 'off'
+}
+
 /**
  * `?aa=0|1`. Same spellings as `?adaptive=`, for the same reason: this is
  * typed into a headset's address bar by hand.

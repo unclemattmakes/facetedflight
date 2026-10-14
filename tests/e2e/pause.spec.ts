@@ -98,7 +98,7 @@ test.describe('@gpu the pause menu', () => {
 
     // ── Backspace pauses ─────────────────────────────────────────────────
     await holdKey(page, 'Backspace')
-    await page.waitForTimeout(300)
+    await expect.poll(async () => (await probe(page)).paused, { timeout: 5_000 }).toBe(true)
     const justPaused = await probe(page)
     expect(justPaused.paused).toBe(true)
     // That the run got somewhere is established above, by watching the clock
@@ -117,7 +117,16 @@ test.describe('@gpu the pause menu', () => {
 
     // ── Backspace again resumes, and the clock moves ─────────────────────
     await holdKey(page, 'Backspace')
-    await page.waitForTimeout(2_000)
+    // Resumed AND the clock a second on: the state the two assertions below read.
+    await expect
+      .poll(
+        async () => {
+          const p = await probe(page)
+          return !p.paused && p.elapsed > stillPaused.elapsed + 1
+        },
+        { timeout: 20_000, intervals: [100] },
+      )
+      .toBe(true)
     const resumed = await probe(page)
     expect(resumed.paused).toBe(false)
     expect(resumed.elapsed).toBeGreaterThan(stillPaused.elapsed + 1)
@@ -143,7 +152,16 @@ test.describe('@gpu the pause menu', () => {
 
     // Confirm without touching the stick: takes RESUME.
     await holdKey(page, 'Enter')
-    await page.waitForTimeout(1_500)
+    // Resumed and the clock past where it was: both facts the assertions below read.
+    await expect
+      .poll(
+        async () => {
+          const p = await probe(page)
+          return !p.paused && p.elapsed > before.elapsed
+        },
+        { timeout: 20_000, intervals: [100] },
+      )
+      .toBe(true)
 
     const after = await probe(page)
     expect(after.paused).toBe(false)

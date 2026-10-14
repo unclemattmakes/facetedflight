@@ -267,6 +267,7 @@ import {
   NO_CRASH,
   ORBIT,
   RIDE_HIDE,
+  SUBMIT_PIN,
   TITLE_IBL,
   TITLE_SUN,
   VARIANT_PARAM,
@@ -282,6 +283,7 @@ import type { createScreenRouter } from './screen-router'
 import type { createAppSettings } from './settings'
 import type { createTitleMenu } from './title/menu'
 import type { createPlayerCourses } from './title/player-courses'
+import type { UpdateRates } from './update-rates'
 import type { WorldHandles } from './world-handles'
 import type { createXrLifecycle } from './xr-lifecycle'
 
@@ -476,6 +478,7 @@ export interface FrameCtx {
   readonly cockpitSelfShadow: CockpitSelfShadow
   /** DEV-937: freezes what never moves; ticked before each mission render. */
   readonly staticScene: StaticScene
+  readonly updateRates: UpdateRates
   readonly codeClosePlate: () => void
   readonly codeFocus: FocusEdge
   readonly codeJoinFrame: () => void
@@ -890,6 +893,7 @@ export const createFrame = (ctx: FrameCtx) => {
     cloudShadow,
     cockpitSelfShadow,
     staticScene,
+    updateRates,
     codeClosePlate,
     codeFocus,
     codeJoinFrame,
@@ -1069,8 +1073,48 @@ export const createFrame = (ctx: FrameCtx) => {
     xrPointer,
     xrSelect,
   } = ctx
-  const frame = (time: number, xrFrame?: XRFrame) => {
-    if (!ctx.running) return
+  // ── How often the frame's bookkeeping runs (DEV-976) ─────────────────────
+  //
+  // Only work that PRESENTS or READS the sim for a cue, and nothing at the head,
+  // the hands, the cockpit or the near field. `update-rates.ts` has the rules.
+  // A place is an event of seconds (it must hold 0.3 s to count), so the overtake
+  // watch and the place the race map and strip show are read at 10 Hz; the flat
+  // strip's DOM and the clouds' wind (a few metres a second under clouds hundreds
+  // of metres across) at 20 Hz. Each is handed the frame time it stands for.
+  const overtakeRate = updateRates.hz('overtake', 10)
+  const placeRate = updateRates.hz('race-place', 10)
+  const stripRate = updateRates.hz('race-strip', 20)
+  const cloudRate = updateRates.hz('clouds', 20)
+  /** The place last read, and the finished run it was read against (a finish refreshes it at once). */
+  let cachedPlace: LivePlace | null = null
+  let cachedPlaceRun: unknown = null
+  // ── The frame, in phases (DEV-975) ────────────────────────────────────
+  //
+  // `frame` is a list of calls, one per phase, in the order the work happens.
+  // It was one closure of about five thousand lines: its bytecode (about 68 KB)
+  // was over V8's `--max-optimized-bytecode-size` (61,440), so TurboFan never
+  // optimised it and every frame ran in the interpreter and the baseline tier.
+  // A phase is a function of its own, well under the limit, optimised on its own
+  // feedback.
+  //
+  // The statements of each phase are the old frame's, moved unchanged and in the
+  // same order. What crosses a boundary is only what a later phase reads: a phase
+  // returns it as an object (`...Out`), and the phases that read it take that
+  // object and destructure it on their first lines. A `let` another phase assigns
+  // is rebound the same way and returned again. Everything else is `ctx` and the
+  // names destructured from it above, as before. The order is the contract: the
+  // guards in tests/unit read this file, and `phase-order.test.ts` pins the list.
+  //
+  // Add work to the phase it belongs to, not to `frame`. A new phase is a new
+  // function in this list and one call in `frame`; keep each under about 40 KB of
+  // bytecode (`node --no-lazy --print-bytecode --print-bytecode-filter=<name>`).
+
+  /**
+   * The frame's stopwatch, the XR probe, the fade and screen swap, the title curtain, the
+   * gate and accent pulse and the out-of-bounds static. Returns the frame's start time and
+   * its seconds.
+   */
+  const phaseOpen = (time: number) => {
     // The main thread's own stopwatch for this frame (VR-PERF §5.2). `time` is
     // the XR display time or the rAF time, which is when the frame was HANDED
     // to us; this is when we started spending it, and the difference between
@@ -1187,8 +1231,17 @@ export const createFrame = (ctx: FrameCtx) => {
       ctx.fadePhaseShown = fade.phase
       document.body.dataset.fade = fade.phase
     }
-    // DEV-469: while the course editor is up, its frame is the whole frame.
-    if (editorFrame(time, frameSeconds)) return
+
+    return { frameT0, frameSeconds }
+  }
+  type OpenOut = ReturnType<typeof phaseOpen>
+
+  /**
+   * Reads every device once (pad, keys, headset controllers, thumbs), merges them into
+   * `actions`, and works out the look and what the mouse is for this frame.
+   */
+  const phaseInput = (openOut: OpenOut) => {
+    const { frameSeconds } = openOut
 
     // Read input ONCE per frame, not per sim step: a 30 fps machine would
     // otherwise sample the pad three times for one physical instant and a
@@ -1222,7 +1275,7 @@ export const createFrame = (ctx: FrameCtx) => {
     // Whichever device is actually being used wins, per axis, by magnitude.
     // No mode switch, no "press any key to activate" — pick up a pad mid-flight
     // and it just works.
-    let actions = handles.flight ? mergeActions(pad, keys, xr.actions, thumbs) : noActions()
+    const actions = handles.flight ? mergeActions(pad, keys, xr.actions, thumbs) : noActions()
 
     // ── looking around, which is not flying ──────────────────────────────
     //
@@ -1290,6 +1343,17 @@ export const createFrame = (ctx: FrameCtx) => {
       // stick sitting idle. Gated by the same `flightIdle` as the other two.
       touch.readLook(lookOpts),
     )
+
+    return { inputOpts, turned, pad, xr, thumbs, actions, presenting, titleLooks, watching, look }
+  }
+  type InputOut = ReturnType<typeof phaseInput>
+
+  /**
+   * The autopilot toggles, CHANGE VIEW, H for VR, and taking the stick back.
+   */
+  const phasePilot = (openOut: OpenOut, inputOut: InputOut) => {
+    const { frameSeconds } = openOut
+    const { xr, actions, presenting } = inputOut
 
     // ── autopilot ────────────────────────────────────────────────────────
     //
@@ -1430,7 +1494,13 @@ export const createFrame = (ctx: FrameCtx) => {
     // that began 107 m above its hangar); this branch's `beginLaunch` is the
     // same fix with the reveal below on top of it, so its shape is kept.
     if (pilot.autopilot && handles.flight) beginLaunch()
+  }
 
+  /**
+   * 2016's `trigger_enableTerrain`: the world, the launch room, the lift and the sea's
+   * hatch follow the ride.
+   */
+  const phaseReveal = () => {
     // ── 2016's `trigger_enableTerrain`: no world until the lift is out ────
     //
     // `Trigger_EnableTerrain.cs` holds the mission's environment INACTIVE while
@@ -1554,6 +1624,13 @@ export const createFrame = (ctx: FrameCtx) => {
         handles.liftSeal.live = open
       }
     }
+  }
+
+  /**
+   * The headset's recentre press and the one-time warning when it reports no thumbstick.
+   */
+  const phaseXrSession = (time: number, xrFrame: XRFrame | undefined, inputOut: InputOut) => {
+    const { xr } = inputOut
 
     // Say it once, out loud, if we are in a session that cannot fly. Apple
     // Vision Pro supports `immersive-vr` and has no controllers, so this is a
@@ -1585,6 +1662,14 @@ export const createFrame = (ctx: FrameCtx) => {
         )
       }
     }
+  }
+
+  /**
+   * Pause and Escape, the stick walking every menu, and BACK from every device.
+   */
+  const phasePauseMenus = (inputOut: InputOut) => {
+    const { inputOpts, turned, pad, xr, thumbs, presenting } = inputOut
+    let actions = inputOut.actions
 
     // ── the dashboard stops the world too (DEV-206) ────────────────────
     //
@@ -1960,6 +2045,17 @@ export const createFrame = (ctx: FrameCtx) => {
       audio.event({ type: 'ui.confirm' })
     }
 
+    return { actions }
+  }
+  type PauseMenusOut = ReturnType<typeof phasePauseMenus>
+
+  /**
+   * The primary action: a finger, a cursor, a laser or a key becomes this frame's
+   * `confirm`.
+   */
+  const phasePointer = (inputOut: InputOut) => {
+    const { xr, presenting, watching, look } = inputOut
+
     // ── the primary action, which is the only button a session is promised ──
     //
     // DEV-205. `xr.confirm` is right-hand `xr-standard` button **4**, and only
@@ -2212,6 +2308,25 @@ export const createFrame = (ctx: FrameCtx) => {
     // handler used to record the state itself at its far end, ~400 lines on.
     if (splash?.covering()) confirmKey.hold()
     const confirmPressed = confirmKey.step(confirm)
+
+    return { mouseClicked, hoverAt, roomPointPress, confirm, confirmPressed }
+  }
+  type PointerOut = ReturnType<typeof phasePointer>
+
+  /**
+   * What a confirm means on each screen (title, hangar, pause plate, results, pad).
+   */
+  const phaseConfirm = (
+    xrFrame: XRFrame | undefined,
+    openOut: OpenOut,
+    inputOut: InputOut,
+    pointerOut: PointerOut,
+  ) => {
+    const { frameT0 } = openOut
+    const { presenting } = inputOut
+    const { mouseClicked, confirmPressed } = pointerOut
+    let roomPointPress = pointerOut.roomPointPress
+
     // ── `flight` gates the MISSION's presses, not the menu's (DEV-281) ────
     //
     // It used to gate all of them, which was a true reading of a build where
@@ -2578,6 +2693,13 @@ export const createFrame = (ctx: FrameCtx) => {
         } else beginLaunch()
       }
     }
+  }
+
+  /**
+   * "Race this lap", the Quick Race's own launch, and the `?snap=` freeze.
+   */
+  const phaseLapPresses = (inputOut: InputOut) => {
+    const { xr } = inputOut
 
     // ── "race this lap" (DEV-371) ────────────────────────────────────────
     //
@@ -2678,6 +2800,15 @@ export const createFrame = (ctx: FrameCtx) => {
         `snap: sim frozen at ${mission.elapsed.toFixed(4)} s (?snap=${SNAP_AT}) — still rendering`,
       )
     }
+  }
+
+  /**
+   * The fixed-step bracket: rooms, the watch and TV frames, then `stepFixed` with the
+   * whole per-tick sim. Returns the interpolation alpha and the sim's own cost.
+   */
+  const phaseSim = (time: number, openOut: OpenOut, pauseMenusOut: PauseMenusOut) => {
+    const { frameSeconds } = openOut
+    let actions = pauseMenusOut.actions
 
     // Paused freezes the SIM, not the frame: zero wall time in, so nothing
     // accumulates and no tick runs. Physics, the race clock, the AI racers and
@@ -4004,6 +4135,18 @@ export const createFrame = (ctx: FrameCtx) => {
     )
     const simMs = performance.now() - simT0
     const ticksThisFrame = clock.tick - tickBefore
+
+    return { alpha, simMs, ticksThisFrame }
+  }
+  type SimOut = ReturnType<typeof phaseSim>
+
+  /**
+   * The lift and the racers placed for this frame, the sun, and the title's own ambient
+   * and sky.
+   */
+  const phaseStage = (simOut: SimOut) => {
+    const { alpha } = simOut
+
     // DEV-445: the lift, drawn where the ship on it is drawn. The step above
     // hands it the sim's rise (`setRise`, beside `rideElevator`); this puts the
     // platform `alpha` of the way between the last two, as `flight.render`
@@ -4116,6 +4259,13 @@ export const createFrame = (ctx: FrameCtx) => {
         if (render.scene.environment !== wanted) render.scene.environment = wanted
       }
     }
+  }
+
+  /**
+   * Which view this frame is (cockpit or chase) and what that turns on.
+   */
+  const phaseView = (inputOut: InputOut) => {
+    const { presenting } = inputOut
 
     handles.title?.setVisible(router.screen === 'title')
     // Which of the ship's two meshes is on, driven by the SCREEN rather than by
@@ -4155,6 +4305,18 @@ export const createFrame = (ctx: FrameCtx) => {
         // DEV-932: the hull is drawn for the MISSION's map; no map, no draw.
         missionShadowsEnabled(editionState.current, editionState.settings),
     )
+
+    return { thirdPersonLive }
+  }
+  type ViewOut = ReturnType<typeof phaseView>
+
+  /**
+   * The title screen: its camera, its rows, the letter plate and the room's share plate.
+   */
+  const phaseTitle = (openOut: OpenOut, inputOut: InputOut, pointerOut: PointerOut) => {
+    const { frameT0, frameSeconds } = openOut
+    const { presenting, titleLooks, look } = inputOut
+    const { hoverAt, confirm } = pointerOut
 
     if (router.screen === 'title' && handles.title) {
       // Standing in the world, looking at the monument. Fixed: a title screen
@@ -4347,6 +4509,17 @@ export const createFrame = (ctx: FrameCtx) => {
         start: flat && touch && roomLobby.lobbyAllReadyWas && lobbyUp(),
       })
     }
+  }
+
+  /**
+   * The hangar seat's look and the camera for the screen (title, hangar, chase, cockpit,
+   * spectator), then the viewer cameras.
+   */
+  const phaseCamera = (openOut: OpenOut, inputOut: InputOut, simOut: SimOut, viewOut: ViewOut) => {
+    const { frameSeconds } = openOut
+    const { presenting, look } = inputOut
+    const { alpha } = simOut
+    const { thirdPersonLive } = viewOut
 
     if (router.screen === 'menu') {
       // Look around the room — right stick or mouse, already in radians and
@@ -4625,6 +4798,15 @@ export const createFrame = (ctx: FrameCtx) => {
     watchCamera(frameSeconds)
     exhibition.frame(frameSeconds, alpha) // DEV-483: TV's exhibition, through TV's camera (DEV-481)
     tvPanelFrame(frameSeconds) // DEV-482: the ident, the lower third, the results, the sting
+  }
+
+  /**
+   * Ghosts, the head position, the hangar's jets, the comfort layer, the vignette feed and
+   * the cloud whiteout.
+   */
+  const phaseAfterCamera = (time: number, openOut: OpenOut, simOut: SimOut) => {
+    const { frameSeconds } = openOut
+    const { alpha } = simOut
 
     // Ghosts run on the MISSION clock — fixed steps, never frame time. One
     // that advances on frame time races a different course on a slow machine,
@@ -4738,6 +4920,17 @@ export const createFrame = (ctx: FrameCtx) => {
       ctx.cloudWhite = 0
     }
     vignette.setWhiteout(ctx.cloudWhite)
+  }
+
+  /**
+   * What the hangar's pointer aims at: the tables, the lobby, the OPTIONS plate, and the
+   * menus' focus clicks.
+   */
+  const phaseRoomAim = (openOut: OpenOut, inputOut: InputOut, pointerOut: PointerOut) => {
+    const { frameT0, frameSeconds } = openOut
+    const { presenting } = inputOut
+    const { confirm } = pointerOut
+
     // The nose pointer. Recomputed every frame the menu is up, from the HEAD's
     // world pose — READ AGAIN here rather than trusting the `cameraWorld` above,
     // which `horizon.update` and two other calls have been handed since: a
@@ -4843,6 +5036,17 @@ export const createFrame = (ctx: FrameCtx) => {
     handles.titleSky?.follow(cameraWorld)
     // The far shore rides with the eye in x and z only (DEV-119).
     handles.liveHorizonGeo?.update(cameraWorld)
+  }
+
+  /**
+   * The other ships, drawn: racers, the ghost's trails, a room's ships, your wing trails
+   * and the traffic. Returns the wing trails' clock.
+   */
+  const phaseRacerRender = (openOut: OpenOut, simOut: SimOut, viewOut: ViewOut) => {
+    const { frameSeconds } = openOut
+    const { alpha } = simOut
+    const { thirdPersonLive } = viewOut
+
     // Not on the title screen: `title.update` owns the racer meshes there, and
     // two writers to one transform is the last writer winning at random.
     // DEV-358: the wing-tip trails' clock. No time while the sim is held —
@@ -4899,6 +5103,28 @@ export const createFrame = (ctx: FrameCtx) => {
     // ships are on that screen, and two writers to one transform is the last
     // writer winning at random.
     if (router.screen !== 'title') handles.liveTraffic?.render(alpha, cameraWorld, frameSeconds)
+
+    return { wingDt }
+  }
+  type RacerRenderOut = ReturnType<typeof phaseRacerRender>
+
+  /**
+   * `?submit=reorder` (DEV-971): the frame whose audio work waits until after the draw's flush.
+   * Always null otherwise; `phaseRender` runs it and clears it.
+   */
+  let audioDeferred: OpenOut | null = null
+
+  /**
+   * Positional audio, the music's filter, the racers' engines and the overtake cue. Under
+   * `?submit=reorder` this only records the frame and `phaseRender` does the work after the flush.
+   */
+  const phaseAudio = (openOut: OpenOut) => {
+    if (SUBMIT_PIN === 'reorder') audioDeferred = openOut
+    else audioWork(openOut)
+  }
+
+  const audioWork = (openOut: OpenOut) => {
+    const { frameSeconds } = openOut
 
     // ── positional audio, every frame ───────────────────────────────────
     //
@@ -4987,7 +5213,8 @@ export const createFrame = (ctx: FrameCtx) => {
         (roomActive()
           ? (roomMapField()?.line ?? null)
           : (handles.liveRacers?.guide ?? handles.liveRacers?.racers[0]?.fallbackCourse ?? null))
-      if (overtakeLine) {
+      const overtakeSeconds = overtakeLine ? overtakeRate(frameSeconds) : null
+      if (overtakeLine && overtakeSeconds !== null) {
         const limit = raceTimeLimit(ctx.level, mission.mode)
         const readings: RacerPlaceReading[] = [
           ...(handles.liveRacers?.racers ?? []).map((racer) => ({
@@ -5002,7 +5229,7 @@ export const createFrame = (ctx: FrameCtx) => {
           (!ctx.launchSpec || ctx.launch.phase === 'flying') &&
             !mission.finished &&
             run.lastResult === null,
-          frameSeconds,
+          overtakeSeconds,
         )
         if (change) {
           audio.event({ type: 'race.position', gained: change.gained })
@@ -5018,6 +5245,25 @@ export const createFrame = (ctx: FrameCtx) => {
         }
       }
     }
+  }
+
+  /**
+   * The cockpit: engine effects, rings, the next-gate arrow, results, pause plate, HUD and
+   * race map.
+   */
+  const phasePanels = (
+    time: number,
+    openOut: OpenOut,
+    pointerOut: PointerOut,
+    simOut: SimOut,
+    viewOut: ViewOut,
+    racerRenderOut: RacerRenderOut,
+  ) => {
+    const { frameT0, frameSeconds } = openOut
+    const { confirm } = pointerOut
+    const { alpha } = simOut
+    const { thirdPersonLive } = viewOut
+    const { wingDt } = racerRenderOut
 
     if (handles.flight) {
       const v = handles.flight.jet.body.velocity
@@ -5523,17 +5769,25 @@ export const createFrame = (ctx: FrameCtx) => {
       ctx.stripPlace = null
       if (results.raceMap && results.raceMapLine && (handles.liveRacers || roomActive())) {
         results.raceMap.setRedraw(ctx.hudRedraw)
-        const placeNowValue =
-          !ctx.launchSpec || ctx.launch.phase === 'flying'
-            ? placeNow(
-                results.raceMapLine,
-                run.lastResult && roomPanelRun(run.lastResult),
-                { passed: mission.course.passed, position: handles.flight.jet.body.position },
-                handles.liveRacers?.racers ?? [],
-                raceTimeLimit(ctx.level, mission.mode),
-                roomPlaceOthers(results.raceMapLine), // DEV-390
-              )
-            : null
+        const placeSeconds = placeRate(frameSeconds)
+        if (ctx.launchSpec && ctx.launch.phase !== 'flying') {
+          cachedPlace = null
+        } else if (
+          placeSeconds !== null ||
+          cachedPlace === null ||
+          cachedPlaceRun !== run.lastResult
+        ) {
+          cachedPlace = placeNow(
+            results.raceMapLine,
+            run.lastResult && roomPanelRun(run.lastResult),
+            { passed: mission.course.passed, position: handles.flight.jet.body.position },
+            handles.liveRacers?.racers ?? [],
+            raceTimeLimit(ctx.level, mission.mode),
+            roomPlaceOthers(results.raceMapLine), // DEV-390
+          )
+          cachedPlaceRun = run.lastResult
+        }
+        const placeNowValue = cachedPlace
         ctx.stripPlace = placeNowValue
         results.raceMap.update(
           {
@@ -5558,9 +5812,17 @@ export const createFrame = (ctx: FrameCtx) => {
         )
       }
     }
+  }
+
+  /**
+   * Render-clock world work: the race strip, terrain and ocean LOD, the waves, others'
+   * gate bursts and the particle fields.
+   */
+  const phaseWorldClocks = (time: number, openOut: OpenOut) => {
+    const { frameT0, frameSeconds } = openOut
 
     // DEV-649: the flat screen's race strip, from this frame's place.
-    syncRaceStrip(frameT0)
+    if (stripRate(frameSeconds) !== null) syncRaceStrip(frameT0)
 
     // LOD. A distance test per chunk and, in the common case, no work at all —
     // the regeneration itself happens in a worker, so a level change costs a
@@ -5625,6 +5887,14 @@ export const createFrame = (ctx: FrameCtx) => {
       for (const gate of watch.takes) handles.liveFx.burstRing(gate)
     }
     handles.liveFx?.update(Math.min(frameSeconds, 0.1), render.camera)
+  }
+
+  /**
+   * The cockpit's shake, the feel layer, the near-field air and the lens.
+   */
+  const phaseFeel = (time: number, openOut: OpenOut, viewOut: ViewOut) => {
+    const { frameSeconds } = openOut
+    const { thirdPersonLive } = viewOut
 
     // ── Anniversary systems, per frame ───────────────────────────────────
     //
@@ -5764,6 +6034,13 @@ export const createFrame = (ctx: FrameCtx) => {
         ? fovAddFor(thirdPersonNow(), forwardSpeedOf(handles.flight), editionState.speedFx)
         : null,
     )
+  }
+
+  /**
+   * Shadows, the headset's halos, props' LOD, birds, boats, fracture, clouds and fog.
+   */
+  const phaseEnvironment = (time: number, openOut: OpenOut) => {
+    const { frameSeconds } = openOut
 
     // The sun's shadow box, refitted to where the eye actually is (DEV-086).
     // AFTER the sun's own direction is set above, because the fit reads the
@@ -5851,14 +6128,24 @@ export const createFrame = (ctx: FrameCtx) => {
     // point. A still sky on Classic returns before it touches a matrix, and
     // `?snap=` does NOT freeze this (docs/vr-testing.md §5), so an A/B pair
     // differs by a few metres of drift and by nothing else.
-    handles.liveClouds?.update(time / 1000)
-    cloudShadow.update() // DEV-585: the wind, after the clouds' own
+    if (cloudRate(frameSeconds) !== null) {
+      handles.liveClouds?.update(time / 1000)
+      cloudShadow.update() // DEV-585: the wind, after the clouds' own
+    }
 
     ctx.fog.update(render.camera)
     // The title valley's own fog carries no height term, so this only refreshes
     // the camera distance — but it is the same contract and skipping it would
     // be a thing to remember rather than a thing that is true. DEV-155.
     handles.titleFog?.update(render.camera)
+  }
+
+  /**
+   * What the thumbs are offered, last, once every flag it reads is settled.
+   */
+  const phaseTouch = (viewOut: ViewOut) => {
+    const { thirdPersonLive } = viewOut
+
     // ── which world is on screen ─────────────────────────────────────────
     //
     // The menu is a different environment, the way 2016's is. Everything that
@@ -5954,6 +6241,15 @@ export const createFrame = (ctx: FrameCtx) => {
       // ship nobody flies.
       hidden: render.renderer.xr.isPresenting || (tvActive() && !tvView.plateUp()),
     })
+  }
+
+  /**
+   * The stage, the tint, the GPU and render brackets, the draw, and the perf recorder.
+   */
+  const phaseRender = (time: number, openOut: OpenOut, simOut: SimOut, viewOut: ViewOut) => {
+    const { frameT0, frameSeconds } = openOut
+    const { simMs, ticksThisFrame } = simOut
+    const { thirdPersonLive } = viewOut
 
     // DEV-572: the menus' reticle, now every menu has aimed this frame.
     menuReticleFrame()
@@ -6033,11 +6329,50 @@ export const createFrame = (ctx: FrameCtx) => {
       shakeWear.restore(render.camera)
     }
     gpu.end()
+    // DEV-971: hand the recorded command buffer to the GPU process now, before the
+    // rest of this frame's JS. A measurement pin, off by default.
+    if (SUBMIT_PIN !== 'off') render.renderer.getContext().flush()
     const renderMs = performance.now() - renderT0
+    if (audioDeferred !== null) {
+      const deferred = audioDeferred
+      audioDeferred = null
+      audioWork(deferred)
+    }
 
     // Step 33 (APP-SPLIT §1c): the recorder, the adaptive cost, the budget line,
     // the trace and the plate, LAST, after the render (`boot/app/perf.ts`).
     perfSys.frame({ time, frameT0, frameSeconds, simMs, renderMs, ticksThisFrame, thirdPersonLive })
+  }
+
+  /** One frame, in the phases above (DEV-975). */
+  const frame = (time: number, xrFrame?: XRFrame) => {
+    if (!ctx.running) return
+    const openOut = phaseOpen(time)
+    // DEV-469: while the course editor is up, its frame is the whole frame.
+    if (editorFrame(time, openOut.frameSeconds)) return
+    const inputOut = phaseInput(openOut)
+    phasePilot(openOut, inputOut)
+    phaseReveal()
+    phaseXrSession(time, xrFrame, inputOut)
+    const pauseMenusOut = phasePauseMenus(inputOut)
+    const pointerOut = phasePointer(inputOut)
+    phaseConfirm(xrFrame, openOut, inputOut, pointerOut)
+    phaseLapPresses(inputOut)
+    const simOut = phaseSim(time, openOut, pauseMenusOut)
+    phaseStage(simOut)
+    const viewOut = phaseView(inputOut)
+    phaseTitle(openOut, inputOut, pointerOut)
+    phaseCamera(openOut, inputOut, simOut, viewOut)
+    phaseAfterCamera(time, openOut, simOut)
+    phaseRoomAim(openOut, inputOut, pointerOut)
+    const racerRenderOut = phaseRacerRender(openOut, simOut, viewOut)
+    phaseAudio(openOut)
+    phasePanels(time, openOut, pointerOut, simOut, viewOut, racerRenderOut)
+    phaseWorldClocks(time, openOut)
+    phaseFeel(time, openOut, viewOut)
+    phaseEnvironment(time, openOut)
+    phaseTouch(viewOut)
+    phaseRender(time, openOut, simOut, viewOut)
   }
   return {
     frame,

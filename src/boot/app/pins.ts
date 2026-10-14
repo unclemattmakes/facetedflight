@@ -24,7 +24,9 @@ import {
   parseHzPin,
   parseMsaaPin,
   parseQualityPin,
+  parseSubmitPin,
   type QualityPins,
+  type SubmitPin,
 } from '@/boot/quality-pin'
 import {
   listedVariants,
@@ -479,6 +481,18 @@ export const VR_VALUE_OFF: (path: string) => boolean = (() => {
  * one load and two readings. It is not a quality setting and no preset reads it.
  */
 export const CHUNK_BATCH = params.get('chunkBatch') !== '0'
+
+/**
+ * `?lookdev=1`: the in-game tuning panel, `L` to toggle.
+ *
+ * Matt: *"stub out an in-game lookdev menu where i can tune tweakable settings
+ * in realtime."* Off by default and never in a headset: it is DOM, and
+ * `dom-overlay` is not reliably granted on Quest. Tune on the monitor, fly in
+ * the headset. The switch lives here, and the panel behind it
+ * (`lookdev-panel.ts`) is a dynamic import in `world/build.ts` (DEV-961), so a
+ * visitor who never asks for it does not download it.
+ */
+export const LOOKDEV = params.get('lookdev') === '1'
 
 /**
  * `?lensMask=0` turns the app's lens mask OFF; `?lensMask=<radius>` sizes it.
@@ -1724,3 +1738,31 @@ export const LAUNCH_RIG_2016_WAIT_MS = 10_000
  * this switch, because this switch is what makes the bug observable and the
  * two want separate before/after evidence.
  */
+
+/**
+ * `?submit=flush` or `?submit=reorder`; absent or `off` is today's frame.
+ * DEV-971, the submit-early A/B. A MEASUREMENT pin, OFF by default, and no arm
+ * becomes the default without a quiet-box table
+ * (`docs/plan/eval-wave/eval-frame-trace.md`).
+ *
+ * three records WebGL calls into Chrome's command buffer, and the renderer
+ * process hands that buffer to the GPU process only when it fills, when a task
+ * ends, or when something flushes it. The draw is the frame's last big
+ * submission and the perf recorder runs after it, so the GPU can sit idle for
+ * the tail of our JS.
+ *
+ *   `flush`    `gl.flush()` right after the render phase's draw.
+ *   `reorder`  that, plus `phaseAudio`'s work (the listener, the music filter,
+ *              the racers' engines, the overtake cue) moved to after the flush.
+ *              The HUD repaint is NOT moved: its canvas is uploaded inside the
+ *              draw, so running it after would show last frame's HUD, which is
+ *              a latency change and not a reorder. The perf recording already
+ *              runs after the draw.
+ *
+ * Read once at load, like every pin here. Printed only when set.
+ */
+export const SUBMIT_PIN: SubmitPin = (() => {
+  const pin = parseSubmitPin(params.get('submit'), (m) => console.warn(`submit: ${m}`))
+  if (pin !== 'off') console.info(`submit: ${pin} (DEV-971)`)
+  return pin
+})()

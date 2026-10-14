@@ -816,6 +816,12 @@ export interface FarShadow {
     jitterMetres?: number,
     canopy?: CanopyField | null,
     groupMatrixWorld?: THREE.Matrix4 | null,
+    /**
+     * DEV-955: the march, already done (baked at content-build time or kept
+     * from an earlier load) for exactly these inputs; the texture is built from
+     * it in place of running `sunHeightSteps`. Null or omitted marches.
+     */
+    baked?: SunHeightField | null,
   ): Steps<SunHeightField | null>
   /** The live field, for tests, the console and the cockpit's own readout. */
   readonly field: SunHeightField | null
@@ -995,14 +1001,23 @@ export const createFarShadow = (
     // DEV-355: the march first, yielding, and the swap after it in one go — so
     // a frame drawn while the march is suspended sees the old field whole, never
     // a disposed texture or a null one.
-    *setWorldSteps(land, sunTravelThree, jitterMetres = 0, canopy = null, groupMatrixWorld = null) {
+    *setWorldSteps(
+      land,
+      sunTravelThree,
+      jitterMetres = 0,
+      canopy = null,
+      groupMatrixWorld = null,
+      baked = null,
+    ) {
       // DEV-359: the march runs in the FIELD's frame, so the sun goes into it
       // first. A mission passes no matrix and marches the level's own vector.
       const sunInField = sunTravelThree
         ? sunTravelInFieldFrame(sunTravelThree, groupMatrixWorld)
         : null
       const marched =
-        land && sunInField ? yield* sunHeightSteps(land, towardSunSim(sunInField)) : null
+        land && sunInField
+          ? (baked ?? (yield* sunHeightSteps(land, towardSunSim(sunInField))))
+          : null
       texture?.dispose()
       texture = null
       field = null

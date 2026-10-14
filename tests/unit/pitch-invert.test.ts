@@ -6,12 +6,9 @@
 // motionless frame must equal `NO_LOOK` under `Object.is`. The helper now holds
 // that guard and every path calls it.
 
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { applyPitchInvert } from '@/input/actions'
 import { touchLook } from '@/input/touch'
-import { REPO } from './helpers/repo-root'
 
 describe('applyPitchInvert', () => {
   it('passes the value through when invert is off, including a negative zero', () => {
@@ -51,11 +48,8 @@ describe('the look paths use it', () => {
     expect(Object.is(still.yaw, 0)).toBe(true)
   })
 
-  it('look.ts and touch.ts no longer negate pitch by hand', () => {
-    for (const file of ['look.ts', 'touch.ts']) {
-      const src = readFileSync(path.join(REPO, 'src/input', file), 'utf8')
-      expect(src, file).toMatch(/applyPitchInvert\(/)
-      expect(src, file).not.toMatch(/invertPitch \? /)
-    }
-  })
+  // The source-text pin "look.ts and touch.ts no longer negate pitch by hand" was removed
+  // (DEV-967): look.test.ts drives the stick path under invert and checks +0 for a centred
+  // stick, and the case above drives touch, so a hand-written negation is caught by what it
+  // returns, not by how it is spelled.
 })

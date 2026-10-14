@@ -354,8 +354,95 @@ const failedMusic = (src: string, reason: string): void => {
   console.warn(`music: ${src} did not load — ${reason}`)
 }
 
+// ── Music streams through an <audio> element (DEV-962) ────────────────────
+//
+// A decoded track is raw float PCM: `retro-synths` is about 86 MB, and a
+// crossfade holds two of them at once (`music.ts` weighs it). The element
+// decodes as it plays, so the resident cost is the compressed bytes the browser
+// has buffered, a few MB, and the crossfade is still two `GainNode` ramps
+// because the element is routed through a `MediaElementAudioSourceNode` into
+// the same per-voice gain and the same music bus (volume, duck, filter, mute).
+//
+// The rules that keep it safe:
+//  - an element may have ONE `MediaElementAudioSourceNode` ever, so a stream
+//    keeps its node and a voice never makes a second;
+//  - `crossOrigin = 'anonymous'`, or a cross-origin element routed into Web
+//    Audio plays SILENCE (no error). Content lives on R2, which already answers
+//    `fetch` with CORS;
+//  - everything that goes wrong falls back to the decode path, which is exactly
+//    what shipped before: a refused `play()` (iOS can want a gesture per
+//    element), a throwing `createMediaElementSource`, an element that never
+//    reaches `canplay` (iOS ignores `preload`), an unknown duration. A fallback
+//    switches streaming off for the rest of the session, because every later
+//    track would hit the same wall.
+
+/** How long a stream may take to reach `canplay` before it is judged unusable. */
+export const MUSIC_STREAM_READY_SECONDS = 4
+
+/** One streamed track: the element, and its (single, ever) Web Audio node. */
+interface StreamedTrack {
+  readonly element: HTMLAudioElement
+  node: MediaElementAudioSourceNode | null
+}
+
+/** Let go of an element's media and its connection. Safe to call twice. */
+const closeStream = (element: HTMLAudioElement): void => {
+  try {
+    element.onended = null
+    element.onerror = null
+    element.pause()
+    element.removeAttribute('src')
+    element.load()
+  } catch {
+    // An element that will not reset is garbage anyway.
+  }
+}
+
+/**
+ * Open `src` on a fresh element and resolve when it can play and says how long
+ * it is; `'timeout'` when it never got there in time (the iOS signature) and
+ * `null` for every other outcome. Never rejects. Not playing yet.
+ */
+const openStream = (
+  src: string,
+  readySeconds: number,
+): Promise<HTMLAudioElement | 'timeout' | null> =>
+  new Promise((resolve) => {
+    let element: HTMLAudioElement
+    try {
+      element = new globalThis.Audio()
+    } catch {
+      resolve(null)
+      return
+    }
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const settle = (ok: boolean, timedOut: boolean): void => {
+      if (timer !== null) clearTimeout(timer)
+      element.removeEventListener('canplay', onReady)
+      element.removeEventListener('error', onError)
+      if (ok && Number.isFinite(element.duration) && element.duration > 0) {
+        resolve(element)
+        return
+      }
+      closeStream(element)
+      resolve(timedOut ? 'timeout' : null)
+    }
+    const onReady = (): void => settle(true, false)
+    const onError = (): void => settle(false, false)
+    element.addEventListener('canplay', onReady)
+    element.addEventListener('error', onError)
+    timer = setTimeout(() => settle(false, true), readySeconds * 1000)
+    element.crossOrigin = 'anonymous'
+    element.preload = 'auto'
+    element.src = src
+  })
+
 export const createWebAudioBackend = (): AudioBackend => {
   let ctx: AudioContext | null = null
+  /** False once any stream has proved unusable on this device (see above). */
+  let streaming = true
+  /** Every element a live voice is still playing, for `dispose()`. */
+  const activeStreams = new Set<HTMLAudioElement>()
   let master: GainNode | null = null
   let noiseBuffer: AudioBuffer | null = null
   /**
@@ -401,6 +488,54 @@ export const createWebAudioBackend = (): AudioBackend => {
    * stereo decode is 69 MB, which is not a thing to leak.
    */
   const decoded = new WeakMap<MusicBuffer, AudioBuffer>()
+  /** The streamed counterpart of `decoded`: a `MusicBuffer` is one or the other. */
+  const streamed = new WeakMap<MusicBuffer, StreamedTrack>()
+
+  /**
+   * Fetch `src` and decode it to PCM. `null` for every failure, reported once.
+   * The path every track took before DEV-962, and still the fallback.
+   */
+  const decodeTrack = async (context: AudioContext, src: string): Promise<AudioBuffer | null> => {
+    try {
+      const response = await fetch(src)
+      if (!response.ok) {
+        failedMusic(src, `HTTP ${response.status}`)
+        return null
+      }
+      // ── A 200 is not a file (DEV-247) ─────────────────────────────────
+      //
+      // An SPA host answers an unknown path with `index.html` and status
+      // **200**, so `response.ok` is true and the next line hands 10 kB of
+      // markup to `decodeAudioData`, which throws `EncodingError` — and the
+      // caller reports the same "could not be played" it reports for a
+      // codec problem. That is exactly how the live site hid a missing base
+      // URL: `ff-10yr.pages.dev/assets/audio/music/drama.opus` returns
+      // `200 text/html`, verified 2026-09-20.
+      //
+      // Checked rather than inferred from the extension, because the whole
+      // point is that the URL looked right.
+      const type = response.headers.get('content-type') ?? ''
+      if (type !== '' && !type.startsWith('audio/') && !type.startsWith('application/octet')) {
+        failedMusic(src, `the server answered ${response.status} ${type}, which is not audio`)
+        return null
+      }
+      const bytes = await response.arrayBuffer()
+      // The promise form. The callback form is the one older WebKit needs and
+      // FF2's floor is a browser that ships WebXR, which is well past it.
+      return await context.decodeAudioData(bytes)
+    } catch (error) {
+      // A 404 body, a codec this browser will not take, a network that went
+      // away mid-fetch, a context closed by `dispose()` while the decode was
+      // in flight. All the same thing to the caller: no track.
+      //
+      // The CALLER still gets one shape — that invariant is the interface's
+      // and it stands. What changed in DEV-247 is that the reason is no
+      // longer thrown away on the way past: the playlist can only say what
+      // happened ("could not be played"), and only this frame knows why.
+      failedMusic(src, String(error))
+      return null
+    }
+  }
   /**
    * The master node is the PLAYER's volume, and it starts at the top of their
    * ladder rather than at `MASTER_SFX`.
@@ -702,6 +837,141 @@ export const createWebAudioBackend = (): AudioBackend => {
     teardown(voice, now + fade + 0.02)
   }
 
+  /**
+   * A music voice backed by an <audio> element (DEV-962). The same contract as
+   * the buffer voice in `playMusic`: silent at start, `fadeIn` / `fadeOut` are
+   * the equal-power ramps on this voice's own gain, `onEnded` fires only when
+   * the track ran out by itself.
+   *
+   * It can turn into a buffer voice. If the element refuses to play or the
+   * element node cannot be made, the track is fetched and decoded after all and
+   * started on the same gain, with the fade-in re-applied from that moment so
+   * the entry is still a fade.
+   */
+  const playStreamed = (
+    context: AudioContext,
+    bus: GainNode,
+    buffer: MusicBuffer,
+    stream: StreamedTrack,
+  ): MusicVoice => {
+    const { element } = stream
+    const gain = context.createGain()
+    gain.gain.setValueAtTime(0, context.currentTime)
+    gain.connect(bus)
+
+    let live = true
+    let ended: (() => void) | null = null
+    let fadeInSeconds: number | null = null
+    let fallback: AudioBufferSourceNode | null = null
+    let fellBack = false
+
+    const release = (): void => {
+      try {
+        gain.disconnect()
+      } catch {
+        // Already disconnected.
+      }
+      try {
+        stream.node?.disconnect()
+      } catch {
+        // Already disconnected.
+      }
+      activeStreams.delete(element)
+      closeStream(element)
+    }
+    const finished = (): void => {
+      const reachedItsOwnEnd = live
+      live = false
+      release()
+      // Only when the track ran out: a voice stopped by `fadeOut` was handed to
+      // its successor already, and calling back would advance a second time.
+      if (reachedItsOwnEnd) ended?.()
+    }
+    const fallBack = (why: string): void => {
+      if (fellBack) return
+      fellBack = true
+      streaming = false
+      console.warn(`music: ${buffer.src} would not stream (${why}); decoding it instead.`)
+      try {
+        stream.node?.disconnect()
+      } catch {
+        // Already disconnected.
+      }
+      element.pause()
+      void decodeTrack(context, buffer.src).then((data) => {
+        if (!data || !live) return
+        const source = context.createBufferSource()
+        source.buffer = data
+        source.loop = false
+        source.connect(gain)
+        source.onended = finished
+        fallback = source
+        source.start()
+        if (fadeInSeconds !== null) {
+          applyFade(gain.gain, 'in', fadeInSeconds, context.currentTime)
+        }
+      })
+    }
+
+    try {
+      // ONCE per element, ever: a replay reuses the node it already has.
+      stream.node ??= context.createMediaElementSource(element)
+      stream.node.connect(gain)
+    } catch (error) {
+      fallBack(String(error))
+    }
+    if (!fellBack) {
+      element.onended = finished
+      // A stream that dies mid-track (the network went) ends the voice, which
+      // advances the playlist, as a track that ran out would.
+      element.onerror = () => {
+        if (live) finished()
+      }
+      activeStreams.add(element)
+      // A replay starts from the top; a first play already is.
+      if (element.currentTime > 0) element.currentTime = 0
+      const started = element.play()
+      // `play()` returns nothing on very old engines; a refusal is a rejection.
+      started?.catch((error: unknown) => {
+        if (live) fallBack(String(error))
+      })
+    }
+
+    return {
+      src: buffer.src,
+      get live() {
+        return live
+      },
+      fadeIn(seconds) {
+        if (!live) return
+        fadeInSeconds = seconds
+        applyFade(gain.gain, 'in', seconds, context.currentTime)
+      },
+      fadeOut(seconds) {
+        if (!live) return
+        live = false
+        applyFade(gain.gain, 'out', seconds, context.currentTime)
+        // Stop the media once the fade has finished. A timer rather than the
+        // audio clock because an element has no `stop(when)`; for the gap
+        // between the two the element plays on at zero gain.
+        setTimeout(
+          () => {
+            try {
+              fallback?.stop()
+            } catch {
+              // Already stopped.
+            }
+            release()
+          },
+          (Math.max(0, seconds) + MUSIC_STOP_MARGIN) * 1000,
+        )
+      },
+      onEnded(callback) {
+        ended = callback
+      },
+    }
+  }
+
   return {
     get running() {
       return ctx !== null && ctx.state === 'running'
@@ -932,10 +1202,12 @@ export const createWebAudioBackend = (): AudioBackend => {
     },
 
     /**
-     * Fetch and decode one track. Never rejects — every failure is `null`.
+     * Open one track for streaming, or fetch and decode it when streaming is
+     * unavailable (DEV-962). Never rejects: every failure is `null`.
      *
-     * **No context means no decode**, because `decodeAudioData` is a method ON
-     * an `AudioContext` and this module does not build one outside a user
+     * **No context means no track**, because the element node and
+     * `decodeAudioData` both belong to an
+     * `AudioContext` and this module does not build one outside a user
      * gesture (see the header). In practice every music cue is downstream of a
      * confirm press that called `resume()` first, and `resume()` constructs the
      * context synchronously before its own `await` — so `ctx` is already there.
@@ -946,53 +1218,40 @@ export const createWebAudioBackend = (): AudioBackend => {
     async loadMusic(src) {
       const context = ctx
       if (!context) return null
-      try {
-        const response = await fetch(src)
-        if (!response.ok) {
-          failedMusic(src, `HTTP ${response.status}`)
+      // DEV-962: stream when the device lets us; decode when it does not.
+      if (streaming && typeof globalThis.Audio === 'function') {
+        const opened = await openStream(src, MUSIC_STREAM_READY_SECONDS)
+        if (ctx !== context) {
+          // `dispose()` ran while the element was opening.
+          if (opened && opened !== 'timeout') closeStream(opened)
           return null
         }
-        // ── A 200 is not a file (DEV-247) ─────────────────────────────────
-        //
-        // An SPA host answers an unknown path with `index.html` and status
-        // **200**, so `response.ok` is true and the next line hands 10 kB of
-        // markup to `decodeAudioData`, which throws `EncodingError` — and the
-        // caller reports the same "could not be played" it reports for a
-        // codec problem. That is exactly how the live site hid a missing base
-        // URL: `ff-10yr.pages.dev/assets/audio/music/drama.opus` returns
-        // `200 text/html`, verified 2026-09-20.
-        //
-        // Checked rather than inferred from the extension, because the whole
-        // point is that the URL looked right.
-        const type = response.headers.get('content-type') ?? ''
-        if (type !== '' && !type.startsWith('audio/') && !type.startsWith('application/octet')) {
-          failedMusic(src, `the server answered ${response.status} ${type}, which is not audio`)
-          return null
+        if (opened === 'timeout') {
+          // iOS ignores `preload` and loads nothing until playback is asked for
+          // inside a gesture, so an element that never reaches `canplay` is the
+          // signature of a device that cannot stream from here. Every later
+          // track would wait the same four seconds: decode from now on.
+          streaming = false
+        } else if (opened) {
+          const buffer: MusicBuffer = { src, durationSeconds: opened.duration }
+          streamed.set(buffer, { element: opened, node: null })
+          return buffer
         }
-        const bytes = await response.arrayBuffer()
-        // The promise form. The callback form is the one older WebKit needs and
-        // FF2's floor is a browser that ships WebXR, which is well past it.
-        const data = await context.decodeAudioData(bytes)
-        const buffer: MusicBuffer = { src, durationSeconds: data.duration }
-        decoded.set(buffer, data)
-        return buffer
-      } catch (error) {
-        // A 404 body, a codec this browser will not take, a network that went
-        // away mid-fetch, a context closed by `dispose()` while the decode was
-        // in flight. All the same thing to the caller: no track.
-        //
-        // The CALLER still gets one shape — that invariant is the interface's
-        // and it stands. What changed in DEV-247 is that the reason is no
-        // longer thrown away on the way past: the playlist can only say what
-        // happened ("could not be played"), and only this frame knows why.
-        failedMusic(src, String(error))
-        return null
+        // `null` (the element errored: a 404, an html body, a codec, no CORS)
+        // falls through to the decode path, which says WHY in the console.
       }
+      const data = await decodeTrack(context, src)
+      if (!data) return null
+      const buffer: MusicBuffer = { src, durationSeconds: data.duration }
+      decoded.set(buffer, data)
+      return buffer
     },
 
     playMusic(buffer) {
       const context = ctx
       const bus = musicBus
+      const stream = streamed.get(buffer)
+      if (context && bus && stream) return playStreamed(context, bus, buffer, stream)
       const data = decoded.get(buffer)
       if (!context || !bus || !data) return deadMusicVoice(buffer.src)
 
@@ -1068,7 +1327,11 @@ export const createWebAudioBackend = (): AudioBackend => {
       master = null
       // Closing the context takes every music voice with it, which is why there
       // is no register of them here: a `BufferSourceNode` whose context is
-      // closed is not a leak, it is garbage.
+      // closed is not a leak, it is garbage. An <audio> element is the
+      // exception (DEV-962): a closed context stops hearing it, and it goes on
+      // decoding and holding its connection until it is told to stop.
+      for (const element of activeStreams) closeStream(element)
+      activeStreams.clear()
       musicBus = null
       musicLow = null
       musicShelf = null

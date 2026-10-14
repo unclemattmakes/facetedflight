@@ -102,7 +102,7 @@ import type { SceneTint } from '@/render/scene-tint'
 import type { SeaReflection } from '@/render/sea-reflection'
 import type { SunShadows } from '@/render/shadows'
 import { shadowMeshesOf } from '@/render/shadows'
-import type { SkyVisibility } from '@/render/sky-visibility'
+import { type SkyVisibility, skyBakeWanted } from '@/render/sky-visibility'
 import { marmosetSunIntensity } from '@/render/skyshop-ibl'
 import {
   createStartDeck,
@@ -120,6 +120,7 @@ import {
   releasePadOf,
   START_PAD_MESH,
 } from '@/render/start-grid'
+import { terrainBakeSource } from '@/render/terrain-bake-client'
 import type { SurfaceGloss } from '@/render/terrain-surface'
 import { toneLookOf } from '@/render/tone'
 import type { UnityFog } from '@/render/unity-fog'
@@ -135,11 +136,12 @@ import type { Clearing } from '@/sim/props/clearing'
 import { buildPropColliders, createPropCollision } from '@/sim/props/collision'
 import { shRadiance } from '@/sim/sky-dome'
 import { terrainHeightAt } from '@/sim/terrain/height-field'
-import { sceneTintLookdevGroup } from '../../lookdev-scene-tint'
+import type { SkyVisibilityField } from '@/sim/terrain/sky-visibility'
+import type { SunHeightField } from '@/sim/terrain/sun-height'
 import { BUILD_VERSION } from '../../version'
 import type { createAtmosphere } from '../atmosphere'
 import { horizonReferenceY, horizonSeed } from '../horizon'
-import { buildLookdev, LOOKDEV, type PlacementTuning } from '../lookdev-panel'
+import type { PlacementTuning } from '../lookdev-panel'
 import {
   CHUNK_BATCH,
   editorPartialRun,
@@ -148,6 +150,7 @@ import {
   HUD_WARM_PIN,
   KEEP_POINT_LIGHTS,
   LAUNCH_RIG_2016_WAIT_MS,
+  LOOKDEV,
   MENU_EDITION,
   OCEAN_PIN,
   OCEAN_RINGS_PIN,
@@ -166,6 +169,7 @@ import type { createResults } from '../results'
 import type { createRoomCore } from '../room/core'
 import type { createAppSettings } from '../settings'
 import type { WorldHandles } from '../world-handles'
+import { runTerrainBakes, type TerrainBakeReceipt } from './terrain-bake-step'
 
 /**
  * DEV-489: milliseconds the last custom island's prop re-scatter took at world
@@ -181,6 +185,18 @@ export let customGroundPropsMs = 0
  * `__ff2.customGround()` reads it; the e2e prints it.
  */
 export let customGroundReceipt: Record<string, number | string> | null = null
+
+/**
+ * DEV-955: where the last world build's two terrain bakes came from (a baked file,
+ * IndexedDB, or the runtime march) and how many rows of each it ran. `__ff2.terrainBake()`.
+ */
+export let terrainBakeReceipt: TerrainBakeReceipt | null = null
+
+/** DEV-955: the two fields behind that receipt, for `__ff2.terrainBakeDigest()`. */
+export let terrainBakeFields: {
+  readonly sun: SunHeightField | null
+  readonly sky: SkyVisibilityField | null
+} | null = null
 
 /** What `createWorldBuild` reads from the closure: getters, each read live (APP-SPLIT §3's `ctx`). */
 export interface WorldBuildCtx {
@@ -8211,6 +8227,8 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
     // and hands the thread back, so the frames keep coming while a world
     // builds. `boot/slice.ts` has the measurement and the mechanism.
     const slicer = createSlicer()
+    // DEV-955: the baked files start coming while the terrain loads; their keys are checked later.
+    terrainBakeSource().prefetch(ctx.level.id, editionState.current.id)
     const [terrain, ocean, rings, turnIndicators, particleFx, loadedFlight, ghosts] =
       await Promise.all([
         loadTerrain(landKey, {
@@ -8926,6 +8944,11 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
     // environment contributes a second), so the search is unambiguous and the
     // alternative is changing a signature for a dev tool.
     if (LOOKDEV) {
+      // DEV-961: the panel is its own chunk, fetched only under `?lookdev=1`.
+      const [{ buildLookdev }, { sceneTintLookdevGroup }] = await Promise.all([
+        import('../lookdev-panel'),
+        import('../../lookdev-scene-tint'),
+      ])
       let sunLight: THREE.DirectionalLight | null = null
       render.scene.traverse((o) => {
         if (!sunLight && (o as THREE.DirectionalLight).isDirectionalLight) {
@@ -9742,15 +9765,42 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
         : null
     // DEV-355: stepped, a row of the march at a time. It was 13 % of one 3.4 s
     // task. `sweepMs` is wall time and so includes the frames let through.
+    //
+    // DEV-955: for a shipped mission both fields are baked on disk and the march
+    // runs zero rows; `terrain-bake-step.ts` has the lookup and the fallback.
     await slicer.checkpoint()
-    const sweep = await slicer.drain(
-      farShadow.setWorldSteps(
-        terrain.heightField,
-        ctx.level.lighting.sun?.direction ?? null,
-        terrain.params.randomOffset * (terrain.heightField.scaleY || 1),
-        canopy,
-      ),
-    )
+    // DEV-333, from the sweep: the sun verdict the bounce needs, and the sun
+    // colour is the light `applyLighting` built, composed the same way (linear
+    // colour × Marmoset's 2π intensity).
+    const bakeSun = ctx.level.lighting.sun
+    const baked = await runTerrainBakes({
+      levelId: ctx.level.id,
+      source: terrainBakeSource(),
+      slicer,
+      farShadow,
+      skyVisibility,
+      land: terrain.heightField,
+      colorMap: terrain.colorMap,
+      sunTravel: ctx.level.lighting.sun?.direction ?? null,
+      jitterMetres: terrain.params.randomOffset * (terrain.heightField.scaleY || 1),
+      canopy,
+      sunColour: bakeSun
+        ? new THREE.Color()
+            .setRGB(
+              bakeSun.colorLinear[0],
+              bakeSun.colorLinear[1],
+              bakeSun.colorLinear[2],
+              THREE.LinearSRGBColorSpace,
+            )
+            .multiplyScalar(marmosetSunIntensity(bakeSun.intensity))
+        : null,
+      softMetres: editionState.current.render.sunHeight.softMetres,
+      skyWanted: skyBakeWanted(editionState),
+    })
+    const sweep = baked.sweep
+    const skyBake = baked.skyBake
+    terrainBakeReceipt = baked.receipt
+    terrainBakeFields = { sun: baked.sweep, sky: baked.skyBake }
     const sweepMs = performance.now() - sweepStart
     // DEV-476: the same inputs, kept for the editor's re-bake under a moved sun.
     atmosphere.sunBakeInputs = {
@@ -9758,28 +9808,6 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
       jitterMetres: terrain.params.randomOffset * (terrain.heightField.scaleY || 1),
       canopy,
     }
-    // DEV-333, from the sweep just taken: it is the sun verdict the bounce
-    // needs, and the sun colour is the light `applyLighting` built, composed
-    // the same way (linear colour × Marmoset's 2π intensity).
-    const bakeSun = ctx.level.lighting.sun
-    // DEV-355: stepped, a row of samples at a time. It was 44 % of that task.
-    const skyBake = await slicer.drain(
-      skyVisibility.setWorldSteps(
-        terrain.heightField,
-        terrain.colorMap,
-        sweep,
-        bakeSun
-          ? new THREE.Color()
-              .setRGB(
-                bakeSun.colorLinear[0],
-                bakeSun.colorLinear[1],
-                bakeSun.colorLinear[2],
-                THREE.LinearSRGBColorSpace,
-              )
-              .multiplyScalar(marmosetSunIntensity(bakeSun.intensity))
-          : null,
-      ),
-    )
     await slicer.checkpoint()
     // ── DEV-489: the custom island's receipt ─────────────────────────────
     customGroundReceipt = terrain.custom

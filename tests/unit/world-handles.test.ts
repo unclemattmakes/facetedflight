@@ -182,7 +182,8 @@ describe('one owner', () => {
               ts.isSourceFile(p.parent.parent.parent.parent)
             )
           ) {
-            name = p.parent.name.text
+            // A phase of the frame (DEV-975) is the frame: it was one function.
+            name = /^phase[A-Z]/.test(p.parent.name.text) ? 'frame' : p.parent.name.text
           }
         }
         return name

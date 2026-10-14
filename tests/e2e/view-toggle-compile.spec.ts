@@ -106,6 +106,34 @@ const snapshot = (page: Page): Promise<Snapshot> =>
     return { programs: w.__ff2.render.renderer.info.programs.length, pointLights, interior }
   })
 
+/**
+ * Wait for the state a sleep used to stand for, as a CONJUNCTION: `ready()` holds
+ * (the ride is over; the view has flipped) AND the transition is not running
+ * (`fade().busy`) AND the program count has not moved across two reads 750 ms
+ * apart, twice running. Any one of the three alone would let a late compile
+ * land after the snapshot that is meant to catch it.
+ */
+const settle = async (page: Page, what: string, ready: () => Promise<boolean>): Promise<void> => {
+  let last = -1
+  let steady = 0
+  await expect
+    .poll(
+      async () => {
+        const { programs } = await snapshot(page)
+        const idle = await page.evaluate(
+          () =>
+            !(globalThis as unknown as { __ff2: { fade: () => { busy: boolean } } }).__ff2.fade()
+              .busy,
+        )
+        steady = idle && (await ready()) && programs === last ? steady + 1 : 0
+        last = programs
+        return steady
+      },
+      { timeout: 90_000, intervals: [750], message: what },
+    )
+    .toBeGreaterThanOrEqual(2)
+}
+
 test.describe('@gpu changing view compiles nothing — DEV-186', () => {
   test.setTimeout(420_000)
 
@@ -143,7 +171,13 @@ test.describe('@gpu changing view compiles nothing — DEV-186', () => {
     // Let the launch ride finish and the world settle: the ride compiles the
     // shaft's own variants (its lamp is a third point light) and those are
     // DEV-117's subject, not this one.
-    await page.waitForTimeout(25_000)
+    await settle(page, 'the ride is over and the programs have settled', async () =>
+      page.evaluate(
+        () =>
+          (globalThis as unknown as { __ff2: { launch: () => { phase: string } } }).__ff2.launch()
+            .phase === 'flying',
+      ),
+    )
 
     const first = await snapshot(page)
     // The premise. If the cockpit's lamps are not lit there is nothing here to
@@ -164,11 +198,19 @@ test.describe('@gpu changing view compiles nothing — DEV-186', () => {
     // `goToScreen` ignores a second press while one is running, so the waits
     // below are not padding.
     await hold(page, 'v')
-    await page.waitForTimeout(3_000)
+    await settle(
+      page,
+      'the camera is outside and the programs have settled',
+      async () => !(await snapshot(page)).interior,
+    )
     const third = await snapshot(page)
 
     await hold(page, 'v')
-    await page.waitForTimeout(3_000)
+    await settle(
+      page,
+      'the camera is back in the seat and the programs have settled',
+      async () => (await snapshot(page)).interior,
+    )
     const back = await snapshot(page)
 
     console.info(

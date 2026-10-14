@@ -11,15 +11,12 @@
 // the §6 rule 3 bag).
 
 import * as THREE from 'three'
-import type { AudioSystem } from '@/audio'
 import { CUE_IDS } from '@/audio'
 import type { EditorBootPhase, ResultsBoardReport, ShareReport } from '@/boot/app/types'
 import type { World } from '@/boot/app/world/switch'
-import type { Capabilities } from '@/boot/capability-gate'
 import type { TitleVr } from '@/boot/enter-vr'
 import type { Feel } from '@/boot/feel'
 import type { GpuTimer } from '@/boot/gpu-timer'
-import type { LoadProgress } from '@/boot/load-progress'
 import type { PerfHud } from '@/boot/perf-hud'
 import type { BakedLightRung, EditionThirdPerson } from '@/content/edition-schema'
 import type { GameMode, Level } from '@/content/level-schema'
@@ -34,7 +31,6 @@ import type { Exhibition, ExhibitionOptions, ExhibitionPhase } from '@/game/tv/e
 import type { TvView } from '@/game/tv/tv-view'
 import type { KeyboardSource } from '@/input/keyboard'
 import type { MouseLook } from '@/input/look'
-import type { TouchControls } from '@/input/touch-overlay'
 import type { BakedLight, BakedLightReport } from '@/render/baked-light'
 import type { Bloom } from '@/render/bloom'
 import type { ControlsDevice } from '@/render/controls-menu'
@@ -71,7 +67,6 @@ import type { PauseOption, PausePage } from '@/render/pause'
 import { panelHeight, rowBand, rowCentreLocalY, TOP_LOCAL_Y, WIDTH } from '@/render/pause'
 import type { PerfPlate } from '@/render/perf-plate'
 import { isPointLightScoped, pointLightScopeOf } from '@/render/point-light-scope'
-import type { Renderer } from '@/render/renderer'
 import type { StandingStatus } from '@/render/results'
 import { codeKeyCentre } from '@/render/room-code-plate'
 import type { SceneTint } from '@/render/scene-tint'
@@ -90,14 +85,13 @@ import { propPenetrationAt, setPropCleared } from '@/sim/props/collision'
 import { terrainHeightAt } from '@/sim/terrain/height-field'
 import { HOVERJET_GROUND } from '@/sim/terrain-collision'
 import type { FrameRecorder } from '../perf-recorder'
-import type { PerfSurface } from '../perf-surface'
 import { renderCensus, rowKey } from '../render-census'
-import { BUILD_MODE, BUILD_VERSION } from '../version'
 import type { createEditorHost } from './editor-host'
 import type { createLessonHost } from './flight/lesson'
 import type { createLetterPlate } from './hangar/letter-plate'
 import type { createMenus } from './hangar/menus'
 import type { OptionsPlate } from './hangar/options-plate'
+import { createPageHandle, type PageHandleCtx } from './page-handle'
 import type { PauseState } from './pause-state'
 import { EDITOR_RUN, SNAP_AT_PIN } from './pins'
 import type { createResults } from './results'
@@ -107,9 +101,11 @@ import type { RunState } from './run-state'
 import type { createScreenRouter } from './screen-router'
 import type { TitleOptionsPlate } from './title/options-plate'
 import type { App, LapsReport } from './types'
-import { customGroundReceipt } from './world/build'
+import type { UpdateRates } from './update-rates'
+import { customGroundReceipt, terrainBakeFields, terrainBakeReceipt } from './world/build'
 import type { createLoadingHost } from './world/loading'
 import type { createWorldProps } from './world/props'
+import { terrainBakeDigest } from './world/terrain-bake-step'
 import type { WorldHandles } from './world-handles'
 
 // A LOCAL const on purpose: the frame loop narrows it through an aliased
@@ -119,17 +115,13 @@ import type { WorldHandles } from './world-handles'
 const SNAP_AT = SNAP_AT_PIN
 
 /** What `createDebugHandle` reads from the closure: getters, each read live (APP-SPLIT §3's `ctx`). */
-export interface DebugHandleCtx {
+export interface DebugHandleCtx extends PageHandleCtx {
   readonly RUNNING_MODE: GameMode
-  readonly audio: AudioSystem
   readonly bakedLight: BakedLight
   readonly bloom: Bloom
   readonly boundary: BoundaryState
   readonly boundarySpec: BoundarySpec | null
   readonly canvas: HTMLCanvasElement
-  readonly capabilities: Capabilities
-  /** APP-SPLIT: bag, owner in phase 3 (written here). */
-  cardLifted: boolean
   /** APP-SPLIT: bag, owner in phase 3 (written here). */
   cockpitFirstOn: boolean
   readonly codePlateState: (device?: ControlsDevice) => {
@@ -209,7 +201,6 @@ export interface DebugHandleCtx {
   readonly fade: Fade
   readonly feel: Feel
   readonly gpu: GpuTimer
-  readonly guardedFrame: (time: number, xrFrame?: XRFrame | undefined) => void
   readonly handles: WorldHandles
   readonly hangar: HangarArt | null
   /** APP-SPLIT: bag, owner in phase 3 (written here). */
@@ -227,10 +218,8 @@ export interface DebugHandleCtx {
   readonly lessonHost: ReturnType<typeof createLessonHost>
   readonly letterPlate: ReturnType<typeof createLetterPlate>
   readonly level: Level
-  readonly loading: LoadProgress
   readonly loadingHost: ReturnType<typeof createLoadingHost>
   readonly loadingScene: LoadingScene
-  readonly maybeReveal: () => void
   readonly menuScene: THREE.Scene<THREE.Object3DEventMap>
   readonly menus: ReturnType<typeof createMenus>
   readonly mission: MissionState
@@ -243,22 +232,17 @@ export interface DebugHandleCtx {
   readonly perf: FrameRecorder
   readonly perfHud: PerfHud | null
   readonly perfPlate: PerfPlate | null
-  readonly perfSurface: PerfSurface | null
   readonly refreshBakedLight: () => BakedLightReport
-  readonly render: Renderer
   readonly staticScene: StaticScene
+  readonly updateRates: UpdateRates
   readonly results: ReturnType<typeof createResults>
   readonly resultsBoardReport: () => ResultsBoardReport | null
-  /** APP-SPLIT: bag, owner in phase 3 (written here). */
-  revealRequested: boolean
   readonly rideSpec: LaunchSpec | null
   readonly roomCore: ReturnType<typeof createRoomCore>
   readonly roomProbe: () => RoomProbe | null
   readonly roomWatch: ReturnType<typeof createRoomWatch>
   readonly router: ReturnType<typeof createScreenRouter>
   readonly run: RunState
-  /** APP-SPLIT: bag, owner in phase 3 (written here). */
-  running: boolean
   readonly sceneTint: SceneTint
   readonly setChunkBatch: (on: boolean) => unknown
   readonly shareReport: () => ShareReport
@@ -275,7 +259,6 @@ export interface DebugHandleCtx {
   /** DEV-882: the title's OPTIONS plate, for the probe's row positions. */
   readonly titleOptions: TitleOptionsPlate
   readonly titleVr: TitleVr
-  readonly touch: TouchControls
   readonly tvControls: TvControls
   readonly tvPanel: TvPanel
   readonly tvPanelInput: TvPanelInput
@@ -302,15 +285,12 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     fade,
     feel,
     gpu,
-    guardedFrame,
     handles,
     keyboard,
     lessonHost,
     letterPlate,
-    loading,
     loadingHost,
     loadingScene,
-    maybeReveal,
     menuScene,
     menus,
     mission,
@@ -321,7 +301,6 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     perf,
     perfHud,
     perfPlate,
-    perfSurface,
     refreshBakedLight,
     render,
     results,
@@ -366,59 +345,9 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
       return ctx.world
     },
     mission,
-    touch,
-    perfSurface,
-    /**
-     * Lift the curtain (L3/L4); `main.ts` asks at boot (DEV-279).
-     *
-     * The canvas has been solid black since boot, so this is the visitor's
-     * ARRIVAL rather than a cut: the title valley appears instead of replacing
-     * a half-built one. It does not lift until the first world has settled,
-     * which is the guarantee L1's button gating only makes likely.
-     */
-    showWorld() {
-      ctx.revealRequested = true
-      maybeReveal()
-    },
-    reveal() {
-      ctx.revealRequested = true
-      ctx.cardLifted = true
-      maybeReveal()
-      // ── Build the AudioContext HERE, under the curtain ──────────────────
-      //
-      // `audio/webaudio.ts` constructs no `AudioContext` until the first
-      // `resume()`, and that is correct — a browser blocks one created without
-      // a user gesture behind it. The gesture it waited for was the LAUNCH
-      // confirm (`audio.resume()` on every confirm, and the comment there says
-      // *"`resume()` is idempotent and cheap"*). True of every call except the
-      // first, which builds the device:
-      //
-      //   rookie_01_jumpSeat   AudioContext  37.6 ms over 64 consecutive samples
-      //   rookie_01_hoverJet   AudioContext  40.8 ms over 70 consecutive samples
-      //
-      // measured with `tests/e2e/frame-profile.spec.ts`, both ~230 ms after the
-      // profiler armed, i.e. inside the frame that handles the confirm. It is
-      // synchronous, so `void`ing the promise does not move it off the frame.
-      //
-      // **It was never a JumpSeat bug, though that is where it showed.** The
-      // per-mission survey found it on six of six JumpSeats and none of seven
-      // HoverJets — because a HoverJet rides a lift up the shaft before its
-      // recorder arms and the JumpSeat launches straight off a pad, so the same
-      // 40 ms lands before the window on one and inside it on the other.
-      //
-      // The player's first key, click or touch is a user gesture too, and it
-      // is the FIRST one the game gets (until DEV-557 it was the landing
-      // card's Start click). `reveal()` runs synchronously inside that event's
-      // handler (`main.ts`'s `onGesture`), so the context builds on the title,
-      // before anybody is flying. Strictly additive: the
-      // confirm still resumes, because a context can be suspended again at any
-      // time by a background tab or a headset coming off, and a second
-      // `resume()` really is cheap.
-      void audio.resume()
-    },
-    onLoadProgress(listener) {
-      loading.subscribe(listener)
-    },
+    // touch, perfSurface, showWorld, reveal, onLoadProgress, start: the
+    // members `main.ts` calls, which ship (`page-handle.ts`).
+    ...createPageHandle(ctx),
     /** DEV-471: `?edit=1`'s arrival, for the landing card. */
     onEditorBoot,
     /** The live transition, for the specs. Accessor: `phase` changes every frame. */
@@ -635,6 +564,7 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     // DEV-926 / DEV-927: the vapour cone and the boost shockwave, rebuilt per world.
     swings: () => handles.liveFx?.swings ?? null,
     staticScene: () => ctx.staticScene.report(),
+    updateRates: () => ctx.updateRates.report(),
     /**
      * WHICH page the plate is turned to, and the rows on it as the player
      * meets them. See the interface for the argument; the short version is
@@ -997,6 +927,11 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     orbitLook: () => ctx.lastOrbitLook,
     terrain: () => handles.liveTerrain,
     customGround: () => customGroundReceipt,
+    terrainBake: () => terrainBakeReceipt,
+    terrainBakeDigest: async () =>
+      terrainBakeReceipt && terrainBakeFields
+        ? terrainBakeDigest(terrainBakeReceipt, terrainBakeFields)
+        : null,
     lineClearing: (sweepMetres = 5) => {
       const props = handles.livePropsLive
       if (!props) return null
@@ -1732,17 +1667,6 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
       spring: thirdPersonNow().enabled,
       armLength: springArm.armLength,
     }),
-    start() {
-      ctx.running = true
-      // setAnimationLoop, not requestAnimationFrame: in an XR session the
-      // browser drives frames from the headset's own vsync and rAF is wrong.
-      render.renderer.setAnimationLoop(guardedFrame)
-      console.info(
-        // DEV-600: the public name; "Faceted Flight 2" is the sequel's, and this is
-        // the first line anyone who opens the console reads.
-        `Faceted Flight: 10th Anniversary Edition ${BUILD_VERSION} (${BUILD_MODE}) · route: ${capabilities.route}`,
-      )
-    },
     stop() {
       ctx.running = false
       render.renderer.setAnimationLoop(null)

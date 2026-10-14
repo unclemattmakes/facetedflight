@@ -61,6 +61,7 @@ import type { GpuTimer } from '../gpu-timer'
 import type { FrameRecorder } from '../perf-recorder'
 import type { PerfSurface } from '../perf-surface'
 import type { Census } from '../render-census'
+import type { RateReport } from './update-rates'
 
 /** `App.laps()`: DEV-371's state, as a spec reads it. */
 export interface LapsReport {
@@ -406,6 +407,8 @@ export interface App {
   } | null
   /** DEV-937: how many objects are frozen, any a check had to hand back, and the lift's state. */
   staticScene(): StaticReport
+  /** DEV-976: every declared update rate and how many frames it ran and skipped. */
+  updateRates(): Readonly<Record<string, RateReport>>
   /**
    * DEV-926 / DEV-927: the vapour cone's strength and pieces in the air, and
    * shockwaves thrown and pieces in the air. Null for a world built without
@@ -563,6 +566,15 @@ export interface App {
   terrain(): { terrain: LoadedTerrain; ocean: LoadedTerrain | null } | null
   /** DEV-489: the last world build's custom-island receipt, or null for a shipped island. */
   customGround(): Record<string, number | string> | null
+  /** DEV-955: where the last world build's terrain bakes came from and the rows of march it ran. */
+  terrainBake(): import('./world/terrain-bake-step').TerrainBakeReceipt | null
+  /** DEV-955: sha256 of each field as its shipped file would hold it (the manifest's sha256). */
+  terrainBakeDigest(): Promise<{
+    sun: string | null
+    sky: string | null
+    /** sha256 of the half-float RGBA the GPU gets for the sky field (the gate; `sky` is informational). */
+    skyTexture: string | null
+  } | null>
   /**
    * DEV-502: the course clearing on this world's scatter, as the WORLD has it:
    * the last mask's receipt; how many scatter props are masked, and of those

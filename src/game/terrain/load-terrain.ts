@@ -73,7 +73,12 @@ import {
   type FacetedTerrainParams,
   generateChunk,
 } from '@/sim/terrain/faceted'
-import { buildHeightField, type HeightField, maxFieldHeight } from '@/sim/terrain/height-field'
+import {
+  buildHeightField,
+  type HeightField,
+  type HeightFieldTransform,
+  maxFieldHeight,
+} from '@/sim/terrain/height-field'
 import {
   createMapSampler,
   type ImageData8,
@@ -159,6 +164,9 @@ const MAP_PATHS: Record<string, { height: string; color: string }> = {
  * loading a terrain.
  */
 export const terrainHeightPath = (key: string): string | null => MAP_PATHS[key]?.height ?? null
+
+/** The colour map's bucket path, the other half of the pair. DEV-955: the content-time bake reads both. */
+export const terrainColorPath = (key: string): string | null => MAP_PATHS[key]?.color ?? null
 
 /**
  * The jitter seed.
@@ -608,6 +616,75 @@ export const highWaterOf = (
 
 export const terrainLocalPosition = (key: string): readonly number[] =>
   terrainEntry(key).transform?.position ?? [0, 0, 0]
+
+/**
+ * The terrain's own local position PLUS its environment root, Unity space.
+ * Split out of `loadTerrain` (DEV-955) so the content-time terrain bake places
+ * the collision field by these lines and not by a copy of them.
+ */
+export const donorTerrainPosition = (entry: {
+  readonly transform?: {
+    readonly position: readonly number[]
+    readonly envRoot?: readonly number[]
+  }
+}): number[] => {
+  const localPos = entry.transform?.position ?? [0, 0, 0]
+  const envRoot = entry.transform?.envRoot ?? [0, 0, 0]
+  return [
+    (localPos[0] as number) + (envRoot[0] as number),
+    (localPos[1] as number) + (envRoot[1] as number),
+    (localPos[2] as number) + (envRoot[2] as number),
+  ]
+}
+
+/** DEV-500: a course's water moves its sea plate; both surfaces read the lifted position. */
+export const liftedPosition = (placed: readonly number[], lift: number): readonly number[] =>
+  lift === 0 ? placed : [placed[0] as number, (placed[1] as number) + lift, placed[2] as number]
+
+/** The collision field's transform for a terrain placed at `terrainPos`. */
+export const fieldTransformAt = (
+  entry: { readonly transform?: { readonly scale: readonly number[] } },
+  terrainPos: readonly number[],
+  worldOffset: readonly number[],
+): HeightFieldTransform => ({
+  // SIM (Unity) space, and it has to include the level's worldOffset.
+  //
+  // The RENDER group goes to `(wo.x + tp.x, wo.y + tp.y, wo.z - tp.z)` in
+  // three space. The sim is that mirrored in z, so its origin is
+  // `(wo.x + tp.x, wo.y + tp.y, tp.z - wo.z)`: note the z term flips which
+  // of the two is subtracted. Leaving `wo` out entirely puts the collision
+  // surface 2 km from the terrain you can see, and the ship sails through the
+  // island without ever finding it.
+  position: [
+    (worldOffset[0] as number) + (terrainPos[0] as number),
+    (worldOffset[1] as number) + (terrainPos[1] as number),
+    (terrainPos[2] as number) - (worldOffset[2] as number),
+  ],
+  scale: (entry.transform?.scale ?? [1, 1, 1]) as number[],
+})
+
+/**
+ * The collision field and colour sampler a SHIPPED land key gives under a
+ * level's `worldOffset`, from its map images alone. `loadTerrain` does the same
+ * with the same pieces; this is the form a Node tool can run (DEV-955).
+ */
+export const shippedLandFor = (
+  key: string,
+  heightImg: ImageData8,
+  colorImg: ImageData8,
+  worldOffset: readonly number[],
+  lift = 0,
+): { heightField: HeightField; colorMap: MapSampler } => {
+  const entry = terrainEntry(key)
+  const params = terrainParams(key)
+  const height = importUnityTexture(heightImg)
+  const colorMap = importUnityTexture(colorImg)
+  const terrainPos = liftedPosition(donorTerrainPosition(entry), lift)
+  return {
+    heightField: buildHeightField(height, params, fieldTransformAt(entry, terrainPos, worldOffset)),
+    colorMap,
+  }
+}
 
 export const terrainParams = (key: string): FacetedTerrainParams => {
   const t = terrainEntry(key)
@@ -1151,40 +1228,22 @@ export const loadTerrain = async (
   //
   // `tests/unit/terrain-env-root.test.ts` proves the sum against world positions
   // measured through a different code path entirely (the scene flattener).
-  const localPos = entry.transform?.position ?? [0, 0, 0]
-  const envRoot = entry.transform?.envRoot ?? [0, 0, 0]
-  const donorPos = [
-    (localPos[0] as number) + (envRoot[0] as number),
-    (localPos[1] as number) + (envRoot[1] as number),
-    (localPos[2] as number) + (envRoot[2] as number),
-  ]
+  const donorPos = donorTerrainPosition(entry)
   // DEV-489: a custom island is CENTRED on the donor's land, from the sum just
   // made rather than a second copy of it (`customTerrainLocal`).
   const placed = custom ? customTerrainLocal(custom, donorPos) : donorPos
   // DEV-500: a course's water moves its sea plate; both surfaces below read `terrainPos`.
   const lift = options.lift ?? 0
-  const terrainPos =
-    lift === 0 ? placed : [placed[0] as number, (placed[1] as number) + lift, placed[2] as number]
+  const terrainPos = liftedPosition(placed, lift)
   const worldOffset = options.worldOffset ?? [0, 0, 0]
   // The COLLISION surface: the same heightmap, at the same grid, WITHOUT the
   // jitter the mesh gets. `tp`/`ts` below are the terrain's Unity-space
   // transform, which is what puts mesh space into the world.
-  const heightField = buildHeightField(height, params, {
-    // SIM (Unity) space, and it has to include the level's worldOffset.
-    //
-    // The RENDER group goes to `(wo.x + tp.x, wo.y + tp.y, wo.z - tp.z)` in
-    // three space. The sim is that mirrored in z, so its origin is
-    // `(wo.x + tp.x, wo.y + tp.y, tp.z - wo.z)` — note the z term flips which
-    // of the two is subtracted. Leaving `wo` out entirely puts the collision
-    // surface 2 km from the terrain you can see, and the ship sails through the
-    // island without ever finding it.
-    position: [
-      (worldOffset[0] as number) + (terrainPos[0] as number),
-      (worldOffset[1] as number) + (terrainPos[1] as number),
-      (terrainPos[2] as number) - (worldOffset[2] as number),
-    ],
-    scale: (entry.transform?.scale ?? [1, 1, 1]) as number[],
-  })
+  const heightField = buildHeightField(
+    height,
+    params,
+    fieldTransformAt(entry, terrainPos, worldOffset),
+  )
   const perSide = chunkPerSide(params)
 
   const group = new THREE.Group()

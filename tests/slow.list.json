@@ -6,6 +6,7 @@
     "tests/unit/lift-seal.test.ts",
     "tests/unit/prop-hash-reach.test.ts",
     "tests/unit/spire-line-attribution.test.ts",
+    "tests/unit/terrain-bake-shipped.test.ts",
     "tests/unit/tv-framing.test.ts",
     "tests/unit/variant-overclocked.test.ts"
   ]

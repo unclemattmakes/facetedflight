@@ -103,6 +103,43 @@ export const sunLitGrid = (sun: SunHeightField, softMetres: number): Float32Arra
   return out
 }
 
+/**
+ * The sky-visibility bake proper, from the albedo grid on: radiance, then the
+ * horizon march. ONE body for the runtime bake below and for the content-time
+ * bake (`terrain-bake.ts`, DEV-955), so the file on disk is this function's
+ * output and not a second implementation's.
+ */
+export function* skyFieldSteps(
+  land: HeightField,
+  albedo: Float32Array,
+  sun: SunHeightField,
+  softMetres: number,
+): Steps<SkyVisibilityField> {
+  const radiance = buildSunRadiance(land, sun.towardSun, albedo, sunLitGrid(sun, softMetres))
+  yield 0
+  return yield* skyVisibilitySteps(land, { stride: strideFor(land.vertPerSide) }, radiance)
+}
+
+/**
+ * The half-float RGBA the GPU receives for a sky field: rgb = bounce, a = V.
+ * DEV-955: exported so the byte-identity proof can compare THESE bytes (what is
+ * uploaded) rather than the Float32 field, whose last-bit transcendental
+ * differences between Node's V8 and Chrome's (about 4e-19, on values that are
+ * themselves near zero) cannot survive half-float storage.
+ */
+export const skyTextureData = (f: SkyVisibilityField): Uint16Array => {
+  const m = f.samplesPerSide
+  const data = new Uint16Array(m * m * 4)
+  const b = f.bounce as Float32Array
+  for (let i = 0; i < m * m; i++) {
+    data[i * 4] = THREE.DataUtils.toHalfFloat(b[i * 3] as number)
+    data[i * 4 + 1] = THREE.DataUtils.toHalfFloat(b[i * 3 + 1] as number)
+    data[i * 4 + 2] = THREE.DataUtils.toHalfFloat(b[i * 3 + 2] as number)
+    data[i * 4 + 3] = THREE.DataUtils.toHalfFloat(f.values[i] as number)
+  }
+  return data
+}
+
 const VERTEX_PRELUDE = 'varying vec2 vFf2SkyUv;'
 const VERTEX_HOOK = '#include <begin_vertex>'
 const FRAGMENT_PRELUDE = `#define FF2_SKY_VISIBILITY
@@ -175,6 +212,8 @@ export interface SkyVisibility {
     colorMap: MapSampler | null,
     sun: SunHeightField | null,
     sunColour: THREE.Color | null,
+    /** DEV-955: the albedo grid and/or the field, when the caller already has them. */
+    prior?: SkyBakePrior,
   ): Steps<SkyVisibilityField | null>
   readonly field: SkyVisibilityField | null
   /** Milliseconds the last bake took. */
@@ -189,7 +228,27 @@ interface Pending {
   readonly colorMap: MapSampler
   readonly sun: SunHeightField
   readonly sunColour: THREE.Color
+  /** DEV-955: the albedo grid already taken for the bake key. */
+  readonly albedo?: Float32Array | undefined
+  /** DEV-955: a field baked earlier for these exact inputs. */
+  readonly baked?: SkyVisibilityField | null | undefined
 }
+
+/** DEV-955: what a caller that already paid for the key hands back in, so nothing is done twice. */
+export interface SkyBakePrior {
+  readonly albedo?: Float32Array | undefined
+  readonly baked?: SkyVisibilityField | null | undefined
+}
+
+/** Does the live preset ask for the bake at all? `apply`'s own gate, for a caller deciding whether to fetch one. */
+export const skyBakeWantedBy = (s: {
+  readonly enabled: boolean
+  readonly sky: number
+  readonly bounce: number
+}): boolean => s.enabled && (s.sky > 0 || s.bounce > 0)
+
+export const skyBakeWanted = (editionState: EditionState): boolean =>
+  skyBakeWantedBy(editionState.current.render.skyVisibility)
 
 export const createSkyVisibility = (editionState: EditionState): SkyVisibility => {
   const placeholder = new THREE.DataTexture(
@@ -217,23 +276,13 @@ export const createSkyVisibility = (editionState: EditionState): SkyVisibility =
   function* bakeSteps(w: Pending): Steps<void> {
     const t0 = performance.now()
     const soft = editionState.current.render.sunHeight.softMetres
-    const radiance = buildSunRadiance(
-      w.land,
-      w.sun.towardSun,
-      albedoGrid(w.land, w.colorMap),
-      sunLitGrid(w.sun, soft),
-    )
-    yield 0
-    const f = yield* skyVisibilitySteps(w.land, { stride: strideFor(w.land.vertPerSide) }, radiance)
+    // DEV-955: a field baked at content-build time (or kept from an earlier
+    // load) stands in for the march; the texture below is built from it either way.
+    const f =
+      w.baked ??
+      (yield* skyFieldSteps(w.land, w.albedo ?? albedoGrid(w.land, w.colorMap), w.sun, soft))
     const m = f.samplesPerSide
-    const data = new Uint16Array(m * m * 4)
-    const b = f.bounce as Float32Array
-    for (let i = 0; i < m * m; i++) {
-      data[i * 4] = THREE.DataUtils.toHalfFloat(b[i * 3] as number)
-      data[i * 4 + 1] = THREE.DataUtils.toHalfFloat(b[i * 3 + 1] as number)
-      data[i * 4 + 2] = THREE.DataUtils.toHalfFloat(b[i * 3 + 2] as number)
-      data[i * 4 + 3] = THREE.DataUtils.toHalfFloat(f.values[i] as number)
-    }
+    const data = skyTextureData(f)
     // A preset flip landing while a sliced bake is suspended bakes once more
     // through `apply`; the later of the two wins and the earlier is not leaked.
     texture?.dispose()
@@ -281,7 +330,7 @@ export const createSkyVisibility = (editionState: EditionState): SkyVisibility =
     setWorld(land, colorMap, sun, sunColour) {
       return runSteps(self.setWorldSteps(land, colorMap, sun, sunColour))
     },
-    *setWorldSteps(land, colorMap, sun, sunColour) {
+    *setWorldSteps(land, colorMap, sun, sunColour, prior) {
       texture?.dispose()
       texture = null
       field = null
@@ -290,7 +339,14 @@ export const createSkyVisibility = (editionState: EditionState): SkyVisibility =
       uniforms.uSkyVisSun.value.set(0, 0, 0)
       pending =
         land && colorMap && sun && sunColour && !land.analytic
-          ? { land, colorMap, sun, sunColour: sunColour.clone() }
+          ? {
+              land,
+              colorMap,
+              sun,
+              sunColour: sunColour.clone(),
+              albedo: prior?.albedo,
+              baked: prior?.baked,
+            }
           : null
       // The bake `apply` would run, run HERE a row at a time (DEV-355); `apply`
       // then finds the field built and only writes the uniforms. The gate is

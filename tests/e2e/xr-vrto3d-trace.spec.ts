@@ -50,6 +50,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { startChromeTrace } from './fixtures/chrome-trace'
 import { knownRed } from './fixtures/known-red'
 import { enterVr, loadSettled } from './fixtures/landing'
 import { armPlan, type StageArm, type StageKeys } from './fixtures/stage-arms'
@@ -61,6 +62,8 @@ const MISSION = process.env.VRTO3D_MISSION ?? 'rookie_01_hoverJet'
 const EDITION = process.env.VRTO3D_EDITION ?? 'anniversary'
 const SECONDS = Number(process.env.VRTO3D_SECONDS ?? '60')
 const OUT_DIR = process.env.VRTO3D_DIR ?? path.join('perf-out', 'vrto3d')
+/** DEV-970: where to write a Chrome trace of the recorded window; empty means none. */
+const CHROME_TRACE_DIR = process.env.VRTO3D_CHROME_TRACE ?? ''
 
 /**
  * Dotted Anniversary flags to switch OFF for this run, comma separated — the
@@ -1583,9 +1586,16 @@ test.describe('@measure @gpu vrto3d', () => {
     // — state-driven, not event-driven (app.ts). So this waits for the recording
     // to start rather than assuming the click did it.
     await expect.poll(async () => tick(page), { timeout: 180_000 }).toBe('recording')
+    // DEV-970: `VRTO3D_CHROME_TRACE=<dir>` records Chrome's own trace around exactly the
+    // window the in-page recorder covers; reduce it with tools/perf/trace-frame.mjs.
+    const chromeTrace = CHROME_TRACE_DIR ? await startChromeTrace(page) : null
     await expect
       .poll(async () => tick(page), { timeout: (SECONDS + 90) * 1000, intervals: [2000] })
       .toBe('done')
+    if (chromeTrace) {
+      const file = path.join(CHROME_TRACE_DIR, `${MISSION}-${EDITION}-vrto3d.chrome-trace.json`)
+      console.info(`chrome trace: ${await chromeTrace.stop(file)} bytes to ${file}`)
+    }
 
     const summary = await page.evaluate(() => {
       const t = (

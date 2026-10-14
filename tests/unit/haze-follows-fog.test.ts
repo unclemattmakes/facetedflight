@@ -11,7 +11,7 @@
 // is on the one path where the boot fog IS the mission's. DEV-363's sun, in a
 // second system.
 //
-// Two halves, the way `sun-once.test.ts` holds DEV-363:
+// Two halves, the way `tests/e2e/sun-switch.spec.ts` holds DEV-363:
 //
 //  1. **The behaviour of the pair**, with the real fog and a real edition
 //     state: the unsubscribe `attachEditionHaze` returns really does stop the

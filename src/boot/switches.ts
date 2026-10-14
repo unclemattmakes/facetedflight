@@ -54,3 +54,13 @@ export const touchOverride = (query: Query = currentQuery()): boolean | null => 
   if (value === null) return null
   return value !== '0'
 }
+
+/**
+ * `?terrainBake=off` (DEV-955): do not look for a baked terrain shadow or sky
+ * field, in IndexedDB or on disk, and keep nothing; run both marches as they ran
+ * before the bake existed. The fallback a custom course takes anyway, as a switch:
+ * the e2e uses it to bake in the browser and compare to the shipped file, and it is
+ * the first thing to try if a world's far shadow ever looks wrong.
+ */
+export const terrainBakeOff = (query: Query = currentQuery()): boolean =>
+  toParams(query).get('terrainBake') === 'off'

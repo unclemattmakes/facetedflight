@@ -149,4 +149,93 @@ test.describe('@gpu the soundtrack in a real browser', () => {
 
     expect(problems.list(), problems.list().join('\n')).toEqual([])
   })
+
+  // DEV-962: the soundtrack is STREAMED, not decoded to PCM. A decoded track
+  // is raw float samples (about 86 MB for the biggest, twice that across a
+  // crossfade); an element holds the compressed bytes. The observer below only
+  // counts what the page asks Web Audio for, and the flow is the player's.
+  test('DEV-962: a track streams through an element, and GO crossfades into another', async ({
+    page,
+  }) => {
+    const problems = watchPageErrors(page)
+    const warnings: string[] = []
+    page.on('console', (m) => {
+      if (m.type() === 'warning') warnings.push(m.text())
+    })
+    await page.addInitScript(() => {
+      const stats = { decodes: 0, decodedBytes: 0, mediaNodes: 0, mediaSrcs: [] as string[] }
+      ;(globalThis as unknown as { __musicStats: typeof stats }).__musicStats = stats
+      const decode = AudioContext.prototype.decodeAudioData
+      AudioContext.prototype.decodeAudioData = function (
+        this: AudioContext,
+        ...args: Parameters<AudioContext['decodeAudioData']>
+      ) {
+        return decode.apply(this, args).then((b) => {
+          stats.decodes += 1
+          stats.decodedBytes += b.length * b.numberOfChannels * 4
+          return b
+        })
+      } as typeof decode
+      const media = AudioContext.prototype.createMediaElementSource
+      AudioContext.prototype.createMediaElementSource = function (
+        this: AudioContext,
+        element: HTMLMediaElement,
+      ) {
+        stats.mediaNodes += 1
+        stats.mediaSrcs.push(element.currentSrc)
+        return media.call(this, element)
+      }
+    })
+    const stats = () =>
+      page.evaluate(
+        () =>
+          (
+            globalThis as unknown as {
+              __musicStats: {
+                decodes: number
+                decodedBytes: number
+                mediaNodes: number
+                mediaSrcs: string[]
+              }
+            }
+          ).__musicStats,
+      )
+
+    await page.goto('/?autopilot=1&xr=off&mission=int_01_hoverJet')
+    await firstPress(page)
+    await missionReady(page, 180_000)
+    await focusCanvas(page)
+    await confirmPress(page)
+    await expect(page.locator('body')).toHaveAttribute('data-audio', 'running', {
+      timeout: 20_000,
+    })
+    await expect.poll(async () => (await probe(page)).seconds, { timeout: 120_000 }).not.toBeNull()
+    const first = await probe(page)
+    expect(first.seconds ?? 0).toBeGreaterThan(DECODED_FLOOR_SECONDS)
+    const afterFirst = await stats()
+    // The count, for whoever reads the run: PCM bytes the page decoded, which
+    // is what the heap held for music (0 when streaming).
+    console.log(`music memory after the first track: ${JSON.stringify(afterFirst)}`)
+    expect(afterFirst.decodes, 'the first track was decoded to PCM instead of streamed').toBe(0)
+    expect(afterFirst.decodedBytes).toBe(0)
+    expect(afterFirst.mediaNodes).toBe(1)
+
+    // GO brings in a NEW track over the lift's (DEV-423): a second element,
+    // alongside the first for the length of the cut, still nothing decoded.
+    await expect
+      .poll(async () => (await probe(page)).track, {
+        // GO is the end of the lift ride and the countdown; measured at about
+        // 150 s from the first track on a shared box, so well clear of it.
+        timeout: 300_000,
+        message: 'GO never brought in a second track',
+      })
+      .not.toBe(first.track)
+    await expect.poll(async () => (await stats()).mediaNodes, { timeout: 30_000 }).toBe(2)
+    const afterGo = await stats()
+    expect(afterGo.decodes).toBe(0)
+    expect(new Set(afterGo.mediaSrcs).size, 'two different files streamed').toBe(2)
+    expect(warnings.filter((w) => w.includes('would not stream'))).toEqual([])
+    expect(warnings.filter((w) => w.includes('no playable tracks'))).toEqual([])
+    expect(problems.list(), problems.list().join('\n')).toEqual([])
+  })
 })

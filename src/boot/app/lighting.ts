@@ -38,8 +38,8 @@ export interface FogSwitches {
  * Called once, before `shellChildren` is captured, so `teardownWorld` never
  * removes it and every world is lit — and shadowed — by the same light object.
  * `applyLighting` aims it per level; the frame loop swaps its direction between
- * the title and the mission. `tests/unit/sun-once.test.ts` holds that this is
- * the only `DirectionalLight` the boot builds.
+ * the title and the mission. `tests/e2e/sun-switch.spec.ts` asks the frame
+ * that there is exactly one directional light after a course switch (DEV-363).
  */
 export const createSun = (scene: THREE.Scene): THREE.DirectionalLight => {
   const light = new THREE.DirectionalLight(0xffffff, 0)

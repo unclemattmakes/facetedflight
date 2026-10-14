@@ -67,14 +67,24 @@ test.describe('DEV-143 — the boost tank is wired to the stick', () => {
     // two-point "later < start" can no longer say it drained: sample it, and
     // ask for a fall between two readings.
     const seen: number[] = [start.boost.energy]
-    for (let i = 0; i < 48; i++) {
-      await page.waitForTimeout(250)
-      seen.push((await probe(page)).boost.energy)
-    }
+    const fell = (): boolean => seen.some((e, i) => i > 0 && e < (seen[i - 1] as number))
     // THE ASSERTION. Not "the module exists": the number went DOWN while the
     // game was being played by something holding the same stick a person holds.
-    const fell = seen.some((e, i) => i > 0 && e < (seen[i - 1] as number))
-    expect(fell, `tank readings: ${seen.map((e) => e.toFixed(1)).join(' ')}`).toBe(true)
+    // Polled on that state (a fall between two readings), so it ends the moment
+    // the tank falls instead of sleeping 12 s for it; 12 s is only the limit.
+    try {
+      await expect
+        .poll(
+          async () => {
+            seen.push((await probe(page)).boost.energy)
+            return fell()
+          },
+          { timeout: 12_000, intervals: [250] },
+        )
+        .toBe(true)
+    } catch (e) {
+      throw new Error(`tank readings: ${seen.map((r) => r.toFixed(1)).join(' ')}\n${e}`)
+    }
     expect(problems.list()).toEqual([])
   })
 
@@ -88,12 +98,28 @@ test.describe('DEV-143 — the boost tank is wired to the stick', () => {
     // DEV-452 (D35): a player's Classic is a look and flies Anniversary's
     // rules, tank included; 2016's rules are `?rules=classic`, the reference.
     await flyTo(page, `/?mission=${MISSION}&edition=classic&rules=classic&${OPEN}`)
-    await page.waitForTimeout(12_000)
-    const p = await probe(page)
+    // A negative claim ("never moves") has no state to wait FOR: the one that
+    // would make it worth anything is "the autopilot held boost", and under
+    // rules=classic `boost.lit` is never true (a probe of this run read '.100'
+    // 56 times running), so there is nothing to poll on but time. Anniversary's
+    // tank is empty after 6.25 s of boost, so the old sleep took 12 s. It is now
+    // 48 readings 250 ms apart (the same 12 s), each checked, so a dip anywhere in
+    // the window fails it rather than only a dip at the final instant.
+    const readings: Array<{ energy: number; lockout: number }> = []
+    await expect
+      .poll(
+        async () => {
+          const r = (await probe(page)).boost
+          readings.push({ energy: r.energy, lockout: r.lockout })
+          return readings.length
+        },
+        { timeout: 40_000, intervals: [250], message: 'readings of the tank' },
+      )
+      .toBeGreaterThanOrEqual(48)
     // Within one tick's burn of full, for ever. `energy.ts`'s header and
     // `tests/unit/energy.test.ts` explain the sawtooth; here it is in the game.
-    expect(p.boost.energy).toBeGreaterThan(99)
-    expect(p.boost.lockout).toBe(0)
+    expect(Math.min(...readings.map((r) => r.energy))).toBeGreaterThan(99)
+    expect(Math.max(...readings.map((r) => r.lockout))).toBe(0)
     expect(problems.list()).toEqual([])
   })
 })
@@ -115,7 +141,17 @@ test.describe('DEV-144 — the energy race is a mode you can select', () => {
 
     const start = await probe(page)
     expect(start.mode).toBe('race')
-    await page.waitForTimeout(20_000)
+    // Waits for the two things it asserts, so it ends when the autopilot has
+    // spent and paid, not after a fixed 20 s; 40 s is only the limit.
+    await expect
+      .poll(
+        async () => {
+          const r = (await probe(page)).race
+          return r.drained > 0 && r.paid > 0
+        },
+        { timeout: 40_000, intervals: [250] },
+      )
+      .toBe(true)
     const later = await probe(page)
     // The tank is being SPENT — the DEV-069 assertion, in the mode that dies
     // of it.

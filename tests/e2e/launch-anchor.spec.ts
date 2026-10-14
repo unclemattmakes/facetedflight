@@ -77,7 +77,19 @@ test.describe('@gpu the launch elevator', () => {
         { timeout: 90_000, intervals: [500] },
       )
       .toBe('flying')
-    await page.waitForTimeout(15_000)
+    // What 15 s stood for is "the ship has flown away": wait for that state (the
+    // premise asserted below), so it ends the moment the ship is 500 m from where
+    // it started, and fails with the distance if it never gets there.
+    await expect
+      .poll(
+        async () => {
+          const s = (await worldPositions(page)).ship
+          const e = before.elevator
+          return s && e ? Math.hypot(s.x - e.x, s.y - e.y, s.z - e.z) : 0
+        },
+        { timeout: 60_000, intervals: [250], message: 'the ship flew away from the elevator' },
+      )
+      .toBeGreaterThan(500)
 
     const after = await worldPositions(page)
     // Narrowed rather than cast: a null here means the probe found nothing,

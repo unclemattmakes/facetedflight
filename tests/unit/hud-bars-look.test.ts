@@ -23,7 +23,6 @@ import { type Edition, editionFeatures } from '@/content/edition-schema'
 import { EDITION_KEY_CLASS, lookOnRules } from '@/content/edition-split'
 import anniversaryJson from '../../content/editions/anniversary.json'
 import classicJson from '../../content/editions/classic.json'
-import { appSourceThroughCtx, codeOnly } from './helpers/app-source'
 
 const ANNIVERSARY = anniversaryJson as unknown as Edition
 const CLASSIC = classicJson as unknown as Edition
@@ -44,13 +43,7 @@ describe('hud.bars is the look’s two bars (DEV-791)', () => {
     expect(worn.gameplay.energy.enabled).toBe(true)
   })
 
-  it('is read by the app where it builds the combo and the HoverJet’s tank', () => {
-    const code = codeOnly(appSourceThroughCtx()).replace(/\s+/g, ' ')
-    expect(code).toMatch(
-      /chain: editionState\.current\.gameplay\.chainMeter\.enabled && editionState\.current\.hud\.bars\.enabled \?/,
-    )
-    expect(code).toMatch(
-      /editionState\.current\.gameplay\.energy\.enabled && editionState\.current\.hud\.bars\.enabled && level\.vehicle === 'hoverjet'/,
-    )
-  })
+  // Removed (DEV-967): "the app reads the flag where it builds the combo and the tank", two regexes
+  // over the exact expressions in the boot closure. They failed on any rewording and proved no pixel.
+  // The painter's half stays held by hud-dash.test.ts ("Classic draws 2016's five words and nothing else").
 })

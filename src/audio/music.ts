@@ -92,6 +92,12 @@
 // milliseconds once per track per session. The compressed file is what the HTTP
 // cache holds, and that is the right place for it.
 //
+// DEV-962 took the next step: where the browser allows it the backend no longer
+// decodes a track at all. It streams the file through an <audio> element
+// routed into the same gain and bus (`webaudio.ts`), so a playing track costs
+// the compressed bytes the element buffers and a crossfade is two elements. The
+// decode path above is the fallback, for a device that refuses to stream.
+//
 // **3. A missing track degrades to silence and then to the next track.** A
 // `loadMusic` that answers `null` — 404, bad codec, network gone, `?audio=off`
 // — warns once for that src and advances. Bounded by the track count, so a

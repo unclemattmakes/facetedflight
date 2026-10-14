@@ -152,6 +152,22 @@ const flyUntilRunning = async (page: Page, url: string) => {
     .toBeGreaterThan(mark)
 }
 
+/**
+ * Wait for the state a sleep used to stand for: poll the probe until `ok` holds,
+ * and say which condition it was if it never does. The assertions that follow a
+ * wait read exactly this state, so a wait on it ends when they can pass.
+ */
+const until = async (
+  page: Page,
+  message: string,
+  ok: (p: Probe) => boolean,
+  timeout = 20_000,
+): Promise<void> => {
+  await expect
+    .poll(async () => ok(await probe(page)), { timeout, intervals: [100], message })
+    .toBe(true)
+}
+
 const SHOT_DIR = process.env.CAMERA_SHOT_DIR
 
 const shoot = async (page: Page, name: string): Promise<void> => {
@@ -183,8 +199,17 @@ test.describe('@gpu CHANGE VIEW — the third-person camera', () => {
     await holdKey(page, 'KeyV')
     // The flip happens under the 0.12 s curtain, so poll rather than assert.
     await expect.poll(async () => (await probe(page)).live, { timeout: 5_000 }).toBe(true)
-    // Let the arm settle for a moment, then measure.
-    await page.waitForTimeout(1_500)
+    // Let the arm settle, then measure: wait for every fact the assertions below read.
+    await until(
+      page,
+      'the spring arm is out behind the ship, the hull on, the HUD on the lens',
+      (p) =>
+        p.spring &&
+        p.distance > ANNIVERSARY_ARM * 0.8 &&
+        p.cockpitVisible === false &&
+        p.hullColour === true &&
+        /camera/i.test(p.hudParent ?? ''),
+    )
     const out = await probe(page)
     expect(out.spring).toBe(true)
     // Behind the ship by the arm, give or take the lag and the pivot.
@@ -202,9 +227,11 @@ test.describe('@gpu CHANGE VIEW — the third-person camera', () => {
     await shoot(page, 'chase-early')
 
     // Two more frames as the autopilot gets going: the row's three speeds.
-    await page.waitForTimeout(6_000)
+    // Waits for the speed to actually rise (3 m/s over the first frame's), as the
+    // photographs want, rather than for 14 s of wall clock.
+    await until(page, 'the autopilot has sped up', (p) => p.speed > out.speed + 3, 40_000)
     await shoot(page, 'chase-mid')
-    await page.waitForTimeout(8_000)
+    await until(page, 'the autopilot has sped up again', (p) => p.speed > out.speed + 6, 40_000)
     const fast = await probe(page)
     await shoot(page, 'chase-fast')
     expect(fast.live).toBe(true)
@@ -213,7 +240,15 @@ test.describe('@gpu CHANGE VIEW — the third-person camera', () => {
     // And back into the seat.
     await holdKey(page, 'KeyV')
     await expect.poll(async () => (await probe(page)).live, { timeout: 5_000 }).toBe(false)
-    await page.waitForTimeout(500)
+    await until(
+      page,
+      'the seat is back: the cockpit shown, the hull off, the HUD off the lens',
+      (p) =>
+        p.distance < 2 &&
+        p.cockpitVisible === true &&
+        p.hullColour === false &&
+        !/camera/i.test(p.hudParent ?? ''),
+    )
     const back = await probe(page)
     expect(back.distance).toBeLessThan(2)
     expect(back.cockpitVisible).toBe(true)
@@ -234,7 +269,11 @@ test.describe('@gpu CHANGE VIEW — the third-person camera', () => {
     expect((await probe(page)).edition).toBe('classic')
     await holdKey(page, 'KeyV')
     await expect.poll(async () => (await probe(page)).live, { timeout: 5_000 }).toBe(true)
-    await page.waitForTimeout(1_000)
+    await until(
+      page,
+      '2016’s chase is out behind the ship, the hull on',
+      (p) => !p.spring && p.distance > 12.6 && p.hullVisible === true,
+    )
     const out = await probe(page)
     expect(out.spring).toBe(false)
     // The target is 12.62 m and the damp adds v·0.066 on top, so the camera is
@@ -248,7 +287,21 @@ test.describe('@gpu CHANGE VIEW — the third-person camera', () => {
     // Fly on, and the autopilot speeds up. A TRAIL moves with the speed; the
     // parked pose did not, and could not have passed this.
     const before = await probe(page)
-    await page.waitForTimeout(8_000)
+    // The wait is for the CAMERA to have followed the speed, not just for the speed
+    // to move: the arm damps (v * 0.066), so at the first frame past 10 m/s its
+    // distance still lags and reads the other way (seen red once in three runs).
+    // So: the speed moved AND the distance went the same way, or 8 mission seconds
+    // went by, which is the old sleep and leaves the assertion below as it was.
+    await until(
+      page,
+      'the speed moved by more than 10 m/s and the camera followed it, or 8 mission seconds went by',
+      (p) => {
+        const dSpeed = p.speed - before.speed
+        const followed = Math.sign(p.distance - before.distance) === Math.sign(dSpeed)
+        return (Math.abs(dSpeed) > 10 && followed) || p.elapsed - before.elapsed >= 8
+      },
+      40_000,
+    )
     const later = await probe(page)
     expect(later.distance).toBeGreaterThan(12.6)
     expect(later.distance).toBeLessThan(40)

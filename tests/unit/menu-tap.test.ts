@@ -27,7 +27,7 @@
 // miss — the ramp's DECAY holds the caller's edge detector for another ~90 ms
 // after the key comes up, so a fast second tap was eaten even when the first
 // one landed. That is why `app.ts` reads this axis INSTEAD of the keyboard's
-// ramped one and not as well as it, and §4 is the guard on that.
+// ramped one and not as well as it (menu-input.spec.ts holds that now).
 //
 // Every claim is written against BOTH axes in the same breath. A test of the
 // fix alone would stay green if the ramp were deleted outright, which would
@@ -37,7 +37,6 @@ import { describe, expect, it } from 'vitest'
 import { MENU_NUDGE_DEADBAND, menuNudge } from '@/input/actions'
 import { attachKeyboard, type KeyboardSource } from '@/input/keyboard'
 import { createRowStepper } from '@/input/menu-step'
-import { appFileWith, codeOnly } from './helpers/app-source'
 
 const OPTS = { invertPitch: false }
 /** A 60 Hz frame. The flat build's, and slower than the headset's. */
@@ -184,48 +183,10 @@ describe('§3 the DECAY half — why the ramped axis had to leave, not be joined
   })
 })
 
-describe('§4 app.ts reads the key here, and the ramped axis nowhere near it', () => {
-  // Structural, and reading the file with its comments stripped — a guard that
-  // classifies by substring is answered by prose about it, and the paragraph
-  // this change added to `app.ts` names both halves (CLAUDE.md, DEV-287).
-  const nudgeBlock = (): string => {
-    // The five menus (pause, lobby, lap questions, title, TV) read ONE step,
-    // `menuStepNow`, so this is the whole of the keys-versus-stick question.
-    // The ONE file holding it, so the slice below cannot cross files.
-    const src = codeOnly(appFileWith('menuStepNow').text)
-    const open = src.indexOf('menuStepFrom(')
-    expect(open, 'the menus step').toBeGreaterThan(-1)
-    const close = src.indexOf('comfort.invertPitch', open)
-    expect(close, 'the end of its arguments').toBeGreaterThan(open)
-    return src.slice(open, close)
-  }
-
-  it('steps from the unramped key first', () => {
-    expect(nudgeBlock()).toMatch(/^menuStepFrom\(\s*keyboard\.menuPitch\(/)
-  })
-
-  it('has every menu read that one step, and none of them read a device itself', () => {
-    const src = codeOnly(appFileWith('menuStepNow').text)
-    expect(src.match(/menuStepNow\(\)/g) ?? []).toHaveLength(6)
-    expect(src).not.toMatch(/menuNudge\(keyboard\.menuPitch/)
-  })
-
-  it('does not let the merged flight actions back in', () => {
-    // THE regression. `actions` merges the keyboard IN, so reading it here is
-    // the bug by another route — and it would look like a harmless tidy-up.
-    expect(nudgeBlock()).not.toContain('actions.pitch')
-  })
-
-  it('still steps from the pad, the XR sticks and a phone', () => {
-    // Removing the keyboard from that merge must not have removed anything
-    // else: three devices reach this menu through the stick half and a fourth
-    // (a D-pad) through `xr.menuStep`.
-    const block = nudgeBlock()
-    for (const device of ['pad', 'xr.actions', 'thumbs', 'xr.menuStep']) {
-      expect(block, device).toContain(device)
-    }
-  })
-})
+// §4 (four source-text pins on app.ts: the menus step from the unramped key, never the merged
+// flight actions) was removed (DEV-967). `tests/e2e/menu-input.spec.ts` presses real keys on the
+// real page and asserts three short taps move three rows, which the old build could not do at any
+// tap length, so the regression is caught by what the menu does and not by how the call is spelled.
 
 // ── fakes ─────────────────────────────────────────────────────────────────
 
