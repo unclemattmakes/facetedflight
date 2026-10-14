@@ -83,7 +83,9 @@ test.describe('@measure @gpu xr multiview on the rig: DEV-989', () => {
     const rows: Record<string, unknown>[] = []
     for (const [n, arm] of ARMS.entries()) {
       const on = arm === 'on'
-      await page.goto(`/?${QUERY}${on ? '&multiview=1' : ''}${EXTRA ? `&${EXTRA}` : ''}`)
+      await page.goto(
+        `/?${QUERY}${on ? '&multiview=1' : '&multiview=0'}${EXTRA ? `&${EXTRA}` : ''}`,
+      )
       await requireImmersiveDevice(page)
       await loadSettled(page, 180_000)
       // Programs three holds before the session: the warm-up's work. What the

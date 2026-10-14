@@ -104,6 +104,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { MULTIVIEW_SHIPPED } from '../../src/boot/multiview-shipped'
 import { bootReady } from './fixtures/boot'
 import { dropFocus } from './fixtures/canvas'
 import { emulatedXrInstalled, installEmulatedXr } from './fixtures/emulated-xr'
@@ -135,15 +136,20 @@ const SNAP_AT = Number(process.env.SHADER_LINK_AT ?? '20')
 
 /** The pin as query parameters, derived from the one constant. */
 /**
- * DEV-988: `SHADER_LINK_MULTIVIEW=1` runs every arm with `?multiview=1` and,
+ * DEV-988: the multiview arm runs every stage with multiview installed and,
  * before each sweep, `__ff2.multiviewProbe()`, which compiles AND draws the
  * stage's multiview programs (one pass into a two-layer target, the per-eye
  * block bound), so the sweep below holds them and checks their link like any
- * other. Flat: the XR layer is the rig's (`xr-multiview.spec.ts`). Unset, the
- * spec is byte for byte what it was.
+ * other. Flat: the XR layer is the rig's (`xr-multiview.spec.ts`).
+ * DEV-990: multiview is the shipped default, so the ordinary run IS the
+ * multiview arm and gates every batch; `SHADER_LINK_MULTIVIEW=0` runs the
+ * other eye path (`?multiview=0`), which still ships behind the pin.
  */
-const MULTIVIEW = process.env.SHADER_LINK_MULTIVIEW === '1'
-const PIN = MULTIVIEW ? `${PINNED}&multiview=1` : PINNED
+const MULTIVIEW =
+  process.env.SHADER_LINK_MULTIVIEW === undefined
+    ? MULTIVIEW_SHIPPED
+    : process.env.SHADER_LINK_MULTIVIEW === '1'
+const PIN = `${PINNED}&multiview=${MULTIVIEW ? 1 : 0}`
 const PIN_PARAMS: Readonly<Record<string, string>> = Object.fromEntries(new URLSearchParams(PIN))
 /**
  * DEV-583's arm: the same pin with the tier at `ultra`, the only tier whose

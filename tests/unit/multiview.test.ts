@@ -20,7 +20,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { parseMultiviewPin } from '@/boot/quality-pin'
+import { MULTIVIEW_SHIPPED, parseMultiviewPin } from '@/boot/quality-pin'
 import {
   defineMultiviewColorSpace,
   drawsBothEyes,
@@ -314,13 +314,15 @@ describe('drawsBothEyes', () => {
 })
 
 describe('?multiview=', () => {
-  it('is off unless asked, and a typo is off', () => {
-    expect(parseMultiviewPin(null)).toBe(false)
+  it('is the shipped default unless asked, and a typo is the shipped default', () => {
+    expect(MULTIVIEW_SHIPPED).toBe(true)
+    expect(parseMultiviewPin(null)).toBe(MULTIVIEW_SHIPPED)
     expect(parseMultiviewPin('1')).toBe(true)
     expect(parseMultiviewPin('on')).toBe(true)
     expect(parseMultiviewPin('0')).toBe(false)
+    expect(parseMultiviewPin('off')).toBe(false)
     const warned: string[] = []
-    expect(parseMultiviewPin('yes', (m) => warned.push(m))).toBe(false)
+    expect(parseMultiviewPin('yes', (m) => warned.push(m))).toBe(MULTIVIEW_SHIPPED)
     expect(warned).toHaveLength(1)
   })
 })

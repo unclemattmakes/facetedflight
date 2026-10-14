@@ -134,19 +134,24 @@ export const parseSubmitPin = (
   return 'off'
 }
 
+import { MULTIVIEW_SHIPPED } from './multiview-shipped'
+
+export { MULTIVIEW_SHIPPED }
+
 /**
- * `?multiview=1|0` (DEV-986). Same spellings as `?adaptive=`. Anything else,
- * and absence, is OFF: a typo must not switch the eye path under a measurement.
+ * `?multiview=1|0` (DEV-986). Same spellings as `?adaptive=`. Absence, or
+ * anything else (with a warning), is the shipped default: a measurement that
+ * wants a known eye path says `0` or `1`.
  */
 export const parseMultiviewPin = (
   raw: string | null,
   warn: (message: string) => void = () => {},
 ): boolean => {
-  if (raw === null) return false
+  if (raw === null) return MULTIVIEW_SHIPPED
   if (raw === '1' || raw === 'on' || raw === 'true' || raw === '') return true
   if (raw === '0' || raw === 'off' || raw === 'false') return false
   warn(`?multiview=${raw} is not 0 or 1; ignored`)
-  return false
+  return MULTIVIEW_SHIPPED
 }
 
 /**
