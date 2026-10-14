@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/net/http.ts: the web platform's streams, as the net layer reads them.
 //
 // One byte-capped reader, where there were six (code-reuse audit BE-8 / XC-8,

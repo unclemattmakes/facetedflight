@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/gpu-timer.ts — how long the GPU spent on the frame we just asked for.
 //
 // DEV-118. `boot/perf-recorder.ts` records the WALL delta between frames, and

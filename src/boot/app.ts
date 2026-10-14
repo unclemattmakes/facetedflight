@@ -14,7 +14,7 @@ import {
 } from '@/boot/feel-events'
 import { createLoadProgress, type LoadProgress } from '@/boot/load-progress'
 import type { QualityPins } from '@/boot/quality-pin'
-import { type ComfortSettings, qualityInForce } from '@/boot/settings'
+import type { ComfortSettings } from '@/boot/settings'
 import { stats } from '@/boot/stats-beacon'
 import { STANDARD_VARIANT_ID } from '@/content/aircraft-schema'
 import { assetUrl } from '@/content/asset-url'
@@ -86,7 +86,6 @@ import {
   type ShakeWear,
   TRAUMA,
 } from '@/render/camera-shake'
-import { buildChunkBatches, type ChunkBatchSet } from '@/render/chunk-batch'
 import { type ClassicChase, createClassicChase } from '@/render/classic-chase'
 import { REVEAL_RISE } from '@/render/elevator'
 import { createFade, type Fade, type FadePhase } from '@/render/fade'
@@ -103,6 +102,7 @@ import {
   createIllustrativeLighting,
   type IllustrativeLighting,
 } from '@/render/illustrative'
+import { createLensMask, followSessions, type LensMask } from '@/render/lens-mask'
 import type { LodFadeSpec } from '@/render/lod-fade'
 import type { ParticleOverride } from '@/render/particles'
 import type { Pause } from '@/render/pause'
@@ -114,6 +114,7 @@ import { createSceneTint, type SceneTint } from '@/render/scene-tint'
 import type { Sky } from '@/render/sky'
 import { useSkyshopLightingModel } from '@/render/skyshop-ibl'
 import { createSpringArm, type SpringArm, type SurfaceHeightAt } from '@/render/spring-arm'
+import { createStaticScene } from '@/render/static-scene'
 import { withSunLightRule } from '@/render/sun-light-rule'
 import {
   attachEditionSurfaceGloss,
@@ -181,6 +182,7 @@ import {
   HUD_RASTER_PIN,
   HUD_REDRAW_PIN,
   HUD_UPLOAD_PIN,
+  LENS_MASK_AT_BOOT,
   lastVariantOf,
   MENU_EDITION,
   MISSION,
@@ -193,6 +195,7 @@ import {
   SKIP_RIDE,
   SUN_LIGHT_RULE,
   VIEWPOINT,
+  VR_VALUE_OFF,
   view,
   WIRE_AT_BOOT,
   WIRE_STAGES,
@@ -225,6 +228,7 @@ import {
 } from './app/world-handles'
 import { createXrLifecycle } from './app/xr-lifecycle'
 import { detectCapabilities } from './capability-gate'
+import { createPageContamination } from './contamination'
 import { createShakeLookdev } from './lookdev-shake'
 import { createFrameRecorder, type FrameRecorder } from './perf-recorder'
 import { IDLE_XR_PROBE, type PerfSurface, type XrProbe } from './perf-surface'
@@ -323,6 +327,13 @@ export const bootApp = async (
   // dependency only goes this way — `render/quality.ts` never imports the
   // recorder, it is handed a function.
   const perf: FrameRecorder = createFrameRecorder()
+  // ── DEV-914: which frames are NOT evidence about the build ───────────────
+  //
+  // Handed to the quality controller below as `contamination`. The page's own
+  // signal (hidden, or an XR session that is not being shown) is in every
+  // build; the dev server's (a reload, the GPU lease, a busy host) is started
+  // after the renderer exists and only under `import.meta.env.DEV`.
+  const pageContamination = createPageContamination()
   // ── The budget, when the runtime will not say (gap 10, DEV-160) ──────────
   //
   // `session.frameRate` is Meta's extension and is not on `XRSession.prototype`
@@ -336,6 +347,9 @@ export const bootApp = async (
     pinned(appSettings.comfort),
     {
       measuredHz: () => perf.modalHz(),
+      contamination: (dtSeconds) => pageContamination.frame(dtSeconds),
+      // DEV-931: on AUTO the headset's tier follows the look it will wear.
+      headsetLook: appSettings.headsetLook,
       // DEV-179. `?hz=` states the DISPLAY's rate; the tier stays measured.
       // Not part of `pinned()` for `QualityPins.msaa`'s reason — a refresh
       // rate is a fact about the hardware, not a comfort preference, and the
@@ -346,6 +360,29 @@ export const bootApp = async (
     // never a `ComfortSettings` field — see `QualityPins.msaa`.
     appSettings.qualityPins.msaa,
   )
+  pageContamination.attach(render.renderer.xr)
+  // `import.meta.env.DEV` is a literal `false` in a build, so this branch and
+  // the module it imports are gone from a production bundle (DEV-915).
+  if (import.meta.env.DEV) {
+    void import('./contamination-dev').then((dev) => {
+      dev.startDevSignals({
+        observe: (mask) => pageContamination.gate.observe(mask),
+        presenting: () => render.renderer.xr.isPresenting,
+        hot: import.meta.hot,
+        self: dev.selfLeaseFromSearch(window.location.search),
+      })
+    })
+  }
+  // ── DEV-930: the app's lens mask, lever 9 ─────────────────────────────
+  //
+  // Near depth outside a circle in each eye, drawn first, so what the lens
+  // cannot show is never shaded. On the RIG rather than in a scene, because the
+  // rig moves between the mission and menu scenes with the frame, and only from
+  // `sessionstart` to `sessionend`, so a monitor never draws or compiles it.
+  // `render/lens-mask.ts` has the region, the three locks and what draws over it.
+  // Before the perf subsystem, whose trace header reads it.
+  const lensMask: LensMask = createLensMask(LENS_MASK_AT_BOOT)
+  followSessions(lensMask, render.renderer.xr, render.rig)
   // ── The perf subsystem (APP-SPLIT 4.1, `boot/app/perf.ts`) ───────────────
   //
   // The DOM panel, the GPU timer, the cockpit plate, the trace and the capture,
@@ -385,6 +422,9 @@ export const bootApp = async (
     },
     get liveFracture() {
       return handles.liveFracture
+    },
+    get lensMask() {
+      return lensMask.report()
     },
     get xrProbe() {
       return xrProbe
@@ -436,6 +476,8 @@ export const bootApp = async (
     await editionLoading,
     pinned(appSettings.comfort),
     await presetFor(RULES_EDITION),
+    // DEV-934/935: the worn A/B's off arms for the VR-only values.
+    VR_VALUE_OFF,
   )
   // DEV-263. BEFORE the line below, so the logged preset is the one that will
   // actually render — and before any system subscribes, so the pin arrives as
@@ -1259,16 +1301,6 @@ export const bootApp = async (
     BAKED_RUNG_PIN,
   )
 
-  /**
-   * DEV-193's spike, when it is folded. One entry per terrain that was folded —
-   * the island and, if it has one, the sea.
-   *
-   * Out here with the other live handles because it has to be dropped on a
-   * course swap like every one of them: `disposeWorld` clears `liveTerrain`, and
-   * a batch holding hidden meshes from a world that is gone is a leak with a
-   * `BatchedMesh`'s buffer attached to it.
-   */
-  let liveChunkBatches: { key: string; set: ChunkBatchSet }[] = []
   const craftSplashes = new Map<string, CraftSplashState>()
   /** DEV-336: the sun's halo. One billboard for the life of the page. */
   const sunHalo = createSunHalo(SUN_HALO_METRES)
@@ -2158,6 +2190,8 @@ export const bootApp = async (
     cockpitSelfShadow,
     nearShadow,
   } = atmosphere
+  // DEV-937: what never moves stops being recomputed every render.
+  const staticScene = createStaticScene(render.scene)
 
   // Load the world. The loop runs against an empty scene until it lands rather
   // than blocking boot behind two megapixel PNGs and 1.8 M vertices.
@@ -2782,61 +2816,20 @@ export const bootApp = async (
   )
 
   /**
-   * DEV-193's spike: fold the live terrains' chunk grids into one
-   * `THREE.BatchedMesh` per LOD band, or unfold them.
+   * Switch the land's chunk batching on or off on a live page, and say what the
+   * bands hold. DEV-193's measurement switch, now over the shipped path: DEV-904
+   * made batching the default, so `false` is the OFF arm of the A/B and `true`
+   * rebuilds the bands from the chunks as they are.
    *
    * Idempotent in both directions, and it returns the PLAN rather than a
-   * verdict — bands, members, slots, reserved bytes, and how many chunks it
-   * refused. A caller that wants the draw-call answer reads
-   * `renderer.info.render.calls` and `__ff2.census()` around it; this function
-   * has no business deciding whether the number is good.
-   *
-   * Both terrains, because the sea is 4 draws and the island is ~146 and a
-   * function that folded only one would be answering a question nobody asked.
-   * The ocean's per-LOD water materials (DEV-183) mean its bands separate by
-   * material as well as by size, which the batch key already handles.
+   * verdict. The sea is never batched, so there is only the land to ask.
    */
   const setChunkBatch = (on: boolean): unknown => {
-    if (!on) {
-      for (const entry of liveChunkBatches) entry.set.restore()
-      liveChunkBatches = []
-      return { on: false, terrains: [] }
-    }
-    if (liveChunkBatches.length > 0) return chunkBatchReport()
-    const targets: [string, LoadedTerrain][] = []
-    if (handles.liveTerrain) targets.push(['land', handles.liveTerrain.terrain])
-    if (handles.liveTerrain?.ocean) targets.push(['ocean', handles.liveTerrain.ocean])
-    for (const [key, terrain] of targets) {
-      // No headroom. A slot nobody can fill is a byte nobody can spend, and the
-      // spike's job is to report what the CURRENT frame needs — what to reserve
-      // for the churn is a budgeting decision the measurement should inform
-      // rather than pre-empt.
-      const set = buildChunkBatches(terrain.group)
-      if (set) liveChunkBatches.push({ key, set })
-    }
-    return chunkBatchReport()
+    const batching = handles.liveTerrain?.terrain.batching
+    if (!batching?.available) return { on: false, available: false, report: null }
+    const report = batching.set(on)
+    return { on: batching.on, available: true, report }
   }
-
-  /** What `setChunkBatch` folded, as rows a spec can print. */
-  const chunkBatchReport = (): unknown => ({
-    on: liveChunkBatches.length > 0,
-    terrains: liveChunkBatches.map(({ key, set }) => ({
-      terrain: key,
-      folded: set.folded,
-      skipped: set.skipped,
-      bytes: set.bytes,
-      bands: set.bands.map((b) => ({
-        key: b.key,
-        vertexCount: b.vertexCount,
-        triangles: (b.vertexCount / 3) * b.members,
-        members: b.members,
-        slots: b.slots,
-        bytes: b.bytes,
-        castShadow: b.castShadow,
-        receiveShadow: b.receiveShadow,
-      })),
-    })),
-  })
 
   /**
    * Take the mission world apart: every disposer we own, then everything the
@@ -2858,13 +2851,6 @@ export const bootApp = async (
     // TITLE world is what it is taking apart in that case.
     const built = world === null ? null : await world.catch(() => null)
     world = null
-    // DEV-193's spike, BEFORE the terrain's own disposer: `LoadedTerrain
-    // .dispose` walks `group.children` and frees the geometry of anything
-    // `isMesh`, and a `BatchedMesh` is one. Unfolding first means the batches
-    // are gone before that walk reaches them, and the chunk meshes it is about
-    // to dispose are the ones it made rather than ones this spike had hidden.
-    for (const entry of liveChunkBatches) entry.set.restore()
-    liveChunkBatches = []
     // Handles first. Each of these owns GPU memory and several own a worker.
     built?.terrain.dispose()
     built?.ocean?.dispose()
@@ -4004,6 +3990,7 @@ export const bootApp = async (
     cockpitSelfShadow,
     codeClosePlate,
     codeFocus,
+    staticScene,
     codeJoinFrame,
     codeKeysDown,
     codeNudgeEdge,
@@ -4355,7 +4342,8 @@ export const bootApp = async (
   // where `statsAllowed` said no (a local build, a dev switch, GPC, an opt-out).
   stats.attach({
     reading: () => ({
-      quality: qualityInForce(pinned(appSettings.comfort), render.renderer.xr.isPresenting),
+      // DEV-931: the report's tier, which knows the headset's look.
+      quality: render.quality.report.quality,
       qualityAuto: appSettings.comfort.qualityAuto !== false,
       scale: render.quality.report.scale,
       look: appSettings.missionEdition(),
@@ -4407,6 +4395,7 @@ export const bootApp = async (
     get RUNNING_MODE() {
       return RUNNING_MODE
     },
+    staticScene,
     audio,
     bakedLight,
     bloom,
@@ -4529,6 +4518,7 @@ export const bootApp = async (
     },
     sceneTint,
     setChunkBatch,
+    lensMask,
     shareReport,
     get skyLastOn() {
       return skyLastOn

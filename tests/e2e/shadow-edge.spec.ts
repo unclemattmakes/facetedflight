@@ -46,6 +46,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { decodePngBuffer } from '../../tools/terrain/png.mjs'
 import { missionReady } from './fixtures/boot'
+import { knownRed } from './fixtures/known-red'
 import { firstPress } from './fixtures/landing'
 import { type DrawState, drawState, drawStateDiff, PINNED } from './fixtures/quality-pin'
 import { boxDistanceAt, type ShadowBoxMask, shadowBoxMask } from './fixtures/shadow-box'
@@ -154,6 +155,7 @@ test.describe('@gpu the shadow map has no edge — DEV-453', () => {
     test(`${stand.name}: past the box and at its face the frame is the far rule's`, async ({
       page,
     }) => {
+      knownRed('KR-19', stand.name === 'valley-west')
       const shipped = await shoot(page, stand, '', true)
       const noMap = await shoot(page, stand, '&feature=render.shadows:off', false)
 

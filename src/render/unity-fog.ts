@@ -610,15 +610,13 @@ export const createUnityFog = (p: UnityFogParams): UnityFog => {
     uFogHeightSign: { value: live.inverted ? -1 : 1 },
     // Nine is not negotiable: `vec3 uFogSh[9]` in GLSL, so a short array reads
     // garbage rather than failing. Same contract as `render/sky.ts`.
+    // One flat Float32Array(27), not nine Vector3: three's array-of-vec3
+    // setter runs `flatten` and `Vector3.toArray` on every draw that binds
+    // this, and a flat array goes straight to `uniform3fv` (DEV-940).
     uFogSh: {
-      value: Array.from(
-        { length: 9 },
-        (_, i) =>
-          new THREE.Vector3(
-            (skySh?.[i]?.[0] as number) ?? 0,
-            (skySh?.[i]?.[1] as number) ?? 0,
-            (skySh?.[i]?.[2] as number) ?? 0,
-          ),
+      value: Float32Array.from(
+        { length: 27 },
+        (_, i) => (skySh?.[(i / 3) | 0]?.[i % 3] as number) ?? 0,
       ),
     },
     uFogSkyMode: { value: skySh ? 1 : 0 },

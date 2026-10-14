@@ -41,6 +41,7 @@ import {
 import type { GameMode, Level, VehicleId } from '@/content/level-schema'
 import { aircraftFor, resolveVariant } from '@/content/load-aircraft'
 import type { PlaytestRequest } from '@/editor/core'
+import { vrValueOffFrom } from '@/game/edition'
 import { HOVERJET_LAT_ACCEL_MEASURED } from '@/game/measured'
 import { MODES } from '@/game/modes'
 import { roomIdFrom } from '@/game/room-client'
@@ -71,6 +72,7 @@ import {
   type HudGauges,
   parseHudGauges,
 } from '@/render/hud-gauges'
+import { parseLensMaskPin } from '@/render/lens-mask'
 import { SHAFT_PAINT_SHIPPED, setShaftPaint, shaftPaintParam } from '@/render/shaft-paint'
 import { type SunLightRule, sunLightRuleFrom } from '@/render/sun-light-rule'
 import { parseTerrainLit, type TerrainLit } from '@/render/terrain-mesh'
@@ -442,37 +444,59 @@ export const FEATURE_PINS: Readonly<Record<string, boolean>> = (() => {
 })()
 
 /**
- * `?chunkBatch=1` — fold the terrain's chunk grid into one `THREE.BatchedMesh`
- * per LOD band. DEV-193's SPIKE, and it is an instrument, not a mode.
+ * `?vrFxTrim=0` and `?vrMeshLod=0`: the OFF arms of two VR-only value layers,
+ * for the worn A/B (`docs/plan/ANNIVERSARY-VR-FRAMERATE.md` section 5). Both
+ * are ON by default in a headset (Matt, 2026-10-12: "default to on").
  *
- * §11.7 item 1: after DEV-184 and DEV-192 the chunks are 75 % FIXED and 25 %
- * fill, and 201 of the frame's 263 draw calls are the grid — ~146 colour and
- * ~55 shadow, carrying a thousand triangles a call, next door to DEV-118's
- * props at 900 k triangles in nine draws. The question the spike answers is
- * *what does the draw count become*, and the answer is a COUNT, which
- * `docs/testing/perf-protocol.md` §3a says survives a busy machine where a
- * millisecond does not.
+ * - `?vrFxTrim=0` (DEV-934, lever 5) keeps the flat speed-line width and mote
+ *   count in the headset: every `vr.override` path under `fx.`.
+ * - `?vrMeshLod=0` (DEV-935, lever 8) keeps the flat `props.meshLod` rung
+ *   edges in the headset.
  *
- * ── Read this before flying with it on ───────────────────────────────────
- *
- * **It stops the terrain's LODs moving.** `game/terrain/load-terrain.ts` swaps
- * `slot.mesh.geometry` when a chunk changes band, and this spike has HIDDEN
- * that mesh — so the batch goes on drawing the geometry the chunk had when it
- * was folded. On a `?snap=` frozen frame nothing churns and the reading is
- * exact; in flight the island would stop refining. Making it a feature means
- * `load-terrain.ts` owning the batches and routing every LOD change through
- * `ChunkBatchSet.take`/`give` — which the module supports and this switch
- * deliberately does not do. That is the difference between a spike and a
- * rewrite, and it is the honest half of the answer.
- *
- * So: measure on a frozen frame, restore, and read
- * `tests/e2e/chunk-batch.spec.ts` for the protocol. `__ff2.chunkBatch(on)`
- * flips it on a LIVE page, which is §3d's own recommendation — one load, two
- * readings, no cross-run pin.
- *
- * Off by default, and nothing in the suite needs it to pass.
+ * Nothing changes on a monitor either way: `vr.override` is only read while
+ * presenting (`content/edition-schema.ts`, `applyVrOverrides`).
  */
-export const CHUNK_BATCH = params.get('chunkBatch') === '1'
+export const VR_VALUE_OFF: (path: string) => boolean = (() => {
+  const off = vrValueOffFrom(params)
+  if (params.get('vrFxTrim') === '0' || params.get('vrMeshLod') === '0') {
+    console.info(
+      `vr value pins (DEV-934/935): fxTrim ${off('fx.speedLines') ? 'off' : 'on'}, meshLod ${off('props.meshLod') ? 'off' : 'on'}`,
+    )
+  }
+  return off
+})()
+/**
+ * `?chunkBatch=0` turns the land's chunk batching OFF. DEV-904; ON by default.
+ *
+ * The land's chunk grid is drawn through one `THREE.BatchedMesh` per LOD band
+ * (`render/chunk-batch.ts`), which DEV-193 measured at 261 draws down to 65 on
+ * `int_01_hoverJet`. `game/terrain/load-terrain.ts` owns the batches: a chunk
+ * is in its band while it is plain geometry at a settled LOD, leaves it to
+ * cross-fade (DEV-130) and rejoins at `finishFade`. The sea is never batched.
+ *
+ * The pin exists as the OFF arm of an A/B (`docs/testing/perf-protocol.md`
+ * section 3d): `__ff2.chunkBatch(false)` and `(true)` flip it on a live page,
+ * one load and two readings. It is not a quality setting and no preset reads it.
+ */
+export const CHUNK_BATCH = params.get('chunkBatch') !== '0'
+
+/**
+ * `?lensMask=0` turns the app's lens mask OFF; `?lensMask=<radius>` sizes it.
+ * DEV-930, lever 9; ON by default in a headset, both looks.
+ *
+ * The mask primes near depth outside a circle in each eye's NDC, so nothing
+ * the lens cannot show is shaded (`render/lens-mask.ts`). It draws only in a
+ * session, so on a monitor this pin changes nothing. The radius is uncalibrated
+ * and the default is conservative; the worn sitting sizes it during fast head
+ * yaw, at load with this pin or live with `__ff2.lensMask(<radius>)`, and
+ * `?lensMask=0` is the off arm of that A/B. `null` is off.
+ */
+export const LENS_MASK_AT_BOOT: number | null = (() => {
+  const raw = params.get('lensMask')
+  const radius = parseLensMaskPin(raw, (m) => console.warn(m))
+  if (raw !== null) console.info(`lens mask pin (DEV-930): ${radius === null ? 'off' : radius}`)
+  return radius
+})()
 
 /**
  * `?hudRedraw=live` · `?hudRedraw=freeze` · `?hudRedraw=<hz>` — DEV-243, and
@@ -871,6 +895,15 @@ export const WIRE_AT_BOOT: WireStage =
  * manages — the opposition was a kilometre behind by the ninth second.
  */
 export const OPPONENTS = params.get('opponents') === 'ghosts' ? 'ghosts' : 'ai'
+
+/**
+ * `?particles=cpu`: DEV-925. The GPU engine (`render/gpu-particles.ts`) is the
+ * default since Matt's call, 2026-10-12: *"make gpu the default - try and
+ * match the behavior of the older systems, but it's ok if they're not
+ * exact"*. This pin puts the 2016 port's CPU engine back for an A/B; anything
+ * else is `gpu`.
+ */
+export const PARTICLE_ENGINE: 'cpu' | 'gpu' = params.get('particles') === 'cpu' ? 'cpu' : 'gpu'
 
 /**
  * The URL's half of D30's `runTainted` (DEV-371): every switch in it that is
@@ -1497,6 +1530,16 @@ export const RULES_PARAM: EditionId | null = ((): EditionId | null => {
 
 /** The rules every run on this page flies (DEV-452, D35): Anniversary's. */
 export const RULES_EDITION: EditionId = RULES_PARAM ?? MENU_EDITION
+
+/**
+ * `?vrLookTier=0`: AUTO's headset tier does NOT follow the look. DEV-931.
+ *
+ * On by default: a headset on AUTO wearing Anniversary gets `low`'s 1512 px
+ * eye (`VR_AUTO_QUALITY_ANNIVERSARY`, `boot/settings.ts`). This pin is the OFF
+ * arm of the worn A/B, the headset back at `medium`'s 1620 px, in the same
+ * build. Never stored, never a harness switch: the game supports both answers.
+ */
+export const VR_LOOK_TIER: boolean = params.get('vrLookTier') !== '0'
 
 /**
  * `?shaftPaint=hangar|2016` — the elevator shaft's paint, a development A/B

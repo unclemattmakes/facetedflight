@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/render/ui-pick.ts: a ray against a panel's own plane, one place.
 //
 // The pause plate, the XR checklist plate (removed, DEV-900), the room-code

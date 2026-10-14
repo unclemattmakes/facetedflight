@@ -222,7 +222,8 @@ describe('a detail chunk is the same generator at a different pitch', () => {
   const fine = detailChunkParams(BASE, RING)
 
   const chunkAt = (p: FacetedTerrainParams, cx = 1, cy = 2) =>
-    generateChunk(buildVertexGrid(height, p), color, height, p, cx, cy, 0)
+    // The detail ring keeps 2016's skirt to the sea (DEV-929; the worker passes 'sea').
+    generateChunk(buildVertexGrid(height, p), color, height, p, cx, cy, 0, 'sea')
 
   it('quadruples the INTERIOR triangles, and says what the skirt costs', () => {
     const coarse = chunkAt(BASE)
@@ -406,7 +407,7 @@ describe('the collision surface is not in the ring s reach', () => {
     // already disagrees with collision by the jitter, on every preset.
     const before = buildHeightField(height, BASE, transform)
     const fine = detailChunkParams(BASE, RING)
-    generateChunk(buildVertexGrid(height, fine), color, height, fine, 1, 2, 0)
+    generateChunk(buildVertexGrid(height, fine), color, height, fine, 1, 2, 0, 'sea')
     const after = buildHeightField(height, BASE, transform)
     expect(after.vertPerSide).toBe(before.vertPerSide)
     expect(after.step).toBe(before.step)

@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/net/base64url.ts — bytes <-> base64url text (RFC 4648 §5), no padding.
 //
 // A lap travels as base64url inside a JSON body and is stored as the same text

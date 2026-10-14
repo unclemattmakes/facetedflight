@@ -128,14 +128,42 @@ export const setPadsHeld = (held: boolean): void => {
   padsHeld = held
 }
 
-/** Only `standard`-mapping pads are read. Everything else needs the deferred raw-axis path. */
-export const firstStandardPad = (): Gamepad | null => {
-  if (padsHeld) return null
+/**
+ * DEV-942: one `navigator.getGamepads()` per frame, not one per helper. The
+ * frame calls `beginPadFrame` before anything reads; the first
+ * `firstStandardPad` after it asks the browser and every later one gets the
+ * same answer. Never begun (unit tests, a caller outside the frame loop): no
+ * snapshot, every call asks, exactly as before.
+ */
+let padSnapshotOpen = false
+let padSnapshot: Gamepad | null = null
+let snapshotting = false
+export const beginPadFrame = (): void => {
+  snapshotting = true
+  padSnapshotOpen = false
+}
+/** Back to asking every call (tests). */
+export const endPadFrames = (): void => {
+  snapshotting = false
+  padSnapshotOpen = false
+}
+
+const scanPads = (): Gamepad | null => {
   const pads = navigator.getGamepads?.() ?? []
   for (const pad of pads) {
     if (pad?.connected && pad.mapping === 'standard') return pad
   }
   return null
+}
+
+/** Only `standard`-mapping pads are read. Everything else needs the deferred raw-axis path. */
+export const firstStandardPad = (): Gamepad | null => {
+  if (padsHeld) return null
+  if (!padSnapshotOpen) {
+    padSnapshot = scanPads()
+    padSnapshotOpen = snapshotting
+  }
+  return padSnapshot
 }
 
 /**

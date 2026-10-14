@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/sim/math/scalar.ts: the scalar kit every layer may import (code-reuse
 // audit WP-1, 2026-10-05). `src/sim/math` is the one home that keeps the sim
 // three-free and DOM-free while content, render, game, input and the editor

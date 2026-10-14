@@ -1,6 +1,6 @@
 {
   "name": "facetedflight2",
-  "version": "1.1.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.4",
@@ -21,6 +21,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "test": "vitest run",
+    "test:slow": "node tools/test/run-slow.mjs",
     "bench": "vitest bench --run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

@@ -437,8 +437,10 @@ describe('the column list is a wire format', () => {
       'phase',
       // DEV-335: the Advanced rows' bitmask, appended like everything since.
       'features',
+      // DEV-914: the contamination bitmask, appended.
+      'tainted',
     ])
-    expect(STRIDE).toBe(27)
+    expect(STRIDE).toBe(28)
     // The relationship, not the value: the original fifteen keep their
     // positions whatever gets added after them (trap 24).
     expect(COLUMNS.indexOf('elapsed_s')).toBe(14)
@@ -457,8 +459,11 @@ describe('the column list is a wire format', () => {
     // `plate_paints` held this assertion until today; the durable half of it
     // is that the PAIR stays adjacent, which is the line below. DEV-335's
     // `features` is newest now, so it is last and `phase` sits before it.
-    expect(COLUMNS.indexOf('features')).toBe(COLUMNS.length - 1)
-    expect(COLUMNS.indexOf('phase')).toBe(COLUMNS.length - 2)
+    // DEV-914's `tainted` is newest and last now: `features` is second-last and
+    // `phase` third-last, still in the order they were appended.
+    expect(COLUMNS.indexOf('tainted')).toBe(COLUMNS.length - 1)
+    expect(COLUMNS.indexOf('features')).toBe(COLUMNS.length - 2)
+    expect(COLUMNS.indexOf('phase')).toBe(COLUMNS.length - 3)
     // The PAIR, and the order within it: the HUD first, its control beside it.
     // Two panels, two rates, one mechanism — the row only reads if both are in
     // the same file (DEV-243 section 2b).
@@ -947,8 +952,41 @@ describe('DEV-335: which Advanced rows were on, per frame', () => {
     expect(header.featureBits).toEqual(['shadows', 'props', 'bloom'])
     const cols = (lines[1] as string).split(',')
     const at = cols.indexOf('features')
-    expect(at).toBe(cols.length - 1)
+    // DEV-914 appended `tainted` after it: `features` is the second-last now.
+    expect(at).toBe(cols.length - 2)
     expect(Number((lines[2] as string).split(',')[at])).toBe(5)
     expect(Number((lines[3] as string).split(',')[at])).toBe(2)
+  })
+})
+
+describe('DEV-914: which frames the game flagged as contaminated', () => {
+  it('writes the mask per frame and names the bits in the header', () => {
+    const t = createTraceRecorder()
+    t.start(1, meta)
+    t.frame(sample({ tainted: 0 }))
+    t.frame(sample({ tainted: 0b0101 }))
+    t.frame(sample()) // a caller that never sets it: clean, not NaN
+    t.stop()
+    const lines = t.dump().split('\n')
+    expect(JSON.parse(lines[0] as string).taintBits).toEqual(['HMR', 'LEASE', 'HOST_CPU', 'HIDDEN'])
+    const at = (lines[1] as string).split(',').indexOf('tainted')
+    expect(at).toBeGreaterThan(0)
+    expect([2, 3, 4].map((i) => (lines[i] as string).split(',')[at])).toEqual(['0', '5', '0'])
+  })
+
+  it('counts flagged frames in the summary and WARNS only when there are some', () => {
+    const t = createTraceRecorder()
+    t.start(20, meta)
+    for (let i = 0; i < 6; i++) t.frame(sample({ tainted: i < 2 ? 4 : 0 }))
+    const s = t.summary()
+    expect(s.taintedFrames).toBe(2)
+    expect(s.taintedFraction).toBeCloseTo(2 / 6, 6)
+    expect(formatTraceSummary(s)).toContain('TAINTED')
+
+    const clean = createTraceRecorder()
+    clean.start(20, meta)
+    for (let i = 0; i < 6; i++) clean.frame(sample())
+    expect(clean.summary().taintedFrames).toBe(0)
+    expect(formatTraceSummary(clean.summary())).not.toContain('TAINTED')
   })
 })

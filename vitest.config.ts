@@ -1,5 +1,13 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
+
+// The slow tier (tests/slow.list.json, DEV-945): `pnpm test` leaves these
+// files out, `pnpm test:slow` (tools/test/run-slow.mjs) runs only them.
+const slowFiles: string[] = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./tests/slow.list.json', import.meta.url)), 'utf8'),
+).files
+const slowTier = process.env.FF2_TEST_TIER === 'slow'
 
 // `environment: 'node'` is deliberate and is the whole point of the sim/render
 // split (PORT_PLAN §2.4, DECISIONS D7): the sim must be testable with no DOM,
@@ -14,7 +22,8 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/unit/**/*.test.ts', 'src/**/*.test.ts'],
+    include: slowTier ? slowFiles : ['tests/unit/**/*.test.ts', 'src/**/*.test.ts'],
+    exclude: slowTier ? configDefaults.exclude : [...configDefaults.exclude, ...slowFiles],
     // `pnpm bench` (VR-PERF §5.9 H1), and NOTHING else. `include` above never
     // matches a `.bench.ts`, so `pnpm test` and `pnpm check` cannot collect one
     // — which is the whole arrangement: a duration belongs to a machine and

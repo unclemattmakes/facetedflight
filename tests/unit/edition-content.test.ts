@@ -334,10 +334,12 @@ describe('the VR override list', () => {
     }
   })
 
-  it('changes NOTHING else — the VR look is a subset of the flat one', () => {
-    // The whole argument for a disable LIST rather than a deep-partial preset.
-    // If this ever fails, `vr` has grown into a second preset and the claim
-    // that "what does VR look like" is answerable by reading a list is false.
+  it('changes NOTHING else: only the disable list and the override list move', () => {
+    // The whole argument for LISTS rather than a deep-partial preset. If this
+    // ever fails, `vr` has grown into a second preset and the claim that "what
+    // does VR look like" is answerable by reading two lists is false. Since
+    // DEV-934 the second list is `vr.override`'s named fields; nothing it does
+    // not name may differ.
     const base = read('anniversary')
     const vr = applyVrOverrides(base)
     const disabled = new Set(base.vr?.disable ?? [])
@@ -346,9 +348,33 @@ describe('the VR override list', () => {
       if (disabled.has(path)) continue
       expect(feature.enabled, `${path} untouched`).toBe(flat.get(path)?.enabled)
     }
-    // And nothing outside the feature registry moved either.
+    // Put every named VR value back to its flat value on a copy; what is left
+    // must be the flat preset but for `enabled`.
+    const restored = structuredClone(vr) as Edition
+    const restoredFeatures = new Map(editionFeatures(restored))
+    for (const [path, fields] of Object.entries(base.vr?.override ?? {})) {
+      const into = restoredFeatures.get(path) as unknown as Record<string, unknown>
+      const from = flat.get(path) as unknown as Record<string, unknown>
+      for (const key of Object.keys(fields)) if (key !== 'note') into[key] = from[key]
+    }
     const strip = (e: Edition) => JSON.stringify(e, (k, v) => (k === 'enabled' ? undefined : v))
-    expect(strip(vr)).toBe(strip(base))
+    expect(strip(restored)).toBe(strip(base))
+  })
+
+  it('sets every named VR value, and leaves the flat preset alone (DEV-934)', () => {
+    const base = read('anniversary')
+    const before = JSON.stringify(base)
+    const vr = new Map(editionFeatures(applyVrOverrides(base)))
+    const entries = Object.entries(base.vr?.override ?? {})
+    expect(entries.length, 'anniversary has VR values').toBeGreaterThan(0)
+    for (const [path, fields] of entries) {
+      const worn = vr.get(path) as unknown as Record<string, unknown>
+      for (const [key, value] of Object.entries(fields)) {
+        if (key === 'note') continue
+        expect(worn[key], `${path}.${key} in VR`).toEqual(value)
+      }
+    }
+    expect(JSON.stringify(base), 'the flat preset was not written to').toBe(before)
   })
 
   it('returns the SAME OBJECT when there is nothing to do', () => {

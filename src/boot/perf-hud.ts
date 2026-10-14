@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/perf-hud.ts — the frame-time panel, behind `?perf=1`.
 //
 // ANNIVERSARY.md §4.3 wants *"a way to SEE frame time, draw calls and triangles

@@ -195,10 +195,28 @@ export interface Fade {
  * A zero or negative duration is instant rather than a division by zero — the
  * boot handover asks for exactly that.
  */
-export const fadeRamp = (elapsed: number, seconds: number): number =>
-  seconds <= 0 ? 1 : clamp01(elapsed / seconds / SOLID_AT)
+export const fadeRamp = (elapsed: number, seconds: number, solidAt: number = SOLID_AT): number =>
+  seconds <= 0 ? 1 : clamp01(elapsed / seconds / solidAt)
 
-export const createFade = (): Fade => {
+/**
+ * The timings a fade is built from, as a value a sequel can pass its own. The
+ * default is this game's: 2016's solid-at fraction and the port's cut length
+ * (the boot handover's way back). `LOAD_FADE_SECONDS` and the rest stay named
+ * constants for the callers that spend them in a {@link FadeSpec}.
+ */
+export interface FadeTimings {
+  /** The fraction of a leg at which the screen is solid. */
+  readonly solidAt: number
+  /** The way back from `blackOut()`, seconds. */
+  readonly blackOutInSeconds: number
+}
+
+export const DEFAULT_FADE_TIMINGS: FadeTimings = {
+  solidAt: SOLID_AT,
+  blackOutInSeconds: CUT_FADE_SECONDS,
+}
+
+export const createFade = (timings: FadeTimings = DEFAULT_FADE_TIMINGS): Fade => {
   let phase: FadePhase = 'idle'
   let amount = 0
   let elapsed = 0
@@ -242,7 +260,7 @@ export const createFade = (): Fade => {
       releaseRequested = true
     },
     blackOut() {
-      spec = { outSeconds: 0, inSeconds: CUT_FADE_SECONDS, holdSeconds: 'released' }
+      spec = { outSeconds: 0, inSeconds: timings.blackOutInSeconds, holdSeconds: 'released' }
       releaseRequested = false
       amount = 1
       fromAmount = 1
@@ -254,7 +272,7 @@ export const createFade = (): Fade => {
       if (phase === 'out') {
         // From wherever we were, not from 0. Interrupting a half-finished
         // fade-in and starting again must not brighten the screen first.
-        amount = fromAmount + (1 - fromAmount) * fadeRamp(elapsed, spec.outSeconds)
+        amount = fromAmount + (1 - fromAmount) * fadeRamp(elapsed, spec.outSeconds, timings.solidAt)
         if (amount >= 1) {
           amount = 1
           enter('hold')
@@ -269,7 +287,7 @@ export const createFade = (): Fade => {
         return
       }
       // 'in'
-      amount = 1 - fadeRamp(elapsed, spec.inSeconds)
+      amount = 1 - fadeRamp(elapsed, spec.inSeconds, timings.solidAt)
       if (amount <= 0) {
         amount = 0
         phase = 'idle'

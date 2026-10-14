@@ -231,7 +231,11 @@ test.describe('@gpu DEV-422 — a nearer gate is not drawn over by a farther one
       // not differ in hue, cannot say which is on top.
       expect(ringPx, 'the ring is on screen').toBeGreaterThan(300)
       expect(finishPx, 'the finish frame is on screen').toBeGreaterThan(300)
-      expect(crossing, 'the two frames cross on screen').toBeGreaterThan(300)
+      // 200, not 300, since DEV-922 made the gates single-sided and opaque: the
+      // back faces no longer draw, so the Anniversary stand's overlap fell from
+      // 472 px to 282 (2026-10-12, same stand, score 0.979 then, 0.993 now).
+      // 200 px is still a crossing a hue average can be read over.
+      expect(crossing, 'the two frames cross on screen').toBeGreaterThan(200)
       expect(span / crossing, 'the ring and the finish differ in hue there').toBeGreaterThan(40)
       // And the claim.
       expect(score, 'the NEARER ring is the top layer where the two cross').toBeGreaterThan(0.5)

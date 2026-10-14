@@ -53,6 +53,8 @@ type Page = import('@playwright/test').Page
 
 const MISSION = process.env.PROFILE_MISSION ?? 'rookie_01_jumpSeat'
 const EDITION = process.env.PROFILE_EDITION ?? 'anniversary'
+/** Extra URL pins, appended verbatim (`&feature=...`), e.g. the headset's `vr.disable` list. */
+const QUERY = process.env.PROFILE_QUERY ?? ''
 /**
  * Mission seconds at which to start sampling, and for how long.
  *
@@ -181,7 +183,7 @@ test.describe('@measure @gpu a CPU profile of real flight', () => {
   test.setTimeout(900_000)
 
   test(`${MISSION} ${EDITION}: ${FOR} s from mission ${FROM} s`, async ({ page }) => {
-    await page.goto(`/?perf=1&autopilot=1&xr=off&mission=${MISSION}&edition=${EDITION}`)
+    await page.goto(`/?perf=1&autopilot=1&xr=off&mission=${MISSION}&edition=${EDITION}${QUERY}`)
     await firstPress(page)
     await missionReady(page, 240_000)
     await focusCanvas(page)

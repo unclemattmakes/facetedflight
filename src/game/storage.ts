@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 /**
  * `localStorage`, or null where touching it throws (a private window, blocked
  * site data, a webview with storage off).

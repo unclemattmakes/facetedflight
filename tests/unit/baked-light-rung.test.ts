@@ -494,15 +494,16 @@ describe('DEV-237 — the preset carries a rung and the validator refuses a wron
   const read = (id: string): Edition =>
     JSON.parse(fs.readFileSync(path.join('content', 'editions', `${id}.json`), 'utf8')) as Edition
 
-  it('ships rung 3 in BOTH presets, with the flag off', () => {
-    // 3 is the value that reproduces the build DEV-232 measured. Shipping
-    // anything else would make the flag a different feature the day somebody
-    // flips it, and nothing else in the tree would say so.
-    for (const id of ['anniversary', 'classic']) {
-      const b = read(id).terrain.bakedLight
-      expect(b.enabled).toBe(false)
-      expect(b.rung).toBe(3)
-    }
+  it('ships rung split in BOTH presets, on in Anniversary only', () => {
+    // Matt, 2026-10-11: "land the split baked light." The rung mirrors across
+    // presets so a diff between them shows the one key that differs, and
+    // Classic stays off because its note rules the bake out there.
+    const anniversary = read('anniversary').terrain.bakedLight
+    const classic = read('classic').terrain.bakedLight
+    expect(anniversary.enabled).toBe(true)
+    expect(classic.enabled).toBe(false)
+    expect(anniversary.rung).toBe('split')
+    expect(classic.rung).toBe(anniversary.rung)
   })
 
   it('accepts every rung the list names', () => {

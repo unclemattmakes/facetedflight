@@ -260,6 +260,8 @@ ctx.onmessage = (event: MessageEvent<TerrainWorkerMessage>) => {
     message.chunkX,
     message.chunkY,
     useLod,
+    // DEV-929: the detail ring's finer grid keeps 2016's skirt to the sea.
+    message.lod < 0 ? 'sea' : 'adaptive',
   )
 
   // ── the other three quarters of the work, DEV-242 ──────────────────────

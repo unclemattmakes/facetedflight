@@ -122,6 +122,7 @@
 
 import type * as THREE from 'three'
 import { type ComfortSettings, type QualitySetting, qualityInForce } from '@/boot/settings'
+import type { EditionId } from '@/content/edition-schema'
 
 export interface QualitySpec {
   /**
@@ -719,6 +720,12 @@ export interface AdaptiveState {
   climbFailures: number
   /** Was the LAST step a step up? How a failed climb is recognised. */
   lastStepWasUp: boolean
+  /**
+   * Frames the controller was told were CONTAMINATED and so did not decide on
+   * (`render/contamination.ts`, DEV-914). A subset of `frames`: those frames
+   * still happened, they are just not evidence about the build.
+   */
+  contaminatedFrames: number
   /** Frames seen, and frames seen while below full resolution. */
   frames: number
   /**
@@ -740,6 +747,7 @@ export const createAdaptiveState = (): AdaptiveState => ({
   meetingSeconds: 0,
   climbFailures: 0,
   lastStepWasUp: false,
+  contaminatedFrames: 0,
   frames: 0,
   engagedFrames: 0,
 })
@@ -766,6 +774,7 @@ export const resetAdaptiveState = (state: AdaptiveState): void => {
   state.meetingSeconds = fresh.meetingSeconds
   state.climbFailures = fresh.climbFailures
   state.lastStepWasUp = fresh.lastStepWasUp
+  state.contaminatedFrames = fresh.contaminatedFrames
   state.frames = fresh.frames
   state.engagedFrames = fresh.engagedFrames
 }
@@ -790,6 +799,7 @@ export const stepAdaptive = (
   dtSeconds: number,
   config: AdaptiveConfig,
   costSeconds?: number,
+  contaminated = false,
 ): boolean => {
   // Same clamp as the vignette's, for the same reason: a backgrounded tab hands
   // back a delta of minutes, and without this the first frame back drops the
@@ -797,6 +807,33 @@ export const stepAdaptive = (
   const dt = dtSeconds < 0 ? 0 : dtSeconds > 0.25 ? 0.25 : dtSeconds
   state.frames += 1
   if (state.stepIndex > 0) state.engagedFrames += 1
+  // ── DEV-914: a contaminated frame is not evidence, in EITHER direction ────
+  //
+  // `render/contamination.ts` says why. What it means here: the frame is
+  // counted (it happened, and `engagedFraction` describes the session's
+  // frames) but it feeds nothing the controller decides on.
+  //
+  //  - The EMA is not fed, and is RESET to unseeded (`0`), so the first clean
+  //    frame after the burst seeds it, as the first frame of a session does.
+  //    Merely not feeding it would leave the average at whatever the last
+  //    starved frames made it, and the first clean seconds would be judged
+  //    against that.
+  //  - `overSeconds` and `underSeconds` are zeroed: they are CONSECUTIVE
+  //    counters, and a flagged frame interrupts the run. This is the line that
+  //    keeps a burst from completing a downgrade that clean frames had
+  //    half-built before it.
+  //  - `meetingSeconds` is left alone. It is the DEV-228 evidence that the
+  //    frame is being met, only a step down clears it, and a starved frame is
+  //    no reason to throw that away. It does not ADVANCE, though.
+  //  - No step in either direction, and `lastStepWasUp` is untouched, so the
+  //    climb backoff does not read a flagged stretch as a failed climb.
+  if (contaminated) {
+    state.contaminatedFrames += 1
+    state.ema = 0
+    state.overSeconds = 0
+    state.underSeconds = 0
+    return false
+  }
 
   // ── DEV-262: WHAT the average is made of, which is not the wall clock ────
   //
@@ -1059,6 +1096,14 @@ export interface QualityReport {
    */
   readonly frames: number
   readonly engagedFrames: number
+  /**
+   * `CONTAMINATION` bits in force for the LAST frame, 0 when it was clean
+   * (`render/contamination.ts`, DEV-914). The plate prints it and the trace
+   * records it per frame.
+   */
+  readonly contamination: number
+  /** Frames the controller did not decide on, out of `frames`. */
+  readonly contaminatedFrames: number
 }
 
 export interface QualityController {
@@ -1134,6 +1179,27 @@ export interface QualityOptions {
    * else.
    */
   readonly displayHz?: number
+  /**
+   * DEV-914: which `CONTAMINATION` bits explain THIS frame, called once per
+   * `frame()` with the frame's `dt`. Non-zero means the frame is flagged and the
+   * adaptive controller does not decide on it. Absent, nothing is ever flagged
+   * and the controller is exactly what it was before this option existed
+   * (`tests/unit/quality-contamination.test.ts` holds that on a recorded trace).
+   *
+   * INJECTED for `measuredHz`'s reasons: what knows about the dev server, the
+   * lease and the page is `boot/contamination.ts`, and a render module must not
+   * reach into boot, a DOM or a clock.
+   */
+  readonly contamination?: (dtSeconds: number) => number
+  /**
+   * DEV-931: the look a headset session wears (`?edition=`, else the look in
+   * force while presenting), or `null` for "do not follow the look" (the
+   * `?vrLookTier=0` pin). On AUTO it picks the headset's tier
+   * (`vrAutoQualityFor`). Read live at each XR scale push, so a look chosen on
+   * the monitor before ENTER VR is the one the session's eye is built for.
+   * Absent is `null`: every caller before DEV-931, and every test, unchanged.
+   */
+  readonly headsetLook?: () => EditionId | null
 }
 
 /**
@@ -1181,6 +1247,13 @@ export const createQualityController = (
     adaptiveResolution: true,
   }
   const adaptive = createAdaptiveState()
+  /**
+   * DEV-914: the flag on the last frame, and how many frames carried one. Kept
+   * here and not read back from `adaptive` because `?adaptive=0` never runs the
+   * controller and the plate still has to say a frame was flagged.
+   */
+  let lastContamination = 0
+  let contaminatedFramesSeen = 0
   let appliedPixelRatio: number | null = null
   /**
    * NaN, not `FOVEATION_ON`, so the FIRST `apply()` always pushes.
@@ -1618,7 +1691,10 @@ export const createQualityController = (
    */
   // The HEADSET's tier: on AUTO that is `VR_AUTO_QUALITY`, not the monitor's
   // `quality` (DEV-334). This scale is only ever read for an XR session.
-  const baseFramebufferScale = () => QUALITY[qualityInForce(settings, true)].framebufferScale
+  // DEV-931: and on AUTO the headset's look picks between its two tiers.
+  const headsetLook = (): EditionId | null => options.headsetLook?.() ?? null
+  const baseFramebufferScale = () =>
+    QUALITY[qualityInForce(settings, true, headsetLook())].framebufferScale
 
   // ── The controller resets at both ends of a session (DEV-178) ───────────
   //
@@ -1640,6 +1716,8 @@ export const createQualityController = (
   // session boundary resolves from nothing rather than from the other display.
   const onSession = (): void => {
     resetAdaptiveState(adaptive)
+    lastContamination = 0
+    contaminatedFramesSeen = 0
     // The VIEWS are the new session's (DEV-236), so a remembered number would
     // report a request this session never heard.
     //
@@ -1679,12 +1757,18 @@ export const createQualityController = (
       // ultra: every other tier's ratio is the cap and does not depend on the
       // size, and their behaviour stays exactly what it was.
       if (QUALITY[settings.quality].ultra && !presenting()) pushPixelRatio()
+      // DEV-914. Asked OUTSIDE the adaptive guard as well: `?adaptive=0` is the
+      // measuring configuration, which is exactly where a flag has to be
+      // recorded, and the plate reads `report.contamination` either way.
+      const flagged = options.contamination ? options.contamination(dtSeconds) : 0
+      lastContamination = flagged
+      if (flagged !== 0) contaminatedFramesSeen += 1
       if (settings.adaptiveResolution) {
         const config: AdaptiveConfig = {
           ...DEFAULT_ADAPTIVE,
           targetSeconds: budgetNow().seconds,
         }
-        if (stepAdaptive(adaptive, dtSeconds, config, costSeconds)) {
+        if (stepAdaptive(adaptive, dtSeconds, config, costSeconds, flagged !== 0)) {
           pushPixelRatio()
           pushFoveation()
         }
@@ -1727,7 +1811,7 @@ export const createQualityController = (
     get report(): QualityReport {
       const target = budgetNow()
       return {
-        quality: qualityInForce(settings, presenting()),
+        quality: qualityInForce(settings, presenting(), headsetLook()),
         framebufferScale: baseFramebufferScale(),
         pixelRatio: presenting() ? null : appliedPixelRatio,
         // The XR half of the same story: null flat, a number in a session.
@@ -1748,6 +1832,8 @@ export const createQualityController = (
         measuredShare: target.measuredShare,
         frames: adaptive.frames,
         engagedFrames: adaptive.engagedFrames,
+        contamination: lastContamination,
+        contaminatedFrames: contaminatedFramesSeen,
       }
     },
   }

@@ -89,3 +89,6 @@ jobs:
 
       - name: Typecheck, lint, unit tests
         run: pnpm check
+
+      - name: Slow unit tests (tests/slow.list.json)
+        run: pnpm test:slow

@@ -891,3 +891,97 @@ describe('warmWorld — show, DEV-250', () => {
     expect(calls.map((c) => c.kind)).toEqual(['render', 'compile'])
   })
 })
+
+describe('warmWorld: bloom’s UI pass, DEV-938', () => {
+  /** The fake, with the camera's mask recorded beside every compile. */
+  const spied = () => {
+    const w = world()
+    const hud = new THREE.Mesh(new THREE.BufferGeometry())
+    hud.name = 'hud'
+    w.scene.add(hud)
+    const fake = fakeRenderer(w.root, w.scene)
+    const masks: { handed: string | undefined; mask: number }[] = []
+    const compile = fake.renderer.compile
+    fake.renderer.compile = ((handed: THREE.Object3D, ...rest: unknown[]) => {
+      masks.push({ handed: handed.name, mask: w.camera.layers.mask })
+      return (compile as (...a: unknown[]) => Set<THREE.Material>)(handed, ...rest)
+    }) as WarmUpRenderer['compile']
+    return { ...w, ...fake, hud, masks }
+  }
+
+  it('compiles the UI roots on the CANVAS with the camera on the UI layer alone', () => {
+    const { scene, camera, root, hud, renderer, calls, masks } = spied()
+    const cameraMask = camera.layers.mask
+    warmWorld(
+      renderer,
+      scene,
+      camera,
+      root,
+      { offscreen: true, uiPass: { roots: [hud], layer: 3 } },
+      () => 0,
+    )
+    const i = calls.findIndex((c) => c.handed === 'hud')
+    expect(i, 'the HUD was handed to a compile of its own').toBeGreaterThan(0)
+    expect(calls[i]?.target, 'bloom draws its UI pass to the canvas').toBeNull()
+    expect(calls[0]?.target, 'and the world draw stays on the composer target').not.toBeNull()
+    // The mask is the second half of the key: lights are collected per layer.
+    expect(masks.find((m) => m.handed === 'hud')?.mask).toBe(1 << 3)
+    expect(camera.layers.mask, 'the camera is handed back as found').toBe(cameraMask)
+  })
+
+  it('runs before shaftLit puts the room back, so it sees the FLIGHT’s lights', () => {
+    const { scene, camera, root, hud, renderer, calls } = spied()
+    const room = new THREE.Group()
+    room.name = 'room'
+    const deck = new THREE.Group()
+    deck.name = 'deck'
+    scene.add(room, deck)
+    warmWorld(
+      renderer,
+      scene,
+      camera,
+      root,
+      { offscreen: true, hide: [room], shaftLit: [deck], uiPass: { roots: [hud], layer: 3 } },
+      () => 0,
+    )
+    const ui = calls.find((c) => c.handed === 'hud')
+    expect(ui?.visibleNames, 'the room is still hidden for the UI compile').not.toContain('room')
+    expect(calls.findIndex((c) => c.handed === 'hud')).toBeLessThan(
+      calls.findIndex((c) => c.handed === 'deck'),
+    )
+  })
+
+  it('does nothing without a composite: one pass already drew the UI', () => {
+    const { scene, camera, root, hud, renderer, calls } = spied()
+    warmWorld(
+      renderer,
+      scene,
+      camera,
+      root,
+      { offscreen: false, uiPass: { roots: [hud], layer: 3 } },
+      () => 0,
+    )
+    expect(calls.map((c) => c.kind)).toEqual(['render', 'compile'])
+  })
+
+  it('hands the camera mask back on a throw', () => {
+    const { scene, camera, root, hud, renderer } = spied()
+    const cameraMask = camera.layers.mask
+    const compile = renderer.compile
+    renderer.compile = ((handed: THREE.Object3D, ...rest: unknown[]) => {
+      if (handed.name === 'hud') throw new Error('context lost')
+      return (compile as (...a: unknown[]) => Set<THREE.Material>)(handed, ...rest)
+    }) as WarmUpRenderer['compile']
+    expect(() =>
+      warmWorld(
+        renderer,
+        scene,
+        camera,
+        root,
+        { offscreen: true, uiPass: { roots: [hud], layer: 3 } },
+        () => 0,
+      ),
+    ).toThrow('context lost')
+    expect(camera.layers.mask).toBe(cameraMask)
+  })
+})

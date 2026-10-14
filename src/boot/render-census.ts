@@ -91,10 +91,35 @@ export interface CensusItem {
   readonly group: { start: number; count: number } | null
 }
 
+/**
+ * Triangles one `BatchedMesh` draw submits: the multi-draw counts its last
+ * `onBeforeRender` recorded, summed. Those are private to three
+ * (`_multiDrawCounts`, `_multiDrawCount`), so they are read structurally and a
+ * missing field reads as 0 rather than as a guess; `tests/unit/render-census
+ * .test.ts` pins the shape against the real class so an upgrade that renames
+ * them fails there.
+ */
+export const batchedTriangles = (batch: THREE.BatchedMesh): number => {
+  const shape = batch as unknown as { _multiDrawCounts?: Int32Array; _multiDrawCount?: number }
+  const counts = shape._multiDrawCounts
+  const n = shape._multiDrawCount
+  if (!counts || typeof n !== 'number') return 0
+  let vertices = 0
+  for (let i = 0; i < n; i++) vertices += counts[i] as number
+  return Math.floor(vertices / 3)
+}
+
 /** Triangles one draw of `item` issues: draw range or full geometry, times instances. */
 export const itemTriangles = (item: CensusItem): number => {
   const g = item.geometry
   if (!g) return 0
+  // DEV-904. A `BatchedMesh`'s geometry is its whole RESERVED buffer, free slots
+  // and all (DEV-193 section 4: 280 k triangles reported for the 182 k a frame
+  // submitted). What it submitted is the sum of the draw ranges `onBeforeRender`
+  // last built for the camera in use, and the census renders with its own, so
+  // after that render these are the frame's.
+  const batched = item.object as THREE.BatchedMesh
+  if (batched.isBatchedMesh) return batchedTriangles(batched)
   const index = g.index
   const position = g.attributes.position
   const total = index ? index.count : position ? position.count : 0
@@ -126,7 +151,11 @@ export const rowKey = (object: THREE.Object3D, scene: THREE.Object3D): string =>
   if (top !== 'world-terrain') return top
   let n: THREE.Object3D = object
   while (n.parent && n.parent.parent !== scene) n = n.parent
-  const second = n === object && /^chunk_\d+_\d+$/.test(n.name) ? 'chunks' : n.name || n.type
+  // DEV-904: the land's LOD batches (`chunks_batch_N`) are the chunks, drawn
+  // another way, so they fold into the same row. A before and after of the
+  // chunk grid is then a diff of one row, and `census-baseline`'s key holds.
+  const second =
+    n === object && /^chunk_\d+_\d+$|^chunks_batch_\d+$/.test(n.name) ? 'chunks' : n.name || n.type
   return `${top}/${second}`
 }
 

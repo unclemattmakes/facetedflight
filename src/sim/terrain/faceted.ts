@@ -197,6 +197,81 @@ export const diagonalTopLeftToBottomRight = (
 }
 
 /**
+ * DEV-929: how a chunk's skirts drop. `adaptive` (the default) sizes each
+ * edge's skirt to the deepest seam a neighbour at any LOD can open there;
+ * `sea` is 2016's wall to y = 0, which the detail ring keeps (its finer grid
+ * meets the base grid's edge, a seam this chunk cannot bound from its own
+ * vertices alone).
+ */
+export type ChunkSkirts = 'adaptive' | 'sea'
+
+/** A skirt depth meaning "to y = 0", 2016's. */
+const SEA_LEVEL = -1
+const SEA_SKIRTS = { xm: SEA_LEVEL, xp: SEA_LEVEL, ym: SEA_LEVEL, yp: SEA_LEVEL } as const
+
+/**
+ * Metres added to every adaptive skirt below the seam bound. The bound is in
+ * HEIGHT along the edge's grid index; the shared vertices also carry a
+ * horizontal jitter of up to `randomOffset` (0.6 m to Simonet's 1.3 m), which
+ * tilts the seam a little off vertical. Three metres covers 1.3 m of jitter on
+ * a 45 degree slope with room over, and is a small wall next to the hundreds
+ * 2016 dropped. Not a 2016
+ * number (DEV-929 is ours); CLAUDE.md rule 3 asks a literal under `src/sim/`
+ * to say why, and this is why.
+ */
+export const SKIRT_MARGIN_METRES = 3
+
+/**
+ * DEV-929: the depth each of a chunk's four skirts must drop, metres below its
+ * edge (`SEA_LEVEL` for an edge on the grid's border).
+ *
+ * At LOD k a chunk's edge is the straight line between every 2^k-th grid
+ * vertex of the shared edge, and both neighbours read the same vertices. So at
+ * each point along the edge, every LOD's line has a height, and the deepest
+ * seam any two neighbours can open there is the RANGE of those heights: the
+ * highest line minus the lowest. The edge's depth is the worst range along it,
+ * over every stride up to the whole chunk (whatever LODs a scene uses), plus
+ * `SKIRT_MARGIN_METRES`. The skirt of the higher edge then always reaches the
+ * lower one. `pinnedY` never lets it go below y = 0, 2016's wall: a seam that
+ * reaches under the sea is one 2016 left too.
+ */
+export const skirtDepths = (
+  verts: Float32Array,
+  vertPerSide: number,
+  offsetX: number,
+  offsetY: number,
+  quadPerChunkLod0: number,
+): { xm: number; xp: number; ym: number; yp: number } => {
+  const n = quadPerChunkLod0
+  const heightAt = (gx: number, gy: number): number =>
+    verts[(gx * vertPerSide + gy) * 3 + 1] as number
+  /** Worst range of the LOD lines along one edge, `h(i)` its heights for i = 0..n. */
+  const edgeDepth = (h: (i: number) => number): number => {
+    let worst = 0
+    for (let i = 0; i <= n; i++) {
+      let lo = Number.POSITIVE_INFINITY
+      let hi = Number.NEGATIVE_INFINITY
+      for (let s = 1; s <= n; s *= 2) {
+        const a = Math.floor(i / s) * s
+        const b = Math.min(a + s, n)
+        const y = a === b ? h(a) : h(a) + ((h(b) - h(a)) * (i - a)) / (b - a)
+        if (y < lo) lo = y
+        if (y > hi) hi = y
+      }
+      if (hi - lo > worst) worst = hi - lo
+    }
+    return worst + SKIRT_MARGIN_METRES
+  }
+  const last = vertPerSide - 1
+  return {
+    xm: offsetX === 0 ? SEA_LEVEL : edgeDepth((i) => heightAt(offsetX, offsetY + i)),
+    xp: offsetX + n >= last ? SEA_LEVEL : edgeDepth((i) => heightAt(offsetX + n, offsetY + i)),
+    ym: offsetY === 0 ? SEA_LEVEL : edgeDepth((i) => heightAt(offsetX + i, offsetY)),
+    yp: offsetY + n >= last ? SEA_LEVEL : edgeDepth((i) => heightAt(offsetX + i, offsetY + n)),
+  }
+}
+
+/**
  * Generate one chunk's mesh at the given LOD.
  *
  * The quad loop runs from -1 to `quadPerSide` inclusive — one ring wider than
@@ -219,6 +294,7 @@ export const generateChunk = (
   chunkX: number,
   chunkY: number,
   lod = 0,
+  skirts: ChunkSkirts = 'adaptive',
 ): TerrainChunkMesh => {
   const quadPerChunkLod0 = params.chunkSize / params.baseResolution
   const stride = 1 << lod
@@ -274,10 +350,46 @@ export const generateChunk = (
   const edgeNormalYM = new Float32Array(quadPerChunk * 3)
   const edgeNormalYP = new Float32Array(quadPerChunk * 3)
 
-  const readCorner = (slot: number, gx: number, gy: number, pinY: boolean): void => {
+  // -- DEV-929: how far each edge's skirt drops --------------------------
+  //
+  // 2016 drops every skirt to y = 0, so in the mountains a skirt is a wall
+  // hundreds of metres tall, a third to two-fifths of every fragment the land
+  // rasterises (`ANNIVERSARY-VR-FRAMERATE.md` section 3.5). The skirt only has
+  // to reach the lowest a NEIGHBOUR's edge can be, and that is bounded:
+  // `skirtDepths` has the argument. The grid's outer border has no neighbour
+  // to meet and keeps 2016's wall to the sea, and so does `skirts: 'sea'`.
+  const depths =
+    skirts === 'sea'
+      ? SEA_SKIRTS
+      : skirtDepths(verts, vertPerSide, offsetX, offsetY, quadPerChunkLod0)
+  /** Where a pinned corner on these edges sits: the LOWEST of their drops. */
+  const pinnedY = (h: number, xm: boolean, xp: boolean, ym: boolean, yp: boolean): number => {
+    let y = Number.POSITIVE_INFINITY
+    const take = (d: number): void => {
+      // Never below 2016's wall: no skirt is longer than the one it replaces.
+      const at = d === SEA_LEVEL ? 0 : Math.max(0, h - d)
+      if (at < y) y = at
+    }
+    if (xm) take(depths.xm)
+    if (xp) take(depths.xp)
+    if (ym) take(depths.ym)
+    if (yp) take(depths.yp)
+    return y
+  }
+
+  const readCorner = (
+    slot: number,
+    gx: number,
+    gy: number,
+    xm: boolean,
+    xp: boolean,
+    ym: boolean,
+    yp: boolean,
+  ): void => {
     const i = (gx * vertPerSide + gy) * 3
+    const h = verts[i + 1] as number
     cx[slot] = verts[i] as number
-    cy[slot] = pinY ? 0 : (verts[i + 1] as number)
+    cy[slot] = xm || xp || ym || yp ? pinnedY(h, xm, xp, ym, yp) : h
     cz[slot] = verts[i + 2] as number
   }
 
@@ -367,10 +479,15 @@ export const generateChunk = (
         y === quadPerChunk ? quadPerChunk * stride + offsetY : (y + 1) * stride + offsetY
 
       // Skirt pinning, mirroring the original's per-corner y = 0 assignments.
-      readCorner(0, lowerX, lowerY, x === -1 || y === -1)
-      readCorner(1, lowerX, upperY, x === -1 || y === quadPerChunk)
-      readCorner(2, upperX, lowerY, x === quadPerChunk || y === -1)
-      readCorner(3, upperX, upperY, x === quadPerChunk || y === quadPerChunk)
+      // DEV-929: which edges pin each corner, so it drops by theirs.
+      const xm = x === -1
+      const xp = x === quadPerChunk
+      const ym = y === -1
+      const yp = y === quadPerChunk
+      readCorner(0, lowerX, lowerY, xm, false, ym, false)
+      readCorner(1, lowerX, upperY, xm, false, false, yp)
+      readCorner(2, upperX, lowerY, false, xp, ym, false)
+      readCorner(3, upperX, upperY, false, xp, false, yp)
 
       let topLeftToBottomRight = true
       if (x >= 0 && x < quadPerChunk && y >= 0 && y < quadPerChunk) {

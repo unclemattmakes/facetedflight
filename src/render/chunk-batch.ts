@@ -1,414 +1,473 @@
-// src/render/chunk-batch.ts — the chunk grid as one `BatchedMesh` per LOD band.
-// DEV-193, and it is a SPIKE: off by default, behind `?chunkBatch=1`, and it
-// answers three questions with counts rather than shipping a rewrite.
+// src/render/chunk-batch.ts : the land's chunk grid as one `BatchedMesh` per LOD.
+// DEV-193 built it as a spike behind `?chunkBatch=1`; DEV-904 makes it the path
+// the land is drawn by.
 //
-// ── The question ─────────────────────────────────────────────────────────
+// ── Why ──────────────────────────────────────────────────────────────────
 //
-// `docs/plan/VR-PERF-WAVE-2-WORK.md` §11.7 item 1. After DEV-184 took
-// `lod-fade.ts`'s `discard` out of the base material and DEV-192 took the
-// cabin's dead point lights out of every world shader, the chunk grid flipped
-// from fill-bound to DRAW-bound: 1.16 ms fixed against 0.06 ms/Mpx of fill, and
-// 201 of the frame's 263 calls. Next door, DEV-118's instanced props carry
-// 900 k triangles in nine draws and measure at nothing. **Geometry was never
-// the problem here; the draw count is.**
-//
-// §9 sketched `THREE.BatchedMesh`, one batch per LOD band. Nobody had
-// established that it FITS. This module is the test of that, and every claim it
-// makes is a count a spec can read back.
+// After DEV-184 took `lod-fade.ts`'s `discard` out of the base material and
+// DEV-192 took the cabin's dead point lights out of every world shader, the
+// chunk grid flipped from fill-bound to DRAW-bound: ~1.16 ms fixed against
+// 0.06 ms/Mpx of fill, and 201 of the frame's 263 calls (DEV-193 section 3).
+// Next door DEV-118's instanced props carry 900 k triangles in nine draws and
+// cost nothing. Geometry was never the problem; the draw count was.
 //
 // ── Why a band is the right unit, and it is a FACT not a choice ──────────
 //
-// `sim/terrain/faceted.ts:221` is `quadPerChunk = (chunkSize / baseResolution)
-// >> lod` and `triCount = (quadPerChunk + 2)^2 * 2` — the +2 being the skirt
-// ring — and the arrays are allocated at `triCount * 9` and never truncated, so
-// `chunkGeometry` always emits exactly `triCount * 3` vertices.
-//
-// **Every chunk at one LOD has exactly the same vertex count.** That single
-// fact is what makes a batch affordable, because `BatchedMesh` reserves FIXED
-// per-geometry budgets and a heterogeneous batch has to be repacked. A
-// homogeneous band is a fixed-stride array: slot `k` owns
-// `vertexCount` vertices for the life of the batch, and a chunk arriving in the
-// band writes over a free slot with `setGeometryAt`.
+// `sim/terrain/faceted.ts` is `quadPerChunk = (chunkSize / baseResolution) >>
+// lod` and `triCount = (quadPerChunk + 2)^2 * 2` (the +2 is the skirt ring), and
+// the arrays are never truncated, so `chunkGeometry` emits exactly `triCount *
+// 3` vertices. **Every chunk at one LOD is exactly the same size**, which is
+// what makes `BatchedMesh`'s fixed per-geometry budgets affordable: a band is a
+// fixed-stride array, slot `k` owns `vertexCount` vertices for the life of the
+// batch, and a chunk arriving in the band is written over a free slot.
 //
 // ── The trap in `addGeometry`, which is why the churn path is a SWAP ─────
 //
-// `BatchedMesh.addGeometry` (three 0.185.1, `:626`) recycles the deleted
-// geometry **ID** out of `_availableGeometryIds` and then allocates fresh space
-// at `_nextVertexStart`, which only ever moves forward. So
-// `deleteGeometry` + `addGeometry` LEAKS the vertex range: the buffer fills up
-// and throws `Reserved space request exceeds the maximum buffer size` after
-// enough churn, and the only way back is `optimize()`, which repacks the whole
-// buffer.
+// three 0.185.1's `addGeometry` recycles a deleted geometry's ID and then
+// allocates fresh space at `_nextVertexStart`, which only ever moves forward. So
+// `deleteGeometry` + `addGeometry` LEAKS the vertex range, the buffer fills, it
+// throws `Reserved space request exceeds the maximum buffer size`, and the only
+// way back is `optimize()`. Simonet hands over ~10 chunks a second at 100 m/s.
+// `setGeometryAt` into a pre-reserved slot does not move `_nextVertexStart`,
+// uploads only that slot's sub-range and picks up the incoming geometry's own
+// bounding sphere. So: reserve the slots once, swap geometry into them, never
+// delete. `place` and `release` are that swap.
 //
-// A terrain hands over ~10 chunks a second at the 1,024 m band at 100 m/s, so a
-// design that leaks per hand-over is a design that repacks a 24 MB buffer every
-// few seconds. `setGeometryAt` on a pre-reserved slot does not move
-// `_nextVertexStart` at all, writes only that slot's sub-range
-// (`addUpdateRange`, `:764`), and picks up the incoming geometry's own
-// `boundingSphere` for the per-instance cull. So: **reserve the slots once,
-// swap geometry into them, never delete.** A band the chunk has left is a slot
-// returned to a free list with its instance hidden.
+// ── What the batch draws with ────────────────────────────────────────────
 //
-// ── What a batch must NOT lose ───────────────────────────────────────────
+// **The identical material object**, by reference. The terrain's base material
+// carries a stack of `onBeforeCompile` patches whose install order matters
+// (fog, far shadow, warp, gloss, lod-fade, fragment gates, point-light scope,
+// baked light), and `Material.copy` carries neither the hook nor the cache key
+// and WIPES `defines`, so a clone would lose all of it silently. three still
+// compiles a second program for the batch because `batching` is bit 18 of the
+// cache key; every band of one material shares that one program, so the cost is
+// +1 program (plus the depth material's batched variant), not +1 per band.
 //
-// The terrain's base material carries a stack of `onBeforeCompile` patches whose
-// INSTALL ORDER matters (`boot/app.ts` sets it): Unity fog, `far-shadow.ts`'s
-// far-field sun term, the illustrative warp, the surface gloss, `lod-fade.ts`'s
-// gated `discard`, DEV-191's `fragment-gates.ts` and DEV-192's
-// `point-light-scope.ts`. A batch that got a FRESH material would silently lose
-// all of it — and `Material.copy` does not carry `onBeforeCompile` or
-// `customProgramCacheKey` and WIPES `defines`, so a clone would lose it too.
+// ── Who owns what ────────────────────────────────────────────────────────
 //
-// So the batch draws with **the identical material object**, by reference. Not a
-// copy, not a clone. three still compiles a second program for it, because
-// `batching` is bit 18 of `getProgramCacheKeyBooleans`
-// (`WebGLPrograms.js`) — that is correct and it is the cost: **+1 program per
-// batched material**, compiled once, with the same patched source text.
-// `tests/unit/chunk-batch.test.ts` asserts the identity rather than the
-// behaviour, because identity is the only thing that cannot drift.
+// This module owns the batches and the slot arithmetic and knows nothing about
+// LODs, fades or the worker. `game/terrain/load-terrain.ts` owns the chunks and
+// decides when one is placed: a chunk is in a band while it is plain geometry
+// at a settled LOD, and OUT of it while it cross-fades (DEV-130 gives each half
+// of a fade its own pooled material clone carrying its own `uLodFade`, and one
+// batch has one material), while it is excluded (the launch bore hides its
+// chunks one by one, DEV-249) and while its band is full.
 //
-// ── What decides a batch, and it is deliberately not "the LOD" ───────────
-//
-// The key is `(material, vertexCount, castShadow, receiveShadow)` — the four
-// things one `BatchedMesh` can only have one of. It is derived from the MESHES,
-// not from a `lod` field this module would have to be told.
-//
-// That is the point. §9's claim is *"the band IS the flag"*: LOD <= 0 casts,
-// LOD >= 1 does not (`render/shadows.ts`'s `shadowFlagsFor`, 2016's
-// `FacetedTerrain.cs:721`, extended to the LOD -1 ring by DEV-115). If the claim
-// is true, grouping on the shadow flags and the vertex count yields exactly one
-// group per band and nothing else. If it is false — if one band ever holds two
-// different cast flags, or two vertex counts — this grouping SAYS SO, by
-// producing more groups than there are bands. A key that read `slot.lod` would
-// have assumed the answer instead of measuring it. (CLAUDE.md trap 24: assert
-// the relationship, not the value.)
-//
-// ── What this module does NOT do, and it is not an oversight ─────────────
-//
-// **A fading chunk is left alone.** `lod-fade.ts` gives each of a transition's
-// two meshes its own pooled material CLONE carrying its own `uLodFade`, and one
-// batch has one material, so a fading chunk cannot be in a batch. §9's answer is
-// to draw it on its own for the 0.6-1 s of the fade — which is what already
-// happens here for free, because a fade clone fails the `material` half of the
-// batch key and a mesh that is not in a batch keeps drawing exactly as it does
-// today. The cost is a handful of extra calls, not 146.
+// A chunk that is not placed keeps drawing as its own mesh, exactly as before,
+// so the failure mode of every limit here is "a few more draws", never "a hole".
 
 import * as THREE from 'three'
-import { lodFadeUniformOf } from '@/render/lod-fade'
 
-/** The four things one `BatchedMesh` can only have one of. */
-export interface ChunkBatchKey {
+/**
+ * Where a land band sits among the opaques: `renderOrder` 0, interleaved with
+ * the props by material id as the chunks always were, or {@link AFTER_PROPS},
+ * after every object at 0 and before the sea's 1.
+ *
+ * Measured, not argued (DEV-904). three sorts `renderOrder -> material.id`, so
+ * where the ground draws against the props decides how much of it they shade
+ * over. Every subset of four bands was tried on five missions, shaded overdraw
+ * of the same frozen frame:
+ *
+ *   hoverJet_kauai_beg    all at 0 1.327 · finest alone at 0, rest after 1.211
+ *                         (unbatched 1.242)
+ *   rookie_02_jumpSeat    all at 0 1.247 · detail ring after 2.011
+ *   int_01_jumpSeat       all at 0 1.169 · detail ring after 1.894
+ *
+ * The detail ring (LOD -1) is the ground under the ship: it has to draw BEFORE
+ * the props, or the props behind it are shaded and then covered. The bands
+ * from LOD 0 out gain on Kauai and cost nothing on the jumpSeat missions when
+ * they draw after the props. So the ring stays at 0 and the rest follow it.
+ */
+export const AFTER_PROPS = 0.001
+
+/** The default place of a band, by LOD. */
+export const bandRenderOrder = (lod: number): number => (lod < 0 ? 0 : AFTER_PROPS)
+
+/** What a band casts and receives. `load-terrain.ts` derives it from `shadowFlagsFor`. */
+export interface ChunkBandFlags {
+  readonly cast: boolean
+  readonly receive: boolean
+}
+
+export interface ChunkBatcherOptions {
+  /** The terrain's base material, by reference. See the header. */
   readonly material: THREE.Material
-  readonly vertexCount: number
-  readonly castShadow: boolean
-  readonly receiveShadow: boolean
+  /** Where the batches hang: the terrain group. */
+  readonly parent: THREE.Object3D
   /**
-   * The chunks' own `renderOrder`. DEV-241.
-   *
-   * In the key because it is in three's opaque sort AHEAD of `material.id`, so
-   * two chunks at different orders are two positions in the frame and folding
-   * them into one `BatchedMesh` would pick one of the two and silently move the
-   * other. Today it separates nothing — a terrain's chunks are all at 0 and the
-   * SEA's are all at `OCEAN_LATE_ORDER` — and that is the point: the band it
-   * builds for the sea has to carry the 1, or the spike would hand the ocean
-   * back to `material.id` and undo the default it is measuring against.
+   * Vertices in one chunk at `lod`, or null for a level this terrain does not
+   * have. Asked of the sim's own arithmetic by the caller, so this module never
+   * restates the skirt.
    */
-  readonly renderOrder: number
+  readonly vertexCount: (lod: number) => number | null
+  /** Slots to reserve for `lod`. The sizing is the caller's, from a measurement. */
+  readonly capacity: (lod: number) => number
+  /** Cast and receive flags for a band, read fresh by `refreshFlags`. */
+  readonly flags: (lod: number) => ChunkBandFlags
+  /** The band for `lod`'s place in the frame. Defaults to {@link bandRenderOrder}. */
+  readonly renderOrder?: (lod: number) => number
 }
 
-/**
- * A short, stable serial per material — so a band key is readable in a log.
- *
- * A `WeakMap` rather than `material.uuid`, which is 36 characters and turns a
- * printed band list into noise, and rather than `material.id`, which three's
- * typings do not expose. It is per session and that is all it has to be: the key
- * exists to GROUP within one fold and to be legible in the report.
- */
-const materialSerial = new WeakMap<THREE.Material, number>()
-let nextMaterialSerial = 1
-
-/**
- * A chunk mesh's batch key as a string, for grouping.
- *
- * A string rather than a tuple because it is what a spec prints, and a printed
- * band list is the evidence for the paragraph above — *"three bands, and their
- * cast flags separate"* is a claim a reader can check.
- */
-export const batchKeyString = (key: ChunkBatchKey): string => {
-  let serial = materialSerial.get(key.material)
-  if (serial === undefined) {
-    serial = nextMaterialSerial++
-    materialSerial.set(key.material, serial)
-  }
-  return `m${serial}/v${key.vertexCount}/${key.castShadow ? 'cast' : 'nocast'}/${
-    key.receiveShadow ? 'recv' : 'norecv'
-  }/o${key.renderOrder}`
+/** A chunk offered to `sync`. */
+export interface ChunkBatchItem {
+  readonly id: string
+  readonly lod: number
+  readonly geometry: THREE.BufferGeometry
 }
 
-/** Is this object a chunk mesh this module is willing to batch? */
-export const isBatchableChunk = (object: THREE.Object3D): object is THREE.Mesh => {
-  const mesh = object as THREE.Mesh
-  if (!mesh.isMesh) return false
-  // A batch has ONE material. An array material is a mesh with draw groups and
-  // this module has no business folding one.
-  if (Array.isArray(mesh.material)) return false
-  const geometry = mesh.geometry
-  if (!geometry?.attributes.position) return false
-  // `chunkGeometry` emits non-indexed soup and `BatchedMesh` demands
-  // consistency (`BatchedMesh.js:423`), not the absence of an index. Mixing is
-  // what it refuses, so the filter is "no index" rather than "an index".
-  if (geometry.index !== null) return false
-  // Anything that is not at the identity is not a chunk of THIS grid — the
-  // generator offsets its vertices by the chunk origin itself, so every chunk
-  // mesh sits at its parent's origin. A mesh with its own transform would need
-  // `setMatrixAt` to carry it, which is supported, but it is also the tell that
-  // this is not the object we think it is.
-  if (!(mesh.position.lengthSq() === 0 && mesh.scale.x === 1 && mesh.quaternion.w === 1)) {
-    return false
-  }
-  // ── a chunk MID-FADE is not batchable, and this is the test that says so ──
-  //
-  // §9 called it the first of the three constraints: a fading chunk needs its
-  // OWN `uLodFade`, one batch has one material, so it has to be drawn alone for
-  // the 0.6-1 s of its transition. `lod-fade.ts` keeps each clone's uniform in a
-  // `WeakMap` and `lodFadeUniformOf` is the lookup — so "is this material a fade
-  // clone" is asked of the module that knows, rather than guessed from a name or
-  // inferred from the material id.
-  //
-  // Without it the exclusion would still half-happen, and silently: a clone is a
-  // distinct `material.id`, so each fading chunk would get a batch OF ONE, which
-  // is strictly worse than the mesh it replaced and would read as a band in the
-  // output. The right answer is to leave it exactly as it is drawn today.
-  return lodFadeUniformOf(mesh.material as THREE.Material) === undefined
-}
-
-/** A chunk mesh of the grid, by name. `load-terrain.ts` names them. */
-export const isChunkName = (name: string): boolean => /^chunk_\d+_\d+$/.test(name)
-
-export interface ChunkBatchBand {
-  readonly key: string
-  readonly material: THREE.Material
+export interface ChunkBandReport {
+  readonly lod: number
+  readonly name: string
   readonly vertexCount: number
+  /** Slots reserved. */
+  readonly slots: number
+  /** Slots holding a chunk right now. */
+  readonly used: number
+  /** `slots * vertexCount * floatsPerVertex * 4`, the GPU buffer this band holds. */
+  readonly bytes: number
   readonly castShadow: boolean
   readonly receiveShadow: boolean
-  /** Chunks folded into this batch at build time. */
-  readonly members: number
-  /** Slots reserved — `members` plus headroom. */
-  readonly slots: number
-  /** `slots * vertexCount * 11 * 4`, the GPU buffer this band holds. */
-  readonly bytes: number
-  readonly batch: THREE.BatchedMesh
 }
 
-export interface ChunkBatchSet {
-  readonly bands: readonly ChunkBatchBand[]
-  /** Chunk meshes folded in, across every band. */
-  readonly folded: number
-  /** Chunk meshes left drawing on their own — fade clones, and anything odd. */
-  readonly skipped: number
+export interface ChunkBatchReport {
+  readonly bands: readonly ChunkBandReport[]
+  /** Chunks currently drawn through a band. */
+  readonly placed: number
   /** Total reserved vertex bytes, all bands. */
   readonly bytes: number
+  /** `place` calls refused because the band was full. Should stay 0 for ever. */
+  readonly overflows: number
+  /** `place` calls refused because the geometry did not fit the band's layout. */
+  readonly mismatches: number
+}
+
+export interface ChunkBatcher {
   /**
-   * Move a chunk into a band's free slot, the way a LOD change would.
-   *
-   * The churn path §9 left open, and the whole reason this is a swap rather
-   * than a delete — see the header. Returns the slot, or null when the band is
-   * full, which is the caller's signal to draw that chunk on its own.
+   * Put a chunk's geometry in the band for `lod`. True when it is now drawn by
+   * the band; false when it is not, in which case the caller keeps drawing the
+   * chunk as its own mesh. Replaces any earlier placement of `id`.
    */
-  take(key: string, geometry: THREE.BufferGeometry): number | null
-  /** Give a slot back: the instance goes invisible and the slot is reusable. */
-  give(key: string, slot: number): void
-  /** Free slots in a band, for the spec and for the overflow decision. */
-  free(key: string): number
-  /** Put the individual chunk meshes back and drop the batches. */
-  restore(): void
+  place(id: string, lod: number, geometry: THREE.BufferGeometry): boolean
+  /** Take a chunk out of its band. A no-op for one that is not in one. */
+  release(id: string): void
+  has(id: string): boolean
+  /**
+   * Who is in which slot: band name, slot (equal to the batch's instance and
+   * geometry id, which are allocated in step) and the chunk's id. For a spec to
+   * name the chunk behind an instance; nothing in the game reads it.
+   */
+  occupants(): readonly { readonly band: string; readonly slot: number; readonly id: string }[]
+  /**
+   * Rebuild every band from `items` and return the ids that are placed.
+   *
+   * The first build, and the answer to anything that rewrites the chunk
+   * geometries in place: the baked light adds, rewrites and deletes the
+   * `ff2Direct` attribute and recolours every vertex, and a batch holds its own
+   * COPY of the data. A batch that kept its old copy would draw yesterday's
+   * lighting, or no `ff2Direct` at all and a ground that reads zero sun.
+   *
+   * `levels` are the LODs to have a band for whether or not a chunk is in one
+   * yet, so every band exists (and has been drawn once) under the curtain
+   * rather than being allocated in flight.
+   */
+  sync(items: Iterable<ChunkBatchItem>, levels?: readonly number[]): ReadonlySet<string>
+  /** Re-read each band's cast and receive flags. */
+  refreshFlags(): void
+  /** Free slots in a band, for the spec and the overflow decision. */
+  free(lod: number): number
+  report(): ChunkBatchReport
+  /** Remove every batch and free its buffers. */
+  dispose(): void
+}
+
+/** Floats per vertex in a chunk geometry, REPORTED only: nothing depends on it. */
+const REPORT_FLOATS_PER_VERTEX = 11
+
+interface Band {
+  readonly lod: number
+  readonly batch: THREE.BatchedMesh
+  readonly vertexCount: number
+  readonly layout: string
+  readonly geometryIds: number[]
+  readonly instanceIds: number[]
+  readonly free: number[]
+  used: number
 }
 
 /**
- * Floats per vertex in a chunk geometry: position 3, normal 3, color 3, uv 2.
- * Used only to REPORT the buffer size a band reserves; nothing depends on it.
- */
-export const CHUNK_FLOATS_PER_VERTEX = 11
-
-/**
- * Fold a terrain group's chunk meshes into one `BatchedMesh` per band.
+ * The attribute set a batch was built from, as a string.
  *
- * Returns null when there is nothing to fold, so a caller can say "no" without
- * a special case. The individual meshes are hidden rather than removed: this is
- * a spike and `restore()` has to put the frame back exactly.
- *
- * `headroom` is extra slots per band, and it is the budget question made
- * explicit. A band sized to exactly its current members cannot accept a single
- * hand-over; a band sized for the whole grid reserves the whole grid. The
- * default of 0 is the honest floor — build it, count it, and let the spec
- * choose what to reserve.
+ * `BatchedMesh` throws on a geometry missing an attribute the batch has
+ * (`_validateGeometry`), and the split bake's `ff2Direct` comes and goes with
+ * the rung. Comparing layouts BEFORE `setGeometryAt` turns that throw into a
+ * `false`, which the caller answers by drawing the chunk alone.
  */
-export const buildChunkBatches = (
-  group: THREE.Object3D,
-  options: { readonly headroom?: number } = {},
-): ChunkBatchSet | null => {
-  const headroom = Math.max(0, Math.floor(options.headroom ?? 0))
-  const groups = new Map<string, { key: ChunkBatchKey; meshes: THREE.Mesh[] }>()
-  let skipped = 0
-  for (const child of group.children) {
-    // Only a mesh whose name says it is a chunk. `boot/app.ts` parents the
-    // PROP group under the terrain group (DEV-089) and a fade's `:incoming`
-    // mesh hangs here too; folding either would be this module deciding
-    // something that is not its business.
-    if (!isChunkName(child.name)) continue
-    if (!isBatchableChunk(child)) {
-      // A chunk this module refused — mid-fade, or a shape it does not
-      // recognise. Counted, because *"146 became 3"* is only true if nothing was
-      // quietly left behind still drawing.
-      skipped++
-      continue
-    }
-    const mesh = child
-    const material = mesh.material as THREE.Material
-    const vertexCount = (mesh.geometry.attributes.position as THREE.BufferAttribute).count
-    const key: ChunkBatchKey = {
-      material,
-      vertexCount,
-      renderOrder: mesh.renderOrder,
-      castShadow: mesh.castShadow,
-      receiveShadow: mesh.receiveShadow,
-    }
-    const id = batchKeyString(key)
-    const bucket = groups.get(id) ?? { key, meshes: [] }
-    bucket.meshes.push(mesh)
-    groups.set(id, bucket)
-  }
-  if (groups.size === 0) return null
+export const geometryLayout = (geometry: THREE.BufferGeometry): string => {
+  const names = Object.keys(geometry.attributes).sort()
+  return names
+    .map((name) => {
+      const a = geometry.getAttribute(name)
+      return `${name}:${a.itemSize}${a.normalized ? 'n' : ''}:${a.array.constructor.name}`
+    })
+    .join(',')
+}
 
-  const bands: ChunkBatchBand[] = []
-  const hidden: THREE.Mesh[] = []
-  /** Per band: the free slot list and the slot -> instance map. */
-  const state = new Map<string, { band: ChunkBatchBand; free: number[]; instance: number[] }>()
-
-  let bandIndex = 0
-  for (const [id, bucket] of groups) {
-    const slots = bucket.meshes.length + headroom
-    const vertexCount = bucket.key.vertexCount
-    const batch = new THREE.BatchedMesh(
-      slots,
-      slots * vertexCount,
-      // ZERO index budget. `_initializeGeometry` (`BatchedMesh.js:400`) only
-      // builds an index buffer when the reference geometry has one, and these
-      // never do — the faceted look requires fully split vertices. Letting the
-      // default `maxVertexCount * 2` stand would reserve nothing, because the
-      // branch is never taken, but 0 says so out loud.
-      0,
-      bucket.key.material,
+/** A zeroed geometry with `source`'s attribute layout and `vertexCount` vertices. */
+const blankLike = (source: THREE.BufferGeometry, vertexCount: number): THREE.BufferGeometry => {
+  const blank = new THREE.BufferGeometry()
+  for (const name of Object.keys(source.attributes)) {
+    const a = source.getAttribute(name)
+    const Ctor = a.array.constructor as new (n: number) => Float32Array
+    blank.setAttribute(
+      name,
+      new THREE.BufferAttribute(new Ctor(vertexCount * a.itemSize), a.itemSize, a.normalized),
     )
-    // ── the NAME is read by the census, so it is plain ────────────────────
-    //
-    // `boot/render-census.ts`'s `rowKey` folds a `world-terrain` child's own
-    // name into the row, and the band key carries `/` characters that would
-    // turn one row into something that reads like a path. An index here and the
-    // full key in the report: `chunks_batch_0` groups under the prefix the
-    // chunks row already has, which is what makes a before/after diff legible.
-    batch.name = `chunks_batch_${bandIndex++}`
-    batch.castShadow = bucket.key.castShadow
-    batch.receiveShadow = bucket.key.receiveShadow
-    // The members' own place in the frame (DEV-241). Every member of a band
-    // carries the same one — it is in the key — so there is one right answer
-    // and this is it. Without it the sea's band would fold back to 0 and the
-    // spike would be measuring a frame the game does not draw.
-    batch.renderOrder = bucket.key.renderOrder
-    // The batch's own sphere is computed from the ACTIVE instances
-    // (`BatchedMesh.computeBoundingSphere`), and `Frustum.intersectsObject`
-    // finds it because `BatchedMesh` declares `boundingSphere` — so the coarse
-    // cull is correct without help. `perObjectFrustumCulled` is three's default
-    // and is the one that matters: it culls each sub-geometry against its own
-    // sphere, which is what the individual meshes get today.
+  }
+  return blank
+}
+
+export const createChunkBatcher = (options: ChunkBatcherOptions): ChunkBatcher => {
+  const bands = new Map<number, Band>()
+  const placements = new Map<string, { band: Band; slot: number }>()
+  let overflows = 0
+  let mismatches = 0
+  let serial = 0
+  /**
+   * One sphere over the whole grid, shared by every band (see `sync`). null until
+   * the first `sync`, when each band computes its own from what it holds.
+   */
+  let footprint: THREE.Sphere | null = null
+
+  /**
+   * DEV-921: the bands' own shadow depth material, a default one exactly like
+   * three's. Without it every caster shares three's single `_depthMaterial`, and
+   * a material drawn for a `BatchedMesh` and then for a plain mesh fails
+   * `setProgram`'s batching check each time it changes hands: twice a frame
+   * (the bands, then the ship and landmarks, then the bands), each a full
+   * `getProgram` of about 85 us measured on `int_02_hoverJet`. One that only
+   * ever draws batched never changes hands. Same program key, so nothing new
+   * compiles; three's per-draw copying (side, maps, clipping) applies to a
+   * `customDepthMaterial` the same way.
+   */
+  const depthMaterial = new THREE.MeshDepthMaterial()
+
+  const applyFlags = (band: Band): void => {
+    const flags = options.flags(band.lod)
+    band.batch.castShadow = flags.cast
+    band.batch.receiveShadow = flags.receive
+  }
+
+  /** Build the band for `lod` with `sample`'s layout, or null for a level that does not exist. */
+  const createBand = (lod: number, sample: THREE.BufferGeometry): Band | null => {
+    const vertexCount = options.vertexCount(lod)
+    if (vertexCount === null || vertexCount <= 0) return null
+    const slots = Math.max(1, Math.floor(options.capacity(lod)))
+    // ZERO index budget: these are non-indexed soup (the faceted look needs
+    // fully split vertices) and `_initializeGeometry` only builds an index when
+    // the reference has one.
+    const batch = new THREE.BatchedMesh(slots, slots * vertexCount, 0, options.material)
+    // The name is plain on purpose: `boot/render-census.ts` folds a
+    // `world-terrain` child's name into its row key.
+    batch.name = `chunks_batch_${serial++}`
+    batch.renderOrder = (options.renderOrder ?? bandRenderOrder)(lod)
+    batch.customDepthMaterial = depthMaterial
+    // DEV-921: three 0.185.1's `setProgram` asks `object.colorTexture`, which
+    // `BatchedMesh` never defines (it keeps `_colorsTexture`), so for a program
+    // built without batch colours `undefined !== null` fails the check and
+    // every draw re-runs `getProgram`. Answering with the real field makes the
+    // check mean what it says; the value is the one three's own
+    // `getParameters` reads, so no program changes.
+    Object.defineProperty(batch, 'colorTexture', {
+      configurable: true,
+      get(this: { _colorsTexture: THREE.DataTexture | null }) {
+        return this._colorsTexture
+      },
+    })
+    // Culls each sub-geometry against its own sphere, which is what the
+    // individual meshes got. The default, said out loud.
     batch.perObjectFrustumCulled = true
-    const freeSlots: number[] = []
-    const instance: number[] = []
+    // ── the bands' draw ORDER is decided here, and by nothing else ──────
+    //
+    // three sorts opaques `renderOrder -> material.id -> z -> id`, and an
+    // object's z is the clip depth of its BOUNDING SPHERE'S CENTRE. A band's own
+    // sphere is the union of the slots it holds (plus the zeroed free ones), so it
+    // moved with every swap and the bands drew in whatever order their centres
+    // happened to fall: measured on `int_02_jumpSeat`, shaded overdraw 1.30
+    // unbatched against 2.39 batched, and 1.88 against 1.66 on two
+    // consecutive folds of the same frame. One shared sphere makes z a tie, and
+    // the tie goes to `id`: creation order, which `sync` makes finest first
+    // (the detail ring, then LOD 0, 1, 2), the nearest ground drawn first.
+    if (footprint) batch.boundingSphere = footprint.clone()
+    const reference = blankLike(sample, vertexCount)
+    const geometryIds: number[] = []
+    const instanceIds: number[] = []
+    const free: number[] = []
     for (let i = 0; i < slots; i++) {
-      const mesh = bucket.meshes[i]
-      // Every slot is reserved at the band's vertex count, occupied or not —
-      // that is what makes the swap possible later. An empty slot is given the
-      // first member's geometry and then hidden, because `addGeometry` needs a
-      // reference geometry and a band is homogeneous so any member will do.
-      const reference = mesh?.geometry ?? (bucket.meshes[0] as THREE.Mesh).geometry
-      // `reservedVertexCount` explicit, `reservedIndexCount` left at its default:
-      // `addGeometry` reads the index budget only `if (hasIndex)`
-      // (`BatchedMesh.js:656`) and these geometries never have one, so any value
-      // passed there is discarded. Saying 0 would look like a decision.
       const geometryId = batch.addGeometry(reference, vertexCount)
       const instanceId = batch.addInstance(geometryId)
-      instance.push(instanceId)
-      if (!mesh) {
-        batch.setVisibleAt(instanceId, false)
-        freeSlots.push(geometryId)
-        continue
-      }
-      // The chunk's vertices are already in world space relative to the group
-      // (`load-terrain.ts` adds the mesh with no transform), so the instance
-      // matrix is the identity `addInstance` already set.
-      hidden.push(mesh)
-      mesh.visible = false
+      batch.setVisibleAt(instanceId, false)
+      geometryIds.push(geometryId)
+      instanceIds.push(instanceId)
     }
-    batch.computeBoundingSphere()
-    group.add(batch)
-    const band: ChunkBatchBand = {
-      key: id,
-      material: bucket.key.material,
-      vertexCount,
-      castShadow: bucket.key.castShadow,
-      receiveShadow: bucket.key.receiveShadow,
-      members: bucket.meshes.length,
-      slots,
-      bytes: slots * vertexCount * CHUNK_FLOATS_PER_VERTEX * 4,
+    // Lowest slot out first, so a band fills from the front and a report reads
+    // as a prefix.
+    for (let i = slots - 1; i >= 0; i--) free.push(i)
+    reference.dispose()
+    const band: Band = {
+      lod,
       batch,
+      vertexCount,
+      layout: geometryLayout(sample),
+      geometryIds,
+      instanceIds,
+      free,
+      used: 0,
     }
-    bands.push(band)
-    state.set(id, { band, free: freeSlots, instance })
+    applyFlags(band)
+    options.parent.add(batch)
+    bands.set(lod, band)
+    return band
+  }
+
+  const release = (id: string): void => {
+    const placed = placements.get(id)
+    if (!placed) return
+    placements.delete(id)
+    const { band, slot } = placed
+    band.batch.setVisibleAt(band.instanceIds[slot] as number, false)
+    band.free.push(slot)
+    band.used--
+    if (!footprint) band.batch.boundingSphere = null
+  }
+
+  const place = (id: string, lod: number, geometry: THREE.BufferGeometry): boolean => {
+    release(id)
+    const band = bands.get(lod) ?? createBand(lod, geometry)
+    if (!band) return false
+    const position = geometry.getAttribute('position')
+    if (
+      !position ||
+      position.count !== band.vertexCount ||
+      geometryLayout(geometry) !== band.layout
+    ) {
+      mismatches++
+      return false
+    }
+    const slot = band.free.pop()
+    if (slot === undefined) {
+      overflows++
+      return false
+    }
+    // The worker measures the sphere (DEV-242); computing it here when it did not
+    // keeps `setGeometryAt` from deriving one from the batch's own buffer.
+    if (geometry.boundingSphere === null) geometry.computeBoundingSphere()
+    band.batch.setGeometryAt(band.geometryIds[slot] as number, geometry)
+    band.batch.setVisibleAt(band.instanceIds[slot] as number, true)
+    if (!footprint) band.batch.boundingSphere = null
+    band.used++
+    placements.set(id, { band, slot })
+    return true
+  }
+
+  const dropAll = (): void => {
+    for (const band of bands.values()) {
+      band.batch.removeFromParent()
+      band.batch.dispose()
+    }
+    bands.clear()
+    placements.clear()
   }
 
   return {
-    bands,
-    folded: hidden.length,
-    skipped,
-    bytes: bands.reduce((n, b) => n + b.bytes, 0),
+    place,
+    release,
+    has: (id) => placements.has(id),
+    occupants: () =>
+      [...placements].map(([id, p]) => ({ band: p.band.batch.name, slot: p.slot, id })),
 
-    take(key, geometry) {
-      const entry = state.get(key)
-      if (!entry) return null
-      const slot = entry.free.pop()
-      if (slot === undefined) return null
-      // The band is homogeneous, so this fits by construction — and if it does
-      // not, `setGeometryAt` throws rather than drawing something wrong, which
-      // is the behaviour to want.
-      entry.band.batch.setGeometryAt(slot, geometry)
-      const instanceId = entry.instance[slot] as number
-      entry.band.batch.setVisibleAt(instanceId, true)
-      // The batch grew, so its coarse sphere is stale. Null asks three to
-      // recompute on the next `intersectsObject`.
-      entry.band.batch.boundingSphere = null
-      return slot
-    },
-
-    give(key, slot) {
-      const entry = state.get(key)
-      if (!entry || entry.free.includes(slot)) return
-      const instanceId = entry.instance[slot]
-      if (instanceId === undefined) return
-      entry.band.batch.setVisibleAt(instanceId, false)
-      entry.free.push(slot)
-      entry.band.batch.boundingSphere = null
-    },
-
-    free(key) {
-      return state.get(key)?.free.length ?? 0
-    },
-
-    restore() {
-      for (const band of bands) {
-        band.batch.removeFromParent()
-        band.batch.dispose()
+    sync(items, levels = []) {
+      const list = [...items]
+      dropAll()
+      // The grid's sphere, with a tenth to spare for a finer LOD's skirt. Used
+      // for the batch-level cull too, where being larger only means "not culled
+      // as a whole"; the per-instance cull still runs against each chunk's own.
+      footprint = null
+      for (const item of list) {
+        if (item.geometry.boundingSphere === null) item.geometry.computeBoundingSphere()
+        const sphere = item.geometry.boundingSphere as THREE.Sphere
+        if (footprint === null) footprint = sphere.clone()
+        else footprint.union(sphere)
       }
-      for (const mesh of hidden) mesh.visible = true
+      if (footprint) footprint.radius *= 1.1
+      const first = list[0]
+      if (first) {
+        // A band for every level asked for, before any chunk is placed, so the
+        // layout comes from a real geometry and the allocation is done now.
+        for (const lod of levels) if (!bands.has(lod)) createBand(lod, first.geometry)
+      }
+      const placed = new Set<string>()
+      for (const item of list) if (place(item.id, item.lod, item.geometry)) placed.add(item.id)
+      return placed
+    },
+
+    refreshFlags() {
+      for (const band of bands.values()) applyFlags(band)
+    },
+
+    free: (lod) => bands.get(lod)?.free.length ?? 0,
+
+    report() {
+      const rows = [...bands.values()]
+        .sort((a, b) => a.lod - b.lod)
+        .map((band) => ({
+          lod: band.lod,
+          name: band.batch.name,
+          vertexCount: band.vertexCount,
+          slots: band.geometryIds.length,
+          used: band.used,
+          bytes: band.geometryIds.length * band.vertexCount * REPORT_FLOATS_PER_VERTEX * 4,
+          castShadow: band.batch.castShadow,
+          receiveShadow: band.batch.receiveShadow,
+        }))
+      return {
+        bands: rows,
+        placed: placements.size,
+        bytes: rows.reduce((n, r) => n + r.bytes, 0),
+        overflows,
+        mismatches,
+      }
+    },
+
+    dispose: () => {
+      dropAll()
+      depthMaterial.dispose()
     },
   }
+}
+
+/**
+ * Slots a band needs so that no eye position can overflow it. DEV-904.
+ *
+ * `eyes` are sample points over (and around) the terrain, `chunks` the chunks'
+ * distances to a point come from `distanceTo`. For every eye the chunks that
+ * COULD be at `lod` are counted, hysteresis included, and the answer is the
+ * largest count plus a margin for the frames a chunk spends waiting on the
+ * worker. Derived from the ladder and the footprint, never typed: a ladder that
+ * changes in the sheet changes this with it.
+ */
+export const bandCapacity = (
+  eyes: Iterable<readonly [number, number]>,
+  chunks: ReadonlyArray<{ readonly cx: number; readonly cy: number }>,
+  distanceTo: (cx: number, cy: number, x: number, z: number) => number,
+  inBand: (distance: number) => boolean,
+  margin: { readonly ratio: number; readonly slots: number },
+): number => {
+  let most = 0
+  for (const [x, z] of eyes) {
+    let n = 0
+    for (const c of chunks) if (inBand(distanceTo(c.cx, c.cy, x, z))) n++
+    if (n > most) most = n
+  }
+  return Math.min(chunks.length, Math.ceil(most * margin.ratio) + margin.slots)
 }

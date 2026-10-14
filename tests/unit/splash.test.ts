@@ -28,7 +28,7 @@ import { loadParticleFx, splashCrownSpec, splashDropsSpec, splashScale } from '@
 import { createCraftSplash, stepCraftSplash } from '@/game/splash-crossing'
 import { WORLD } from '@/generated/constants.generated'
 import { createLeaperField, type LeapSplash } from '@/render/life-leapers'
-import { createParticleField } from '@/render/particles'
+import { createParticleField, particleAttribute } from '@/render/particles'
 import type { WaterDisplace } from '@/render/water'
 import { airTime, type Leaper } from '@/sim/life/pods'
 import anniversaryJson from '../../content/editions/anniversary.json'
@@ -44,9 +44,9 @@ const TEXTURE = new THREE.Texture()
 const readPool = (field: ReturnType<typeof createParticleField>) => {
   const mesh = field.object as THREE.Mesh
   const g = mesh.geometry as THREE.InstancedBufferGeometry
-  const pos = g.getAttribute('iPosition').array as Float32Array
-  const par = g.getAttribute('iParams').array as Float32Array
-  const vel = g.getAttribute('iVelocity').array as Float32Array
+  const pos = particleAttribute(field, 'iPosition').array as Float32Array
+  const par = particleAttribute(field, 'iParams').array as Float32Array
+  const vel = particleAttribute(field, 'iVelocity').array as Float32Array
   const out: { p: THREE.Vector3; size: number; v: THREE.Vector3 }[] = []
   for (let i = 0; i < g.instanceCount; i++) {
     out.push({
@@ -80,10 +80,9 @@ describe('DEV-613: how big, by the emitter, and inert at 1', () => {
       a.update(0.0122, camera)
       b.update(0.0122, camera)
     }
-    const geo = (f: typeof a) => (f.object as THREE.Mesh).geometry as THREE.InstancedBufferGeometry
-    for (const name of ['iPosition', 'iParams', 'iVelocity', 'iColor']) {
-      expect(Array.from(geo(b).getAttribute(name).array), name).toEqual(
-        Array.from(geo(a).getAttribute(name).array),
+    for (const name of ['iPosition', 'iParams', 'iVelocity', 'iColor'] as const) {
+      expect(Array.from(particleAttribute(b, name).array), name).toEqual(
+        Array.from(particleAttribute(a, name).array),
       )
     }
   })

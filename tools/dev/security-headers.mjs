@@ -42,17 +42,65 @@ export const SECURITY_HEADERS = Object.freeze({
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
 })
 
-/** The file's text: one rule, every path. */
-export const headersFile = () =>
+// ── Long cache for hashed output (DEV-945) ─────────────────────────────────
+//
+// Without a Cache-Control, Pages revalidates every JS chunk on every visit.
+// Rollup writes the code, CSS, workers and imported assets of a build as
+// `assets/<name>-<hash>.<ext>`, the hash being of the content, so a changed
+// file is a new URL and the old one may be cached for a year. Everything else
+// in `dist/` (`index.html`, `404.html`, the making-of pages, the icon, the
+// share card, `_headers`) has a stable name and must keep revalidating, so the
+// rule names the `/assets/` prefix and nothing broader, never `/*`.
+//
+// The premise is that NOTHING un-hashed lives under `/assets/`. It holds for a
+// Cloudflare build, where `publicDir` is off (`vite.config.ts`). It does NOT
+// hold for a local build, where `public/assets/` (the game's R2 assets,
+// un-hashed names) is copied to `dist/assets/`: so the rule is emitted only
+// when the caller says the public dir is off (`immutableAssets`), and when it
+// is, every bundle file under `assets/` must carry a hash or the build fails
+// rather than ship a year-long cache on a stable name. (`_headers` supports
+// splats, not regexes, so the prefix is the narrowest rule there is.)
+
+/** The prefix Rollup writes hashed output under. */
+export const HASHED_PREFIX = '/assets/*'
+
+/** One year, immutable: safe only for a name that changes when its bytes do. */
+export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable'
+
+/** `assets/name-AbCd_-12.js`: a name ending in an 8-character content hash. */
+export const HASHED_ASSET = /^assets\/.+-[\w-]{8}\.[\w.]+$/
+
+/** The file's text: the security rule for every path, then (optionally) the cache rule for the hashed prefix. */
+export const headersFile = ({ immutableAssets = false } = {}) =>
   `/*\n${Object.entries(SECURITY_HEADERS)
     .map(([name, value]) => `  ${name}: ${value}\n`)
-    .join('')}`
+    .join('')}${immutableAssets ? `${HASHED_PREFIX}\n  Cache-Control: ${IMMUTABLE_CACHE}\n` : ''}`
 
-/** The Vite plugin: emit `_headers` in a build. Nothing in dev (hard rule 8 forbids `server.headers`). */
-export const securityHeaders = () => ({
+/** Names in a bundle that sit under `assets/` without a hash in them. */
+export const unhashedUnderAssets = (fileNames) =>
+  fileNames.filter((n) => n.startsWith('assets/') && !HASHED_ASSET.test(n))
+
+/**
+ * The Vite plugin: emit `_headers` in a build. Nothing in dev (hard rule 8
+ * forbids `server.headers`). `immutableAssets` adds the year-long cache for
+ * `/assets/*`; pass `true` only when `publicDir` is off.
+ */
+export const securityHeaders = ({ immutableAssets = false } = {}) => ({
   name: 'ff2-security-headers',
   apply: 'build',
-  generateBundle() {
-    this.emitFile({ type: 'asset', fileName: HEADERS_FILE, source: headersFile() })
+  generateBundle(_options, bundle) {
+    if (immutableAssets) {
+      const bad = unhashedUnderAssets(Object.keys(bundle ?? {}))
+      if (bad.length > 0) {
+        this.error(
+          `_headers marks /assets/* immutable but these have no content hash: ${bad.join(', ')}`,
+        )
+      }
+    }
+    this.emitFile({
+      type: 'asset',
+      fileName: HEADERS_FILE,
+      source: headersFile({ immutableAssets }),
+    })
   },
 })

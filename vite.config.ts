@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from 'node:url'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig } from 'vite'
 import { appIcon } from './tools/dev/app-icon.mjs'
+import { boxState } from './tools/dev/box-state.mjs'
 import { notFound } from './tools/dev/not-found.mjs'
 import { overrideWriter } from './tools/dev/override-writer.mjs'
 import { securityHeaders } from './tools/dev/security-headers.mjs'
@@ -71,15 +72,19 @@ export default defineConfig({
   // `makingOfPlugin` (DEV-506): the making-of pages as extra build inputs, and
   // their nav, `data-const` and `data-snippet`. A release build leaves out
   // chapters still `draft`. See the plugin's header.
+  // `boxState` (DEV-915): `GET /__ff2/box`, the GPU lease's holder and the
+  // host's CPU load, so a dev page can tell a starved frame from a slow build
+  // (`src/boot/contamination-dev.ts`). `apply: 'serve'`: absent from every build.
   plugins: [
     basicSsl(),
     overrideWriter(),
+    boxState(),
     appIcon(fileURLToPath(new URL('./icon.svg', import.meta.url)), {
       root: REPO_ROOT,
       layoutPath: fileURLToPath(new URL('./tools/dev/share-card.layout.json', import.meta.url)),
     }),
     notFound(),
-    securityHeaders(),
+    securityHeaders({ immutableAssets: !assetsAreLocal }),
     makingOfPlugin(channel),
   ],
   define: { __FF2_CHANNEL__: JSON.stringify(channel) },

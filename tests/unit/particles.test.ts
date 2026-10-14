@@ -16,7 +16,9 @@ import {
   evaluateMinMax,
   type MinMaxCurveLike,
   type MinMaxGradientLike,
+  type ParticleField,
   type ParticleSpec,
+  particleAttribute,
   ridesWithEmitter,
   SIMULATION_SPACES_HANDLED,
 } from '@/render/particles'
@@ -324,7 +326,7 @@ describe('which way a particle actually goes (DEV-271)', () => {
     emitter.play()
     field.update(0.1, new THREE.PerspectiveCamera())
     expect(field.alive).toBeGreaterThan(0)
-    const attr = (field.object as THREE.Mesh).geometry.getAttribute('iVelocity')
+    const attr = particleAttribute(field, 'iVelocity')
     const out = new THREE.Vector3(attr.getX(0), attr.getY(0), attr.getZ(0))
     field.dispose()
     return out
@@ -433,7 +435,7 @@ describe('the gate burst keeps its cone (DEV-272)', () => {
     })
     field.addEmitter().play()
     field.update(0.1, new THREE.PerspectiveCamera())
-    const attr = (field.object as THREE.Mesh).geometry.getAttribute('iVelocity')
+    const attr = particleAttribute(field, 'iVelocity')
     const axis = new THREE.Vector3(0, 0, -1)
     const v = new THREE.Vector3()
     let near = 0
@@ -594,7 +596,7 @@ const spray = (
   // lands either side of it. The callers assert `n` as well, so a degenerate
   // sample cannot quietly satisfy a claim about a mean.
   for (let k = 0; k < 60 && field.alive < 300; k++) field.update(0.02, camera)
-  const attr = (field.object as THREE.Mesh).geometry.getAttribute('iVelocity')
+  const attr = particleAttribute(field, 'iVelocity')
   const n = field.alive
   const mean = new THREE.Vector3()
   const v = new THREE.Vector3()
@@ -854,13 +856,9 @@ describe('§3 every live system’s simulationSpace has a reader (DEV-308)', () 
   const sheetSaysLocal = (spec: ExtractedParticle): boolean => spec.simulationSpace === 'local'
 
   /** Read every live particle's position and velocity out of the draw buffers. */
-  const readBuffers = (field: {
-    object: THREE.Object3D
-    alive: number
-  }): { p: THREE.Vector3[]; v: THREE.Vector3[] } => {
-    const g = (field.object as THREE.Mesh).geometry
-    const pa = g.getAttribute('iPosition')
-    const va = g.getAttribute('iVelocity')
+  const readBuffers = (field: ParticleField): { p: THREE.Vector3[]; v: THREE.Vector3[] } => {
+    const pa = particleAttribute(field, 'iPosition')
+    const va = particleAttribute(field, 'iVelocity')
     const p: THREE.Vector3[] = []
     const v: THREE.Vector3[] = []
     for (let i = 0; i < field.alive; i++) {
@@ -996,5 +994,57 @@ describe('§3 every live system’s simulationSpace has a reader (DEV-308)', () 
     for (const spec of LIVE_SPECS.filter((p) => !sheetSaysLocal(p))) {
       expect(moved(spec), `${spec.name} should have stayed`).toBe(0)
     }
+  })
+})
+
+describe('§4 a field uploads only its live particles (DEV-919)', () => {
+  // The CPU engine's own upload (DEV-925 made the GPU engine the default;
+  // its uploads are spawns only, `gpu-particles.test.ts`). Measured on
+  // `int_02_hoverJet`: every field set `needsUpdate` on all four
+  // instance buffers every frame with no range, so three re-sent each buffer at
+  // CAPACITY, idle or not: 2.4 MB of `bufferSubData` a frame. The draw reads
+  // only the first `instanceCount` instances, so the range is the live prefix.
+  const camera = new THREE.PerspectiveCamera()
+  const NAMES = ['iPosition', 'iColor', 'iParams', 'iVelocity'] as const
+  const attrs = (field: { object: THREE.Object3D }) =>
+    NAMES.map(
+      (n) =>
+        (field.object as THREE.Mesh).geometry.getAttribute(n) as THREE.InstancedBufferAttribute,
+    )
+
+  it('sends nothing while the pool is empty', () => {
+    const spec = LIVE_SPECS[0] as ExtractedParticle
+    const field = createParticleField(spec, new THREE.Texture(), { capacity: 500, engine: 'cpu' })
+    const before = attrs(field).map((a) => a.version)
+    for (let k = 0; k < 10; k++) field.update(0.02, camera)
+    expect(field.alive).toBe(0)
+    expect(attrs(field).map((a) => a.version)).toEqual(before)
+    field.dispose()
+  })
+
+  it('sends exactly [0, alive x itemSize) once particles live, never the capacity', () => {
+    let checked = 0
+    for (const spec of LIVE_SPECS) {
+      const field = createParticleField(spec, new THREE.Texture(), { capacity: 500, engine: 'cpu' })
+      field.addEmitter().play()
+      for (let k = 0; k < 200 && field.alive === 0; k++) field.update(0.02, camera)
+      if (field.alive === 0) {
+        field.dispose()
+        continue
+      }
+      field.update(0.02, camera)
+      const n = field.alive
+      expect(n, spec.name).toBeLessThan(500)
+      for (const a of attrs(field)) {
+        // Exactly one range, from zero, the live prefix: a range that piled up
+        // across frames, or the whole buffer, would both fail here.
+        expect(a.updateRanges, spec.name).toEqual([{ start: 0, count: n * a.itemSize }])
+        expect(a.version, spec.name).toBeGreaterThan(0)
+      }
+      checked++
+      field.dispose()
+    }
+    // A loop that skipped every spec would pass vacuously.
+    expect(checked).toBeGreaterThan(5)
   })
 })

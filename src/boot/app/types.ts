@@ -42,12 +42,14 @@ import type { FadePhase } from '@/render/fade'
 import type { HangarAim, HangarView } from '@/render/hangar'
 import type { CanvasPanelReport, HudReport } from '@/render/hud'
 import type { HudFontState } from '@/render/hud-font'
+import type { LensMaskReport } from '@/render/lens-mask'
 import type { LoadingPlace } from '@/render/loading-scene'
 import type { RaceMapReport } from '@/render/race-map'
 import type { Renderer } from '@/render/renderer'
 import type { ReportBugHook } from '@/render/report-bug-menu'
 import type { BoardPlateView } from '@/render/results'
 import type { SceneTint } from '@/render/scene-tint'
+import type { StaticReport } from '@/render/static-scene'
 import type { TvPanelReport } from '@/render/tv-panel'
 import type { TvControlsReport } from '@/render/tv-panel-controls'
 import type { TvPanelFeed } from '@/render/tv-panel-layout'
@@ -402,6 +404,18 @@ export interface App {
     capacity: number
     last: { x: number; y: number; z: number; scale: number } | null
   } | null
+  /** DEV-937: how many objects are frozen, any a check had to hand back, and the lift's state. */
+  staticScene(): StaticReport
+  /**
+   * DEV-926 / DEV-927: the vapour cone's strength and pieces in the air, and
+   * shockwaves thrown and pieces in the air. Null for a world built without
+   * either (each is built only when on at load).
+   */
+  swings(): {
+    vapour: { strength: number; alive: number } | null
+    shockwave: { thrown: number; alive: number } | null
+    vortices: { strength: number; turnDeg: number; alive: number } | null
+  } | null
   /**
    * WHICH page the pause plate is turned to, its heading, and its rows.
    *
@@ -622,16 +636,18 @@ export interface App {
    */
   bakedLight(on?: boolean, rung?: BakedLightRung): BakedLightReport
   /**
-   * DEV-193's spike: fold the chunk grids into one `THREE.BatchedMesh` per LOD
-   * band, or unfold them, and return the PLAN — bands, members, reserved bytes,
-   * and the chunks it refused. Never a verdict: the draw-call answer is
-   * `renderer.info.render.calls` read around this call.
-   *
-   * **Frozen frames only** — folding hides the chunk meshes, so a LOD change
-   * `game/terrain/load-terrain.ts` makes afterwards is invisible. See
-   * `CHUNK_BATCH` for what making it a feature would take.
+   * The land's chunk batching, on or off (DEV-193, DEV-904). Batching is the
+   * shipped default, so `false` is the OFF arm of an A/B and `true` rebuilds the
+   * bands from the chunks as they are. Returns the PLAN, never a verdict: the
+   * draw-call answer is `renderer.info.render.calls` read around this call.
    */
   chunkBatch(on?: boolean): unknown
+  /**
+   * DEV-930, the app's lens mask, live. No argument reads it; a radius (NDC)
+   * sizes it; `0` or `null` turns it off. For the worn calibration during fast
+   * head yaw, and the on/off arms of its A/B on one load. `render/lens-mask.ts`.
+   */
+  lensMask(radius?: number | null): LensMaskReport
   /**
    * DEV-238. The REAL per-frame submission sequence, folded into runs.
    *

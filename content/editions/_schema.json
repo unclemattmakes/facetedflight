@@ -156,7 +156,7 @@
 
     "render": {
       "type": "object",
-      "required": ["toneMapping", "exposure", "haze", "illustrative", "shadows", "shipShadow", "cockpitShadow", "cockpitSelfShadow", "nearShadow", "smoothSky", "sunHeight", "cloudShadow", "canopyShade", "skyVisibility", "horizonGeo", "coast", "seaReflection", "flatFov", "clouds", "bloom", "thirdPerson", "racerLivery", "sceneTint"],
+      "required": ["toneMapping", "exposure", "haze", "illustrative", "shadows", "missionShadows", "shipShadow", "cockpitShadow", "cockpitSelfShadow", "nearShadow", "smoothSky", "sunHeight", "cloudShadow", "canopyShade", "skyVisibility", "horizonGeo", "coast", "seaReflection", "flatFov", "clouds", "bloom", "thirdPerson", "racerLivery", "sceneTint"],
       "additionalProperties": false,
       "properties": {
         "toneMapping": {
@@ -311,6 +311,22 @@
             }
           },
           "description": "Keep the ship's EXTERIOR hull in the scene while the player is in the COCKPIT, so that it casts (DEV-305, wishlist #29). 2016 deactivates `Art/ThirdPerson` when you go inside and the port copied it, so the one shadow whose length a player can read against their own altitude -- their own ship's -- was never on the ground. Three cannot do this cheaply and the refusals are each a different line of `WebGLShadowMap`: `object.visible`, `material.visible` and the layer test (against the VIEW camera) are all read by the shadow pass as well as by the frame. So with this true the hull is DRAWN with `colorWrite` and `depthWrite` both off -- one draw call and the vertex work, nothing in the colour or the depth buffer, and the shadow pass unaffected because it renders three's own `_depthMaterial`. A real cost, which is why it is a flag. INERT while `render.shadows.enabled` is false or at quality `low`: `boot/app.ts` composes it with `shadowsEnabled`, so Classic draws no extra hull and writes no material flag. A DEVIATION from 2016. SEPARATE from the bug it sits on: the hull cast nothing in ANY view, because the flag was written on the glTF scene root and three reads `castShadow` on the Mesh -- `shadowMeshesOf` fixes that for both presets and is not this switch. READ IT WITH `render.cockpitShadow`: the hull surrounds the cockpit, so both on puts the airframe's own shadow across the dashboard."
+        },
+        "missionShadows": {
+          "type": "object",
+          "required": [
+            "enabled"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "description": "The mission sun's shadow map in a MISSION, and the passes that ride on it: the cockpit's own map (`render.cockpitSelfShadow`), the near cascade (`render.nearShadow`), the hull drawn for its shadow (`render.shipShadow`) and the cockpit receiving (`render.cockpitShadow`). DEV-932. `render.shadows` stays the machinery for every scene: the hangar's 2016 key light (DEV-440) and the title's sun cast under it alone, so a preset's `vr.disable` can name this key to take the map out of a mission in a headset while the menus keep theirs. With it off the far-field term (`render.sunHeight`) still shadows the terrain at every distance, through `render/far-shadow.ts`'s no-map branch. INERT while `render.shadows` is off or at quality `low`."
         },
         "cockpitShadow": {
           "type": "object",
@@ -956,7 +972,8 @@
     "fx": {
       "type": "object",
       "required": ["speedLines", "motes", "gatePulse",
-        "ringBurst", "speedRamp", "wingTrails", "waterSpray", "propBurst", "splash"],
+        "ringBurst", "speedRamp", "wingTrails", "waterSpray", "propBurst", "splash",
+        "vapourCone", "boostShockwave", "wingVortices"],
       "additionalProperties": false,
       "properties": {
         "speedLines": {
@@ -1686,6 +1703,245 @@
             }
           },
           "description": "DEV-613: a splash where anything goes into the sea or comes out of it: a dolphin leaving it and landing, a HoverJet (the player's or a racer's) whose hull meets it and rises back out. Paper, not light. A look (D35): 2016 threw none."
+        },
+        "vapourCone": {
+          "type": "object",
+          "description": "DEV-926: a ring of mist riding the ship near top speed. edition-schema.ts EditionVapourCone has each field.",
+          "required": [
+            "enabled",
+            "minSpeed",
+            "fullSpeed",
+            "rate",
+            "radius",
+            "angleDeg",
+            "aftMetres",
+            "drift",
+            "lifetime",
+            "size",
+            "alpha",
+            "colour"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            },
+            "minSpeed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "fullSpeed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rate": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "angleDeg": {
+              "type": "number",
+              "minimum": 0
+            },
+            "aftMetres": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drift": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lifetime": {
+              "type": "number",
+              "minimum": 0
+            },
+            "size": {
+              "type": "number",
+              "minimum": 0
+            },
+            "alpha": {
+              "type": "number",
+              "minimum": 0
+            },
+            "colour": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "sRGB 0-1."
+            }
+          }
+        },
+        "boostShockwave": {
+          "type": "object",
+          "description": "DEV-927: a ring of air thrown out where boost engages. edition-schema.ts EditionBoostShockwave has each field.",
+          "required": [
+            "enabled",
+            "minSpeed",
+            "count",
+            "radius",
+            "speed",
+            "drag",
+            "lifetime",
+            "size",
+            "alpha",
+            "cooldownSeconds",
+            "colour"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            },
+            "minSpeed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "count": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drag": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lifetime": {
+              "type": "number",
+              "minimum": 0
+            },
+            "size": {
+              "type": "number",
+              "minimum": 0
+            },
+            "alpha": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cooldownSeconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "colour": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "sRGB 0-1."
+            }
+          }
+        },
+        "wingVortices": {
+          "type": "object",
+          "description": "DEV-928: wing-tip vortices in a hard turn. edition-schema.ts EditionWingVortices has each field.",
+          "required": [
+            "enabled",
+            "minSpeed",
+            "fullSpeed",
+            "minTurnDeg",
+            "fullTurnDeg",
+            "rate",
+            "lifetime",
+            "size",
+            "radius",
+            "radiusGrow",
+            "spinTurnsPerSecond",
+            "twistTurnsPerSecond",
+            "alpha",
+            "colour"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            },
+            "minSpeed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "fullSpeed": {
+              "type": "number",
+              "minimum": 0
+            },
+            "minTurnDeg": {
+              "type": "number",
+              "minimum": 0
+            },
+            "fullTurnDeg": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rate": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lifetime": {
+              "type": "number",
+              "minimum": 0
+            },
+            "size": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radiusGrow": {
+              "type": "number",
+              "minimum": 0
+            },
+            "spinTurnsPerSecond": {
+              "type": "number",
+              "minimum": 0
+            },
+            "twistTurnsPerSecond": {
+              "type": "number",
+              "minimum": 0
+            },
+            "alpha": {
+              "type": "number",
+              "minimum": 0
+            },
+            "colour": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "sRGB 0-1."
+            }
+          }
         }
       }
     },
@@ -3032,7 +3288,7 @@
       "type": "object",
       "required": ["disable"],
       "additionalProperties": false,
-      "description": "Features this preset turns OFF while a headset is presenting, and nothing else — the VR look is always a SUBSET of the flat one. DEV-263, Matt 2026-09-21: “off in VR, on in flat.” Optional: absent means the preset is the same in both places, which is what Classic is. A deliberately narrow shape — a deep-partial preset would let VR change any number, which is two looks to art-direct and every future field silently acquiring a second value nobody set.",
+      "description": "Features this preset turns OFF while a headset is presenting (and, since DEV-934, a short list of named VR VALUES in `override`), so the VR look is a SUBSET of the flat one but for those values. DEV-263, Matt 2026-09-21: “off in VR, on in flat.” Optional: absent means the preset is the same in both places, which is what Classic is. A deliberately narrow shape: a deep-partial preset would let VR change any number, which is two looks to art-direct and every future field silently acquiring a second value nobody set.",
       "properties": {
         "note": { "type": "string" },
         "disable": {
@@ -3044,6 +3300,11 @@
           "type": "object",
           "additionalProperties": { "type": "string" },
           "description": "Why each entry is on the list, keyed by the same path. Prose only; nothing reads it."
+        },
+        "override": {
+          "type": "object",
+          "additionalProperties": { "type": "object" },
+          "description": "DEV-934: VR-only VALUES, keyed by `editionFeatures()` path, each an object of that feature's own fields set while presenting (plus an optional `note`, prose). validateEdition refuses a path that is not a feature or is a RULES key (edition-split.ts), a path vr.disable turns off, `enabled` (on and off are disable's), a field the feature does not have, and a value not the flat value's exact shape. So nothing can be added or turned on in VR and no rule can differ; what moves is a number somebody wrote down here by name. `props.meshLod.rungs` may move each `from` and never a `keep` (DEV-935: the meshes are made once, at world build)."
         }
       }
     },

@@ -200,6 +200,9 @@ export const loadTurnIndicators = async (level: Level): Promise<LoadedTurnIndica
     count: placements.length,
     dispose() {
       arrows.dispose()
+      // DEV-936: the arrow's BAKED clone (`bakedGeometry`); `gltf.dispose()`
+      // frees only the loaded original, so this one outlived every course.
+      geometry.dispose()
       bars.dispose()
       bars.geometry.dispose()
       arrowMaterial.dispose()

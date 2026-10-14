@@ -737,6 +737,15 @@ export interface MeshLodOptions {
   readonly rungs: readonly MeshLodRung[]
   /** Whether the rungs are in use right now. A getter, never cached. */
   readonly enabled: () => boolean
+  /**
+   * DEV-935: the rung table in force NOW, read at every scan for its `from`s
+   * only. A headset moves the edges nearer (`vr.override` on
+   * `props.meshLod`) on the meshes `rungs` built, which is why the loader
+   * refuses a VR table whose `keep`s differ. Absent: `rungs`' own edges, for
+   * the life of the world. Compared by identity, so a getter that returns the
+   * same array costs one comparison a scan.
+   */
+  readonly liveRungs?: () => readonly MeshLodRung[]
 }
 
 /**
@@ -1232,12 +1241,23 @@ export const createPassLod = (
     hysteresis: entry.flipFlopPercent,
     ...PROP_LOD_DEFAULTS,
   }
-  const withRungs: PropLodParams = { ...base, rungEdges: rungFrom }
+  let withRungs: PropLodParams = { ...base, rungEdges: rungFrom }
+  // DEV-935: the table the edges were last read from, by identity.
+  let rungsSeen: readonly MeshLodRung[] | null = null
   // DEV-338: the edges are live — `enabled` is a getter, read at every scan,
   // so a flip mid-flight is honoured by the next scan. No rungs built, one
   // params object and nothing to ask.
-  const paramsNow = (): PropLodParams =>
-    rungFrom.length > 0 && options.meshLod?.enabled() === true ? withRungs : base
+  const paramsNow = (): PropLodParams => {
+    if (rungFrom.length === 0 || options.meshLod?.enabled() !== true) return base
+    // DEV-935: a headset's nearer edges, on the same meshes. Sliced to the
+    // rungs this pass BUILT, so an edge can never name a mesh that is not there.
+    const live = options.meshLod.liveRungs?.()
+    if (live !== undefined && live !== rungsSeen) {
+      rungsSeen = live
+      withRungs = { ...base, rungEdges: live.slice(0, rungCount - 1).map((r) => r.from) }
+    }
+    return withRungs
+  }
   const chunks = passChunks(
     batches.map((b) => b.runs),
     chunkPerSide,

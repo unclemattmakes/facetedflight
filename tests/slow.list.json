@@ -1,0 +1,12 @@
+{
+  "_": "The slow unit tier (DEV-945): files that fly or sweep whole levels and carry 600 s+ budgets. `pnpm test` excludes them, `pnpm test:slow` runs only them, batch-gate.sh and CI run both. Add a file here when a unit test needs more than a minute; tests/unit/slow-tier.test.ts holds this list to the tree.",
+  "files": [
+    "tests/unit/crash-reset-clearance.test.ts",
+    "tests/unit/jumpseat-autopilot-missions.test.ts",
+    "tests/unit/lift-seal.test.ts",
+    "tests/unit/prop-hash-reach.test.ts",
+    "tests/unit/spire-line-attribution.test.ts",
+    "tests/unit/tv-framing.test.ts",
+    "tests/unit/variant-overclocked.test.ts"
+  ]
+}

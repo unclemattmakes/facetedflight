@@ -35,6 +35,10 @@
       "note": "no cast shadows at all, which is where the port has always been and is NOT where 2016 was: it ran soft shadows on LOD-0 casters out to a shadowDistance of 384, and 384 is written here so the one number 2016 had is not lost on a disabled block. Nothing reads any of it while enabled is false — the renderer's shadowMap stays off, the sun never gets castShadow, and no object is given a flag (DEV-086)",
       "edgeFade": 80
     },
+    "missionShadows": {
+      "enabled": false,
+      "note": "DEV-932. Off: Classic has no sun map anywhere (render.shadows is off), so this is inert either way."
+    },
     "shipShadow": {
       "enabled": false,
       "note": "no. 2016 deactivates Art/ThirdPerson while you are in the cockpit, so the hull is not in the scene and casts nothing, and that is transcribed rather than chosen. Inert anyway while render.shadows.enabled is false -- boot/app.ts composes this with shadowsEnabled, so Classic never draws the extra hull and never writes a material flag. DEV-305"
@@ -364,6 +368,52 @@
         "size": 0.4,
         "colour": [0.8, 0.91, 0.94]
       }
+    },
+    "vapourCone": {
+      "enabled": false,
+      "note": "2016 drew no vapour cone. Off; the numbers mirror anniversary.json. DEV-926",
+      "minSpeed": 280,
+      "fullSpeed": 380,
+      "rate": 220,
+      "radius": 3.2,
+      "angleDeg": 35,
+      "aftMetres": 2.5,
+      "drift": 8,
+      "lifetime": 0.35,
+      "size": 0.9,
+      "alpha": 1,
+      "colour": [0.95, 0.97, 1.0]
+    },
+    "boostShockwave": {
+      "enabled": false,
+      "note": "2016 drew no boost shockwave. Off; the numbers mirror anniversary.json. DEV-927",
+      "minSpeed": 60,
+      "count": 96,
+      "radius": 2.5,
+      "speed": 70,
+      "drag": 5,
+      "lifetime": 0.6,
+      "size": 1.6,
+      "alpha": 1,
+      "cooldownSeconds": 1.5,
+      "colour": [0.92, 0.96, 1.0]
+    },
+    "wingVortices": {
+      "enabled": false,
+      "note": "2016 drew no wing-tip vortices. Off; the numbers mirror anniversary.json. DEV-928",
+      "minSpeed": 80,
+      "fullSpeed": 160,
+      "minTurnDeg": 25,
+      "fullTurnDeg": 90,
+      "rate": 120,
+      "lifetime": 0.9,
+      "size": 0.35,
+      "radius": 0.35,
+      "radiusGrow": 2,
+      "spinTurnsPerSecond": 2.5,
+      "twistTurnsPerSecond": 6,
+      "alpha": 0.9,
+      "colour": [0.95, 0.97, 1.0]
     }
   },
   "cockpit": {
@@ -522,8 +572,8 @@
     },
     "bakedLight": {
       "enabled": false,
-      "rung": 3,
-      "note": "off, and not a candidate here. Classic is the ledger as it stands and this is a deviation by construction -- it deletes the view-dependent specular and both shadow multiplies from the land. DEV-232. The rung mirrors Anniversary so a diff between the two presets shows the one key that matters, the flag; 3 is the rung that drops everything and is what DEV-232 measured. DEV-237."
+      "rung": "split",
+      "note": "off, and not a candidate here (rung split mirrors Anniversary since 2026-10-11). Classic is the ledger as it stands and this is a deviation by construction -- it deletes the view-dependent specular and both shadow multiplies from the land. DEV-232. The rung mirrors Anniversary so a diff between the two presets shows the one key that matters, the flag; 3 is the rung that drops everything and is what DEV-232 measured. DEV-237."
     },
     "diagonalFix": {
       "enabled": false,

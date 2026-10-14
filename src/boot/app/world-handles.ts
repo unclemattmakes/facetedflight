@@ -13,10 +13,7 @@
 // ── What a field here is ─────────────────────────────────────────────────
 //
 // Exactly what `teardownWorld` takes down: a world build writes it, and a
-// course swap releases it. `liveChunkBatches` is the one world-lifetime binding
-// that is NOT here. It is DEV-193's debug fold OF the built terrain, and it has
-// to be unfolded BEFORE the terrain's own disposer runs (`teardownWorld` says
-// why), which is earlier than this record's release.
+// course swap releases it.
 //
 // ── The release ──────────────────────────────────────────────────────────
 //

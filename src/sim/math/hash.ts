@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/sim/math/hash.ts: the string hash every layer shares (code-reuse audit
 // WP-2, 2026-10-05). Five files each wrote FNV-1a out by hand
 // (crosscut.md XC-1, sim-game.md SG-6); they compute the same 32-bit value

@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/render/ui-plate.ts: the canvas plate: a canvas, its texture, the unlit UI
 // material and a plane, built once.
 //

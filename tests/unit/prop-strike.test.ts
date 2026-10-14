@@ -29,7 +29,7 @@ import {
   strikePalette,
   strikeStands,
 } from '@/game/particle-fx'
-import { createParticleField, MAX_PALETTE } from '@/render/particles'
+import { createParticleField, MAX_PALETTE, particleAttribute } from '@/render/particles'
 import {
   buildPropColliders,
   createPropCollision,
@@ -204,9 +204,8 @@ describe("DEV-428: the burst leaves with the hitter (geometry against the hitter
     e.velocity.copy(hitter).multiplyScalar(carry)
     e.play()
     field.update(0.001, new THREE.PerspectiveCamera())
-    const mesh = field.object as THREE.Mesh
-    const vel = mesh.geometry.getAttribute('iVelocity')
-    const pos = mesh.geometry.getAttribute('iPosition')
+    const vel = particleAttribute(field, 'iVelocity')
+    const pos = particleAttribute(field, 'iPosition')
     const mean = new THREE.Vector3()
     let farthest = 0
     for (let i = 0; i < field.alive; i++) {
@@ -328,7 +327,7 @@ describe("DEV-428: the burst is the PROP's colours, from where it was struck", (
     e.setPalette(out.subarray(0, n * 3))
     e.play()
     field.update(0.001, new THREE.PerspectiveCamera())
-    const col = (field.object as THREE.Mesh).geometry.getAttribute('iColor')
+    const col = particleAttribute(field, 'iColor')
     expect(field.alive).toBe(SHIPPED.count)
     for (let i = 0; i < field.alive; i++) {
       expect(isLeaf(col.getX(i), col.getY(i), col.getZ(i)), `piece ${i}`).toBe(true)

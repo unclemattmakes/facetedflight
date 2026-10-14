@@ -97,19 +97,49 @@
  * the frame. That is the whole ceremony and it is the point: **a number that
  * updates itself is not a baseline.** Each entry carries the build and the
  * date it was taken on, so a stale one says so.
+ *
+ * ── DEV-909: every mission, a tier, and an overdraw budget ───────────────
+ *
+ * Covers every mission a player reaches in Anniversary (derived, see
+ * `fixtures/census-missions.ts`; 17 at writing). BEHAVIOUR tier: the default
+ * run takes the fast subset (one mission per environment, aircraft and mode),
+ * `CENSUS_SWEEP=all` takes all of them (`batch-gate.sh release` sets it, and
+ * `batch` names the subset). Wall time on the author's box: 32 to 58 s a
+ * mission, 14 to 16 min for all seventeen.
+ *
+ *   # re-stamp ONE mission, or a list, or `all`; a bare `1` is refused
+ *   CENSUS_BASELINE_WRITE=int_01_hoverJet E2E_PORT=<yours> \
+ *     pnpm exec playwright test tests/e2e/census-baseline.spec.ts --workers 1
+ *
+ * Shaded overdraw (opaque and total) is gated at 1 %. Four readings of every
+ * mission (the write and three repeat sweeps, pinned `adaptive=0&quality=high`,
+ * same floor tick) spread by at most 0.25 % (median about 0.1 %, several
+ * missions 0.00 %); 1 % is four times the worst, and a layer that matters is
+ * ten times that. King-tide's lease was not recorded for the first two sweeps;
+ * it was HELD for the third.
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { snapFloorTick } from '../../src/boot/snap'
+import { censusMissions, censusSelection } from './fixtures/census-missions'
 import { type FrozenSim, flyToFreeze, frozenSim, missionTickOf } from './fixtures/freeze'
-import { knownRed } from './fixtures/known-red'
 import { expect, test } from './fixtures/test'
 
 type Page = import('@playwright/test').Page
 
 const BASELINE_PATH = 'tools/perf/census-baseline.json'
-const WRITE = process.env.CENSUS_BASELINE_WRITE === '1'
+/**
+ * `CENSUS_BASELINE_WRITE` names WHAT to write: `all`, or a comma list of
+ * mission ids. The old `1` is refused (DEV-909): it restamped every entry the
+ * run happened to reach, which is how KR-01 and KR-02 sat red for weeks, since
+ * nobody dared re-stamp two missions at the cost of the rest. A write touches
+ * only the entries it names, and leaves every other key byte for byte alone.
+ */
+const WRITE_ENV = process.env.CENSUS_BASELINE_WRITE ?? ''
+const WRITE = WRITE_ENV !== ''
+const WRITE_IDS: ReadonlySet<string> | 'all' =
+  WRITE_ENV === 'all' ? 'all' : new Set(WRITE_ENV.split(',').map((x) => x.trim()))
 const SNAP_AT = Number(process.env.CENSUS_BASELINE_AT ?? '20')
 
 /**
@@ -130,14 +160,50 @@ const SNAP_AT = Number(process.env.CENSUS_BASELINE_AT ?? '20')
 const MAX_ATTEMPTS = 5
 
 /**
- * The runs the baseline covers. Anniversary only: Classic draws a strict
- * subset of the same scene, so a Classic regression that this would catch is
- * one Anniversary catches first — and each row costs three minutes.
+ * The runs the baseline covers: every mission a player reaches in Anniversary
+ * (`fixtures/census-missions.ts`, derived from content), all of them when
+ * `CENSUS_SWEEP=all` (the release gate sets it) and the fast subset otherwise.
+ * When a write names missions, those are the runs, whatever the sweep says.
+ * Anniversary only: Classic draws a strict subset of the same scene, so a
+ * Classic regression that this would catch is one Anniversary catches first.
  */
-const RUNS = [
-  { mission: 'int_01_hoverJet', edition: 'anniversary' },
-  { mission: 'rookie_01_hoverJet', edition: 'anniversary' },
-] as const
+const ALL = censusMissions()
+const RUNS = (
+  WRITE && WRITE_IDS !== 'all'
+    ? ALL.filter((m) => WRITE_IDS.has(m.id))
+    : censusSelection(WRITE && WRITE_IDS === 'all' ? 'all' : process.env.CENSUS_SWEEP, ALL)
+).map((m) => ({ mission: m.id, edition: 'anniversary' }))
+
+/**
+ * The pin, and the reason it is here (DEV-909): overdraw is immune to a
+ * starved box only if the quality tier cannot move under it. `render/quality.ts`
+ * walks the pixel count and drops a tier on a starved frame, and a frame at a
+ * different pixel count shades a different amount.
+ */
+const PIN = { adaptive: '0', quality: 'high' } as const
+
+/**
+ * Relative tolerance on the two SHADED overdraw figures (opaque and total).
+ * Taken from repeat runs, not from taste: the spread is in the DEV-909 section
+ * of the header, and the budget is that spread with headroom, so a real
+ * regression in what the GPU shades is red and a render-clock cloud is not.
+ */
+const OVERDRAW_TOLERANCE = 0.01
+
+/**
+ * The culling edge (DEV-909). The two HoverJet missions with racers drew one
+ * chunk call more or fewer (212 against 213) and 0.3 % different prop
+ * triangles (466,671 against 468,017) on two loads of one build at one floor
+ * tick: a chunk or a prop sitting on the frustum edge, because the camera
+ * rides the render clock and the racers' own LOD/cull do too. So the groups a
+ * frustum cull decides get one call and 1 % of triangles of slack; every other
+ * group, the group SET and the overdraw budget stay as tight as before. The
+ * regressions this exists for are fifty draws, not one.
+ */
+const CULL_EDGE_GROUPS = ['world-terrain/chunks', 'world-terrain/props'] as const
+const CULL_EDGE_CALLS = 1
+const CULL_EDGE_TRIANGLES = 0.01
+const isCullEdge = (group: string): boolean => CULL_EDGE_GROUPS.some((g) => group.startsWith(g))
 
 /**
  * Groups whose triangle count is a property of the SCENE rather than of the
@@ -174,7 +240,7 @@ interface Census {
   readonly triangles: number
   readonly programs: number
   readonly rows: readonly Row[]
-  readonly overdraw: { issued: number; shaded: number }
+  readonly overdraw: { issued: number; shaded: number; shadedOpaque: number }
 }
 
 interface Entry {
@@ -193,6 +259,8 @@ interface Entry {
   readonly totalCalls: number
   readonly triangles: number
   readonly groups: Record<string, { calls: number; triangles: number }>
+  /** SHADED overdraw at the frozen frame, pinned: the figures the budget gates. */
+  readonly overdraw: { readonly shaded: number; readonly shadedOpaque: number }
   readonly build: string
   readonly date: string
 }
@@ -232,6 +300,7 @@ const table = (c: Census, sim: FrozenSim | null): string =>
   [
     `  mission tick ${sim ? missionTickOf(sim) : '?'} (elapsed ${sim ? sim.elapsed.toFixed(3) : '?'} s, boot tick ${sim ? sim.tick : '?'})`,
     `  ${gatedCallsOf(c.rows)} gated calls of ${c.calls} · ${k(c.triangles)} tris · ${c.programs} programs`,
+    `  shaded overdraw ${c.overdraw.shaded.toFixed(4)} total, ${c.overdraw.shadedOpaque.toFixed(4)} opaque`,
     `    ${'group'.padEnd(32)} ${'calls'.padStart(5)} ${'tris'.padStart(9)}   gated`,
     ...c.rows.map(
       (r) =>
@@ -259,19 +328,31 @@ const entryFrom = (
   groups: Object.fromEntries(
     c.rows.map((r) => [r.group, { calls: r.calls, triangles: r.triangles }]),
   ),
+  overdraw: { shaded: c.overdraw.shaded, shadedOpaque: c.overdraw.shadedOpaque },
   build,
   date: new Date().toISOString().slice(0, 10),
 })
 
-test.describe('@measure @gpu the census baseline: DEV-160 H2', () => {
+test.describe('@gpu the census baseline: DEV-160 H2, DEV-909', () => {
   test.setTimeout(900_000)
+
+  test('a baseline write names the missions it writes', () => {
+    // The old `CENSUS_BASELINE_WRITE=1` restamped whatever the run reached. A
+    // write that names nothing it knows is a typo, and silently writing
+    // nothing would read as a re-stamp that worked.
+    if (!WRITE) return
+    const known = new Set(ALL.map((m) => m.id))
+    const unknown = WRITE_IDS === 'all' ? [] : [...WRITE_IDS].filter((id) => !known.has(id))
+    expect(
+      unknown,
+      'CENSUS_BASELINE_WRITE takes `all` or a comma list of mission ids, not 1; these are not missions',
+    ).toEqual([])
+  })
 
   for (const run of RUNS) {
     const key = `${run.mission}/${run.edition}@${SNAP_AT}`
 
     test(`${key}: the frame draws what the baseline says it draws`, async ({ page }) => {
-      knownRed('KR-01', key === 'int_01_hoverJet/anniversary@20')
-      knownRed('KR-02', key === 'rookie_01_hoverJet/anniversary@20')
       const baseline = readBaselines()[key]
 
       // ── the WRITE path ───────────────────────────────────────────────
@@ -293,7 +374,7 @@ test.describe('@measure @gpu the census baseline: DEV-160 H2', () => {
         let sim: FrozenSim | null = null
         const reached: string[] = []
         for (let attempt = 0; attempt < MAX_ATTEMPTS && sim === null; attempt++) {
-          await flyToFreeze(page, { ...run, snapAt: SNAP_AT, params: { perf: '1' } })
+          await flyToFreeze(page, { ...run, snapAt: SNAP_AT, params: { perf: '1', ...PIN } })
           const s = await frozenSim(page)
           expect(
             s,
@@ -312,8 +393,15 @@ test.describe('@measure @gpu the census baseline: DEV-160 H2', () => {
         ).not.toBeNull()
         const c = await census(page)
         const entry = entryFrom(run, sim as FrozenSim, c, await buildVersion(page))
-        const all = readBaselines()
-        all[key] = entry
+        // Read AGAIN here, not at the top of the test: a long write run is a
+        // sequence of these, and each must replace only its own key in the file
+        // as it stands now. Keys are kept sorted so a one-mission write is a
+        // one-block diff.
+        const current = readBaselines()
+        current[key] = entry
+        const all = Object.fromEntries(
+          Object.entries(current).sort(([a], [b]) => a.localeCompare(b)),
+        )
         fs.mkdirSync(path.dirname(BASELINE_PATH), { recursive: true })
         // Two-space indent and a trailing newline, because the file is TRACKED
         // and `pnpm lint` formats it. A generator whose output its own repo
@@ -336,7 +424,7 @@ test.describe('@measure @gpu the census baseline: DEV-160 H2', () => {
       let sim: FrozenSim | null = null
       const seen: string[] = []
       for (let attempt = 0; attempt < MAX_ATTEMPTS && got === null; attempt++) {
-        await flyToFreeze(page, { ...run, snapAt: SNAP_AT, params: { perf: '1' } })
+        await flyToFreeze(page, { ...run, snapAt: SNAP_AT, params: { perf: '1', ...PIN } })
         sim = await frozenSim(page)
         if (sim !== null) seen.push(`${missionTickOf(sim)} (boot ${sim.tick})`)
         if (sim !== null && missionTickOf(sim) === want.missionTick) got = await census(page)
@@ -368,7 +456,10 @@ test.describe('@measure @gpu the census baseline: DEV-160 H2', () => {
       // The total first: it is the number a reviewer reads, and the one that
       // moved by 51 between DEV-118 and this branch with nothing noticing.
       // GATED groups only — a cloud that drifted must not fail a draw gate.
-      expect(gatedCallsOf(got.rows), 'draw calls over the gated groups').toBe(want.gatedCalls)
+      expect(
+        Math.abs(gatedCallsOf(got.rows) - want.gatedCalls),
+        `draw calls over the gated groups: ${gatedCallsOf(got.rows)} against ${want.gatedCalls}`,
+      ).toBeLessThanOrEqual(CULL_EDGE_CALLS)
 
       // The group SET. A new group drawing zero calls, or an old one vanishing
       // while another grew, would both pass a total on its own.
@@ -379,13 +470,49 @@ test.describe('@measure @gpu the census baseline: DEV-160 H2', () => {
       // Per-group calls, skipping the three the render clock drives.
       for (const [group, expected] of Object.entries(want.groups)) {
         if (isVolatile(group)) continue
-        expect(rows.get(group)?.calls, `${group} calls`).toBe(expected.calls)
+        expect(
+          Math.abs((rows.get(group)?.calls ?? -999) - expected.calls),
+          `${group} calls: ${rows.get(group)?.calls} against ${expected.calls}`,
+        ).toBeLessThanOrEqual(isCullEdge(group) ? CULL_EDGE_CALLS : 0)
       }
 
       // Triangles only where the geometry cannot move under wall time.
       for (const [group, expected] of Object.entries(want.groups)) {
         if (!gatesTriangles(group)) continue
-        expect(rows.get(group)?.triangles, `${group} triangles`).toBe(expected.triangles)
+        expect(
+          Math.abs((rows.get(group)?.triangles ?? 0) - expected.triangles) /
+            Math.max(1, expected.triangles),
+          `${group} triangles: ${rows.get(group)?.triangles} against ${expected.triangles}`,
+        ).toBeLessThanOrEqual(isCullEdge(group) ? CULL_EDGE_TRIANGLES : 0)
+      }
+
+      // ── the overdraw budget (DEV-909) ──────────────────────────────────
+      //
+      // SHADED, because that is what the GPU pays for: fragments that reached
+      // a shader after early-Z, in three's own draw order. Opaque and total
+      // both, because a transparent layer (cloud, particle, wing trail) moves
+      // the total and not the opaque figure, and one budget would hide which.
+      // Pinned `adaptive=0&quality=high` at the same mission tick, so the pixel
+      // count and the scene are the baseline's. ISSUED is printed, not gated:
+      // it ignores the depth test, so it is a property of the geometry the
+      // draw-call gate already counts.
+      console.info(
+        `CENSUS-OD ${key} shaded=${got.overdraw.shaded.toFixed(5)} ` +
+          `shadedOpaque=${got.overdraw.shadedOpaque.toFixed(5)} issued=${got.overdraw.issued.toFixed(5)}`,
+      )
+      expect(
+        want.overdraw,
+        `${key} has no overdraw budget: the entry predates DEV-909, re-stamp it`,
+      ).toBeDefined()
+      for (const field of ['shadedOpaque', 'shaded'] as const) {
+        const base = want.overdraw[field]
+        const now = got.overdraw[field]
+        expect(
+          Math.abs(now - base) / base,
+          `${field} overdraw ${now.toFixed(4)} against the budget ${base.toFixed(4)} ` +
+            `(tolerance ${OVERDRAW_TOLERANCE * 100} %). More is the GPU shading more; less is a ` +
+            `real saving, and the baseline should be re-stamped on purpose to bank it.`,
+        ).toBeLessThanOrEqual(OVERDRAW_TOLERANCE)
       }
 
       // The volatile groups are not silently dropped: they are asserted to be

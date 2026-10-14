@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/sim/math/quat.ts — mutable unit quaternion for the sim layer. No
 // three.js (PORT_PLAN §2.4 / D7). Same component order and handedness as
 // three.js `Quaternion` so `render/` can copy one into the other field by

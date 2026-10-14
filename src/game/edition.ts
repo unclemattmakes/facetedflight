@@ -53,6 +53,23 @@ export const SPEED_FX_SCALE: Readonly<Record<SpeedFxSetting, number>> = {
 
 export const speedFxScale = (setting: SpeedFxSetting): number => SPEED_FX_SCALE[setting]
 
+/**
+ * The worn A/B's off arms for `vr.override`, read from a query: which paths
+ * keep their FLAT values while presenting. `boot/app/pins.ts` hands it the
+ * page's own query (`VR_VALUE_OFF`); a test hands it a string.
+ *
+ * - `?vrFxTrim=0` (DEV-934, lever 5): every path under `fx.`.
+ * - `?vrMeshLod=0` (DEV-935, lever 8): `props.meshLod`.
+ *
+ * Anything else, `1` included, leaves every value on: the default is ON.
+ */
+export const vrValueOffFrom = (query: URLSearchParams | string): ((path: string) => boolean) => {
+  const params = typeof query === 'string' ? new URLSearchParams(query) : query
+  const fx = params.get('vrFxTrim') === '0'
+  const meshLod = params.get('vrMeshLod') === '0'
+  return (path) => (fx && path.startsWith('fx.')) || (meshLod && path === 'props.meshLod')
+}
+
 export type EditionListener = (edition: Edition, settings: ComfortSettings) => void
 
 export interface EditionState {
@@ -123,6 +140,11 @@ export const createEditionState = (
   initialSettings: ComfortSettings,
   /** The page's rules (DEV-452). Absent: the look's own, one preset whole. */
   initialRules: Edition = initial,
+  /**
+   * DEV-934: `vr.override` paths a pin leaves at their flat values while
+   * presenting (`?vrFxTrim=0`, `?vrMeshLod=0`). Absent: every value applies.
+   */
+  vrValueOff: (path: string) => boolean = () => false,
 ): EditionState => {
   /** The worn LOOK. `resolved()` lays it over `rules`. */
   let edition = initial
@@ -163,7 +185,7 @@ export const createEditionState = (
     worn ??= lookOnRules(edition, rules)
     let base = worn
     if (immersive) {
-      if (vrEdition === null) vrEdition = applyVrOverrides(base)
+      if (vrEdition === null) vrEdition = applyVrOverrides(base, vrValueOff)
       base = vrEdition
     }
     composed = withFeatureOverrides(base, overrides)

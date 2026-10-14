@@ -657,9 +657,14 @@ describe('createSunShadows on Anniversary', () => {
     // SAME objects through the same seam a headset uses, rather than on
     // `shadowFlagsFor` in isolation — `setImmersive` is what `boot/app.ts`
     // calls on `sessionstart` and it is the path that has to write flags.
+    // DEV-932: and since then the headset takes the MISSION's map out whole
+    // (`render.missionShadows`), so in VR nothing in a mission casts or
+    // receives, while the machinery stays on for the hangar's key light.
     state.setImmersive(true)
-    expect(prop).toEqual({ castShadow: false, receiveShadow: true })
-    expect(rock).toEqual({ castShadow: true, receiveShadow: true })
+    expect(prop).toEqual({ castShadow: false, receiveShadow: false })
+    expect(rock).toEqual({ castShadow: false, receiveShadow: false })
+    expect(sun.castShadow, 'no mission sun map in a headset').toBe(false)
+    expect(renderer.shadowMap.enabled, 'the machinery stays, for the hangar').toBe(true)
     state.setImmersive(false)
     expect(prop).toEqual({ castShadow: true, receiveShadow: true })
     expect(rock).toEqual({ castShadow: true, receiveShadow: true })

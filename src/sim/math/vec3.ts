@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/sim/math/vec3.ts — mutable 3-vector for the sim layer. No three.js: the
 // sim must run headless in Vitest's node environment (PORT_PLAN §2.4 / D7).
 

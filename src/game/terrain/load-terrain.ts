@@ -30,6 +30,12 @@ import type * as THREE from 'three'
 import { assetUrl } from '@/content/asset-url'
 import { loadImageData } from '@/content/load-image'
 import { TERRAIN } from '@/generated/constants.generated'
+import {
+  bandCapacity,
+  type ChunkBatcher,
+  type ChunkBatchReport,
+  createChunkBatcher,
+} from '@/render/chunk-batch'
 import { setOceanLate } from '@/render/draw-order'
 import {
   createLodFadePool,
@@ -55,6 +61,7 @@ import {
   waveCeiling,
 } from '@/render/water'
 import {
+  chunkTriangles,
   type DetailCandidate,
   type DetailRingSpec,
   detailBand,
@@ -411,6 +418,33 @@ export interface LoadedTerrain {
    * clones this warms are the clones the first real fade uses.
    */
   warmLodFade(): (() => void) | null
+  /**
+   * DEV-904: the chunk grid's batches. `available` is false for the sea, for a
+   * load that did not ask (`LoadTerrainOptions.chunkBatch`) and for a terrain
+   * with one chunk; every method is then a no-op returning null.
+   */
+  readonly batching: {
+    readonly available: boolean
+    /** Whether chunks are being placed into bands right now. */
+    readonly on: boolean
+    /**
+     * (Re)build every band from the chunks as they are now and start placing.
+     * Call after the baked light has resolved, and whenever it changes (the
+     * loader does that itself through `onBakeChange`).
+     */
+    sync(): ChunkBatchReport | null
+    /** `true` is `sync`; `false` puts every chunk back to drawing as its own mesh. */
+    set(on: boolean): ChunkBatchReport | null
+    /**
+     * Chunks that must keep drawing as their own mesh, by name: the launch bore's
+     * (DEV-249), which `frame.ts` hides and shows one at a time. Replaces the
+     * previous set.
+     */
+    exclude(names: ReadonlySet<string>): void
+    report(): ChunkBatchReport | null
+    /** Which chunk is in which band slot. For specs. */
+    occupants(): readonly { readonly band: string; readonly slot: number; readonly id: string }[]
+  }
   dispose(): void
 }
 
@@ -926,6 +960,22 @@ export interface LoadTerrainOptions {
    */
   bakeGeometry?: (geometry: THREE.BufferGeometry) => void
   /**
+   * DEV-904: draw the chunk grid through one `BatchedMesh` per LOD
+   * (`render/chunk-batch.ts`, DEV-193's spike made a mode). Off by default and
+   * on for the LAND of a mission; the sea is never batched (DEV-193 section 3d).
+   * Nothing is placed until `LoadedTerrain.batching.sync()` is called, because
+   * the batches hold a COPY of the vertex data and the baked light has not
+   * written it yet when the chunks are built.
+   */
+  chunkBatch?: boolean
+  /**
+   * DEV-904: subscribe to "the baked light just rewrote the chunk geometries"
+   * (`BakedLight.onChange`). Returns the unsubscribe, which `dispose` calls. A
+   * batch holds its own copy of the colours and of `ff2Direct`, so it has to be
+   * rebuilt whenever the bake's state moves.
+   */
+  onBakeChange?: (listener: () => void) => () => void
+  /**
    * DEV-130's cross-fade. A GETTER, read at every reply, never cached — the
    * preset flips from the pause menu. Null (the default) is the swap in one
    * assignment that Classic and every existing caller get; a spec turns each
@@ -1398,6 +1448,13 @@ export const loadTerrain = async (
       readonly seconds: number
       t: number
     } | null
+    /**
+     * DEV-904: this chunk is drawn by a band of the batcher, and `mesh` is
+     * hidden for that reason. Tracked here because `mesh.visible` is also
+     * written by others (the launch bore hides its chunks one at a time), so
+     * "put it back" may only undo what the batcher did itself.
+     */
+    batched: boolean
   }
   const slots = new Map<string, ChunkSlot>()
 
@@ -1420,6 +1477,164 @@ export const loadTerrain = async (
     }
   }
 
+  // ── the batches (DEV-904, DEV-193 made a mode) ─────────────────────────
+  //
+  // The LAND's chunk grid is drawn by one `BatchedMesh` per LOD
+  // (`render/chunk-batch.ts` owns the slot arithmetic). The CHUNK MESH stays
+  // the truth: it keeps its geometry, material and LOD, and the band holds a
+  // copy of the geometry for as long as the chunk is placed. So everything
+  // below that already reads or writes `slot.mesh` (the bake, the fade, the
+  // bore, `dispose`) is still right, and the only new rule is `settle`: after
+  // anything that changes what a chunk IS, ask where it should be drawn.
+  //
+  //   plain geometry at a settled LOD  -> in its band, `mesh.visible = false`
+  //   cross-fading (DEV-130)           -> OUT of the band, both halves draw
+  //                                       alone with their own `uLodFade`
+  //                                       clone; `finishFade` rejoins it
+  //   excluded (the launch bore)       -> alone, `frame.ts` owns its `visible`
+  //   its band is full                 -> alone
+  //
+  // Every row of that table degrades to "a few more draw calls", never a hole,
+  // and the sea is never batched (DEV-193 section 3d: 57 MB repacked to save
+  // two draws).
+  let batcher: ChunkBatcher | null = null
+  let batchSynced = false
+  let batchOn = true
+  let batchExcluded: ReadonlySet<string> = new Set()
+  const batchCapacities = new Map<string, number>()
+  /** Quads along a chunk at `lod`, or null for a level this terrain does not have. */
+  const batchQuads = (lod: number): number | null => {
+    if (lod >= 0) {
+      if (lod > bands.distances.length - 1) return null
+      const quads = (params.chunkSize / params.baseResolution) >> lod
+      return quads >= 1 ? quads : null
+    }
+    const spec = options.detailRing?.() ?? null
+    if (!spec || !detailBand(spec, params, bands.hysteresis)) return null
+    return params.chunkSize / spec.baseResolution
+  }
+  /**
+   * Slots for `lod`: the most chunks any eye position could put in it, measured.
+   *
+   * DEV-193 section 3d priced the choice: 35 MB at zero headroom, 76 MB for a
+   * LOD 0 band that could hold every chunk. This is neither. For every eye on a
+   * lattice over the terrain and as far past its edge as the band reaches, count
+   * the chunks whose footprint distance puts them in the band (hysteresis
+   * included, so a chunk the ladder has not yet moved is still counted), and
+   * reserve the largest count plus a margin for chunks waiting on the worker.
+   * The outermost band is unbounded above, so it holds the grid.
+   *
+   * A full band is not a failure (the chunk draws alone), so the margin is
+   * about not paying draw calls, not about correctness.
+   */
+  const batchCapacity = (lod: number): number => {
+    const list = [...slots.values()]
+    const last = bands.distances.length - 1
+    if (lod >= last) return list.length
+    const spec = options.detailRing?.() ?? null
+    const h = bands.hysteresis
+    const outer =
+      lod < 0 ? (spec?.radius ?? 0) * (1 + h) : (bands.distances[lod] as number) * (1 + h)
+    const inner = lod <= 0 ? 0 : (bands.distances[lod - 1] as number) * (1 - h)
+    const key = `${lod}:${list.length}:${outer}`
+    const known = batchCapacities.get(key)
+    if (known !== undefined) return known
+    const step = (params.chunkSize * group.scale.x) / 2
+    const x0 = group.position.x - outer
+    const x1 = group.position.x + group.scale.x * perSide * params.chunkSize + outer
+    const z1 = group.position.z + outer
+    const z0 = group.position.z - group.scale.z * perSide * params.chunkSize - outer
+    const eyes = function* (): Generator<readonly [number, number]> {
+      for (let x = x0; x <= x1; x += step) for (let z = z0; z <= z1; z += step) yield [x, z]
+    }
+    const slotsNeeded = bandCapacity(eyes(), list, chunkDistance, (d) => d <= outer && d >= inner, {
+      ratio: 1.15,
+      slots: 2,
+    })
+    batchCapacities.set(key, slotsNeeded)
+    return slotsNeeded
+  }
+  if (options.chunkBatch === true && !water) {
+    batcher = createChunkBatcher({
+      material: materialForLod(0),
+      parent: group,
+      vertexCount: (lod) => {
+        const quads = batchQuads(lod)
+        return quads === null
+          ? null
+          : chunkTriangles(params.chunkSize, params.chunkSize / quads) * 3
+      },
+      capacity: batchCapacity,
+      flags: (lod) => shadowFlagsFor(shadowRole, shadowsOn, lod),
+    })
+  }
+  const batchWanted = (slot: ChunkSlot): boolean =>
+    batchOn && slot.fade === null && !batchExcluded.has(slot.mesh.name)
+  /**
+   * Put a chunk where it should be drawn, given what it is now. Call after any
+   * change to its geometry, LOD or fade state.
+   */
+  const settle = (slot: ChunkSlot): void => {
+    if (!batcher || !batchSynced) return
+    const id = slot.mesh.name
+    if (batchWanted(slot) && batcher.place(id, slot.lod, slot.mesh.geometry)) {
+      slot.mesh.visible = false
+      slot.batched = true
+      return
+    }
+    batcher.release(id)
+    if (slot.batched) {
+      slot.mesh.visible = true
+      slot.batched = false
+    }
+  }
+  const batchSync = (): ChunkBatchReport | null => {
+    if (!batcher) return null
+    batchSynced = true
+    batchOn = true
+    const items: { id: string; lod: number; geometry: THREE.BufferGeometry }[] = []
+    for (const slot of slots.values()) {
+      if (batchWanted(slot)) {
+        items.push({ id: slot.mesh.name, lod: slot.lod, geometry: slot.mesh.geometry })
+      }
+    }
+    // Every band the ladder has, and the detail ring's when the preset has one,
+    // so each is allocated here and drawn once under the curtain rather than
+    // created in flight.
+    const levels: number[] = []
+    if (batchQuads(-1) !== null) levels.push(-1)
+    for (let lod = 0; lod < bands.distances.length; lod++) levels.push(lod)
+    const placed = batcher.sync(items, levels)
+    for (const slot of slots.values()) {
+      if (placed.has(slot.mesh.name)) {
+        slot.mesh.visible = false
+        slot.batched = true
+      } else if (slot.batched) {
+        slot.mesh.visible = true
+        slot.batched = false
+      }
+    }
+    return batcher.report()
+  }
+  const batchSet = (on: boolean): ChunkBatchReport | null => {
+    if (!batcher) return null
+    if (on) return batchSync()
+    batchOn = false
+    for (const slot of slots.values()) {
+      batcher.release(slot.mesh.name)
+      if (slot.batched) {
+        slot.mesh.visible = true
+        slot.batched = false
+      }
+    }
+    return batcher.report()
+  }
+  const unsubscribeBake = batcher
+    ? options.onBakeChange?.(() => {
+        if (batchSynced && batchOn) batchSync()
+      })
+    : undefined
+
   /**
    * End a fade: the incoming geometry becomes the chunk's, the transient mesh
    * goes, both clones return to the pool. Also the path `dispose` takes.
@@ -1437,6 +1652,9 @@ export const loadTerrain = async (
     group.remove(fade.incoming)
     fadePool.release(fade.pair)
     applySlotShadow(slot)
+    // DEV-904: the fade is over, so the chunk is plain geometry at a settled LOD
+    // again: back into the band for the level it landed on.
+    settle(slot)
   }
 
   const advanceFades = (dt: number): void => {
@@ -1563,7 +1781,7 @@ export const loadTerrain = async (
         // origin itself, because the 2016 bake did and the oracle compares
         // absolute coordinates.
         group.add(mesh)
-        slots.set(`${cx},${cy}`, { cx, cy, mesh, lod, requested: null, fade: null })
+        slots.set(`${cx},${cy}`, { cx, cy, mesh, lod, requested: null, fade: null, batched: false })
         triangleCount += chunk.triangleCount * subdivide * subdivide
         lodHistogram[lod] = (lodHistogram[lod] ?? 0) + 1
         options.onProgress?.((cx * perSide + cy + 1) / total)
@@ -1747,6 +1965,9 @@ export const loadTerrain = async (
         slot.fade = { incoming, pair, seconds, t: 0 }
         slot.lod = reply.lod
         applySlotShadow(slot)
+        // DEV-904: a fading chunk leaves its band. Both halves draw alone with
+        // their own clone of the material until `finishFade` rejoins it.
+        settle(slot)
         return
       }
       slot.mesh.geometry.dispose()
@@ -1754,6 +1975,8 @@ export const loadTerrain = async (
       slot.lod = reply.lod
       // The LOD just moved, so whether this chunk casts just moved with it.
       applySlotShadow(slot)
+      // DEV-904: and which band it belongs in, which moved with the geometry.
+      settle(slot)
     }
 
     drainArrivals = (): void => {
@@ -1945,6 +2168,8 @@ export const loadTerrain = async (
     setShadows(on: boolean): void {
       shadowsOn = on
       for (const slot of slots.values()) applySlotShadow(slot)
+      // DEV-904: a band's cast flag is the LOD's, so it follows the switch too.
+      batcher?.refreshFlags()
       for (const f of farSeaMeshes) {
         const flags = shadowFlagsFor(shadowRole, on, f.lod)
         f.mesh.castShadow = flags.cast
@@ -2092,33 +2317,89 @@ export const loadTerrain = async (
     },
 
     warmLodFade() {
+      // ── DEV-904: the programs batching leaves to individual meshes ───────
+      //
+      // A placed chunk's mesh is hidden, so `warmWorld`'s draw would never reach
+      // it, and with it the two programs a batched terrain still needs: the
+      // fade's clone (below) and the BASE material drawn as a plain mesh (a
+      // chunk whose band is full, a bore chunk, or a fade that has just
+      // finished and not yet rejoined). Both would first compile in flight, in
+      // the seat. So the warm shows one chunk with the base material and, where
+      // fades exist, one with the clone, and puts them back as found.
+      const shown: { mesh: THREE.Mesh; visible: boolean }[] = []
+      const show = (mesh: THREE.Mesh): void => {
+        shown.push({ mesh, visible: mesh.visible })
+        mesh.visible = true
+      }
+      const all = [...slots.values()]
+      // A CASTING chunk where there is one: the shadow pass's depth program for a
+      // plain mesh is a third program of its own, and the first fade of a LOD 0
+      // chunk would compile it in the air (found by `chunk-batch.spec.ts`: one
+      // `depth` program appearing during the churn, and none with batching off,
+      // where the warm drew plain casting chunks anyway).
+      const baseSlot =
+        batcher && batchSynced
+          ? (all.find((s) => s.batched && s.mesh.castShadow) ?? all.find((s) => s.batched))
+          : undefined
+      if (baseSlot) show(baseSlot.mesh)
       // Nothing to warm where nothing can fade: Classic, a terrain the sheet
       // gives no `lodTransitionTime`, `durationScale` 0, or a single-band
       // terrain that never changes LOD at all. Each of those is the swap path,
       // which never cuts a clone — so a warm would compile a program the run
       // cannot reach and the log would say `+1` about nothing.
       const seconds = lodFadeSeconds(lodFade?.() ?? null, entry.lodTransitionTime)
-      if (!seconds) return null
-      const slot = slots.values().next().value
-      if (!slot) return null
-      const pair = fadePool.acquire(material)
-      if (!pair) return null
-      const mesh = slot.mesh
-      const was = mesh.material
-      mesh.material = pair.incoming
-      // Full coverage, so the warm draw RASTERISES rather than discarding every
-      // fragment — `acquire` leaves the incoming clone at coverage 0, which
-      // kills the lot. The pixels go under the curtain either way; what is
-      // wanted is the ordinary path through the program.
-      pair.setCoverage(1)
-      return () => {
-        mesh.material = was
-        fadePool.release(pair)
+      const cloneSlot = seconds
+        ? (all.find((s) => s !== baseSlot && s.mesh.castShadow) ??
+          all.find((s) => s !== baseSlot) ??
+          all[0])
+        : undefined
+      const pair = cloneSlot ? fadePool.acquire(material) : null
+      let was: THREE.Material | THREE.Material[] | null = null
+      if (cloneSlot && pair) {
+        was = cloneSlot.mesh.material
+        cloneSlot.mesh.material = pair.incoming
+        if (cloneSlot !== baseSlot) show(cloneSlot.mesh)
+        // Full coverage, so the warm draw RASTERISES rather than discarding every
+        // fragment — `acquire` leaves the incoming clone at coverage 0, which
+        // kills the lot. The pixels go under the curtain either way; what is
+        // wanted is the ordinary path through the program.
+        pair.setCoverage(1)
       }
+      if (shown.length === 0 && !pair) return null
+      return () => {
+        if (cloneSlot && pair && was) {
+          cloneSlot.mesh.material = was
+          fadePool.release(pair)
+        }
+        for (const s of shown) s.mesh.visible = s.visible
+      }
+    },
+
+    batching: {
+      get available() {
+        return batcher !== null
+      },
+      get on() {
+        return batcher !== null && batchSynced && batchOn
+      },
+      sync: batchSync,
+      set: batchSet,
+      exclude(names: ReadonlySet<string>) {
+        batchExcluded = names
+        for (const slot of slots.values()) settle(slot)
+      },
+      report: () => batcher?.report() ?? null,
+      occupants: () => batcher?.occupants() ?? [],
     },
 
     dispose() {
       worker?.terminate()
+      // DEV-904: first, so no `finishFade` below places a chunk into a band that
+      // is about to go, and the batches are off the group before the loop that
+      // frees its meshes' geometry.
+      unsubscribeBake?.()
+      batchSynced = false
+      batcher?.dispose()
       // Anything still queued is dropped, not applied (DEV-242). Its buffers
       // are plain JS arrays that have never reached the GPU — no `dispose` to
       // call, nothing to leak — and applying them would build meshes into a

@@ -30,7 +30,7 @@ import path from 'node:path'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { Level } from '@/content/level-schema'
-import { GATE_FRAME_ORDER, loadRings } from '@/game/rings'
+import { drawAsGateFrame, GATE_FRAME_ORDER, loadRings, ringFrameMaterial } from '@/game/rings'
 import { loadTurnIndicators } from '@/game/turn-indicators'
 import int01 from '../../content/levels/int_01_hoverJet.json'
 import { REPO as ROOT } from './helpers/repo-root'
@@ -68,33 +68,6 @@ const transparentSortKeys = (): string[] => {
   // z is compared the other way round (`b.z - a.z`, far first); the rest ascend.
   expect(body, 'the transparent list is no longer drawn far-to-near').toContain('b.z - a.z')
   return [...body.matchAll(/a\.([\w.]+)\s*!==\s*b\.\1/g)].map((m) => m[1] as string)
-}
-
-interface Item {
-  readonly object: THREE.Object3D
-  /** Camera-space depth of the object's SORT POINT, three's convention (larger = farther). */
-  readonly z: number
-}
-
-/** Three's transparent order over `items`, with the comparison read from three's source. */
-const transparentSort = (items: readonly Item[]): Item[] => {
-  const keys = transparentSortKeys()
-  const read = (item: Item, key: string): number => {
-    if (key === 'groupOrder') return 0
-    if (key === 'renderOrder') return item.object.renderOrder
-    if (key === 'z') return item.z
-    throw new Error(`reversePainterSortStable compares a key this test does not model: ${key}`)
-  }
-  const indexed = items.map((item, id) => ({ item, id }))
-  indexed.sort((a, b) => {
-    for (const key of keys) {
-      const av = read(a.item, key)
-      const bv = read(b.item, key)
-      if (av !== bv) return key === 'z' ? bv - av : av - bv
-    }
-    return a.id - b.id
-  })
-  return indexed.map((e) => e.item)
 }
 
 const materialsOf = (o: THREE.Object3D): THREE.Material[] => {
@@ -137,76 +110,52 @@ describe('DEV-422 §1 — what three sorts a translucent object by', () => {
   })
 })
 
-describe('DEV-422 §2 — the shipped gates on int_01', () => {
-  it('finds the three translucent gate parts: ring frames, finish frame, turn arrows', async () => {
-    const rings = await loadRings(LEVEL)
-    const turns = await loadTurnIndicators(LEVEL)
-    const names = [...translucent(rings.object), ...translucent(turns.object)].map((m) => m.name)
-    expect(names.sort()).toEqual(['finish-gate', 'rings', 'turn-indicator-arrows'])
-    // And the frames really are ONE instanced object whose single sort point is
-    // far from the gates at its ends — the reason no depth order can be
-    // trusted for it. Measured, not assumed: the farthest gate from the sort
-    // point on int_01.
-    const frames = rings.object.getObjectByProperty('isInstancedMesh', true) as THREE.InstancedMesh
-    expect(frames.name).toBe('rings')
-    frames.computeBoundingSphere()
-    const centre = (frames.boundingSphere as THREE.Sphere).center
-    const far = Math.max(...rings.triggers.map((t) => t.centre.distanceTo(centre)))
-    console.info(
-      `DEV-422: int_01's ${rings.count} frames sort at one point, ${far.toFixed(0)} m from the farthest`,
-    )
-    expect(far).toBeGreaterThan(1000)
-    rings.dispose()
-    turns.dispose()
-  })
+describe('DEV-422 §2, superseded by DEV-922: the shipped gates on int_01', () => {
+  // Matt, 2026-10-12, of four photographs: "front only + opaque wins it for
+  // me". DEV-422's problem was the TRANSPARENT list (one sort point for a whole
+  // course of frames, and neither side writing depth). An opaque gate is not in
+  // that list: three draws every opaque before any transparent thing and the
+  // depth test orders the rest, which is what §1's sort could only approximate.
+  const GATE_PARTS = ['finish-gate', 'rings', 'turn-indicator-arrows']
+  const gateParts = (...roots: THREE.Object3D[]): THREE.Mesh[] => {
+    const out: THREE.Mesh[] = []
+    for (const root of roots)
+      root.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh && GATE_PARTS.includes(o.name)) out.push(o as THREE.Mesh)
+      })
+    return out
+  }
 
-  it('every translucent gate part WRITES DEPTH', async () => {
-    // So a translucent thing drawn after it is hidden where a bar is in front
-    // of it, and passes where it is in front of the bar — instead of whichever
-    // drew second painting over the other.
+  it('finds the three gate parts, and none of them is translucent any more', async () => {
     const rings = await loadRings(LEVEL)
     const turns = await loadTurnIndicators(LEVEL)
-    for (const mesh of [...translucent(rings.object), ...translucent(turns.object)]) {
+    const parts = gateParts(rings.object, turns.object)
+    expect(parts.map((m) => m.name).sort()).toEqual(GATE_PARTS)
+    // The loud counterpart: the old finder still runs and now finds nothing.
+    expect(
+      [...translucent(rings.object), ...translucent(turns.object)].map((m) => m.name),
+    ).not.toEqual(expect.arrayContaining(GATE_PARTS))
+    for (const mesh of parts) {
       for (const m of materialsOf(mesh)) {
+        expect(m.transparent, `${mesh.name} is opaque`).toBe(false)
+        expect(m.opacity, `${mesh.name} at full opacity`).toBe(1)
+        expect(m.side, `${mesh.name} front faces only`).toBe(THREE.FrontSide)
         expect(m.depthWrite, `${mesh.name} writes depth`).toBe(true)
-        // Still translucent: this is the draw order, not the look.
-        expect(m.transparent, `${mesh.name} stays translucent`).toBe(true)
       }
+      expect(mesh.renderOrder, `${mesh.name} keeps the gates' order`).toBe(GATE_FRAME_ORDER)
     }
     rings.dispose()
     turns.dispose()
   })
 
-  it('every translucent gate part draws BEFORE a default-ordered translucent thing, near or far', async () => {
-    // The adversarial pair is the one the e2e photographs: the other thing
-    // NEARER than the gate's sort point and then FARTHER. By depth alone the
-    // two cases draw in opposite orders; the gate has to be first in both,
-    // because a racer hologram, a ghost, a wing trail or a burst particle is
-    // correct over a gate it is in front of only if the gate is already there.
-    const rings = await loadRings(LEVEL)
-    const turns = await loadTurnIndicators(LEVEL)
-    const other = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false }),
-    )
-    expect(other.renderOrder, 'three’s default order').toBe(0)
-    for (const gate of [...translucent(rings.object), ...translucent(turns.object)]) {
-      for (const [gz, oz] of [
-        [900, 300],
-        [300, 900],
-      ] as const) {
-        const first = transparentSort([
-          { object: other, z: oz },
-          { object: gate, z: gz },
-        ])[0]
-        expect(
-          first?.object,
-          `${gate.name} first with it at ${gz} m and the other at ${oz} m`,
-        ).toBe(gate)
-      }
-      expect(gate.renderOrder).toBe(GATE_FRAME_ORDER)
-    }
-    rings.dispose()
-    turns.dispose()
+  it('leaves the shared factory as it was, for the hangar bands and the mode marks', () => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), ringFrameMaterial())
+    const before = mesh.material as THREE.Material
+    expect([before.side, before.transparent]).toEqual([THREE.DoubleSide, true])
+    drawAsGateFrame(mesh)
+    expect(before.side).toBe(THREE.FrontSide)
+    expect(before.transparent).toBe(false)
+    const fresh = ringFrameMaterial()
+    expect([fresh.side, fresh.transparent]).toEqual([THREE.DoubleSide, true])
   })
 })

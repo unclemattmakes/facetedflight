@@ -171,7 +171,22 @@ export const GATE_FRAME_ORDER = -1
 export const drawAsGateFrame = (mesh: THREE.Mesh): void => {
   mesh.renderOrder = GATE_FRAME_ORDER
   const m = mesh.material
-  for (const material of Array.isArray(m) ? m : [m]) material.depthWrite = true
+  for (const material of Array.isArray(m) ? m : [m]) {
+    material.depthWrite = true
+    // DEV-922, Matt 2026-10-12: *"let's simplify the gates - they should be
+    // single sided"*, *"the original idea was they were 'holo-gates' but we
+    // don't need to see through them"*, and, of four photographs, *"front only
+    // + opaque wins it for me"*. Front faces (the mesh's outward ones) and
+    // OPAQUE: no blend, so the frame is the colour it is rather than 71 % of it
+    // over the cliff, and three draws it with the opaque list. The old
+    // translucent `DoubleSide` draw was two passes that set `needsUpdate`
+    // around each, re-deriving the program twice a frame per part (6 a frame,
+    // per view in a headset). The factory stays as it was for the hangar's
+    // bands and the mode marks.
+    material.side = THREE.FrontSide
+    material.transparent = false
+    material.opacity = 1
+  }
 }
 
 // Every ring colour here is a material `Color` property, so every one goes through
@@ -822,6 +837,11 @@ export const loadRings = async (level: Level): Promise<LoadedRings> => {
         ;(finish.frame.material as THREE.Material).dispose()
       }
       box.dispose()
+      // DEV-936: the frame's BAKED clone (`bakedGeometry`), shared by every
+      // ring and the finish frame. `gltf.dispose()` frees the loaded original
+      // and `instanced.dispose()` only its instance buffer, so this one stayed
+      // on the GPU after every mission switch.
+      geometry.dispose()
       frameMaterial.dispose()
       studMaterial.dispose()
       gltf.dispose()

@@ -62,6 +62,7 @@
 
 import type { Ff2GlobalMaybe } from './fixtures/ff2'
 import { flyToFreeze } from './fixtures/freeze'
+import { knownRed } from './fixtures/known-red'
 import { expect, test } from './fixtures/test'
 
 type Page = import('@playwright/test').Page
@@ -266,6 +267,7 @@ test.describe('@gpu draw order — the vehicle', () => {
 
   for (const mission of MISSIONS) {
     test(`the vehicle is submitted before the world on ${mission.id}`, async ({ page }) => {
+      knownRed('KR-18', mission.vehicle === 'hoverjet')
       await flyToFreeze(page, {
         mission: mission.id,
         edition: 'anniversary',

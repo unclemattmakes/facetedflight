@@ -53,6 +53,9 @@ import type { PodSpec } from '@/sim/life/pods'
 import type { DressingBand } from '@/sim/props/dressing'
 import { PROP_KINDS as PROP_KIND_LIST, type PropKind } from '@/sim/props/generate-shapes'
 import type { ProximitySpec } from '@/sim/proximity'
+// DEV-934: `vr.override` may name LOOK keys only. `edition-split.ts` imports
+// nothing from here but a type, so this is not a cycle at run time.
+import { editionKeyClass } from './edition-split'
 
 /** The two presets. Matches the basenames under `content/editions/`. */
 export const EDITION_IDS = ['classic', 'anniversary'] as const
@@ -577,6 +580,14 @@ export interface EditionRender {
   readonly illustrative: EditionIllustrative
   /** Real cast shadows from the mission sun. ANNIVERSARY.md V3. */
   readonly shadows: EditionShadows
+  /**
+   * The mission sun's map, and the passes that ride it (the cockpit's own map,
+   * the near cascade, the ship's hull draw), in a MISSION. DEV-932. `shadows`
+   * is the machinery for every scene, the hangar's key light (DEV-440) and the
+   * title's sun included; this is the one key a headset's `vr.disable` can take
+   * out of a mission while the menus keep theirs. Inert while `shadows` is off.
+   */
+  readonly missionShadows: EditionFeature
   /** The ship's own hull casts while you are sitting in it. DEV-305. */
   readonly shipShadow: EditionFeature
   /** The cockpit shell RECEIVES the shadow map. DEV-306. */
@@ -913,6 +924,93 @@ export interface EditionFx {
   readonly propBurst: EditionPropBurst
   /** A splash where anything goes into the sea or comes out of it. DEV-613. */
   readonly splash: EditionSplash
+  /** A ring of mist riding the ship near top speed. DEV-926. */
+  readonly vapourCone: EditionVapourCone
+  /** A ring of air thrown out where boost engages. DEV-927. */
+  readonly boostShockwave: EditionBoostShockwave
+  /** Corkscrews of mist off the wing tips in a hard turn. DEV-928. */
+  readonly wingVortices: EditionWingVortices
+}
+
+/**
+ * DEV-928: **wing-tip vortices in a hard turn.** From Matt's pick of every
+ * swing (*"all plz!"*): "wingtip vortices". Puffs of soft mist shed from each
+ * wing tip that HANG in the air (world space, no drift) and spiral round the
+ * line the tip flew (the engine's orbit, `spinTurnsPerSecond`, from `radius`
+ * growing `radiusGrow` times over life), their phase advancing
+ * `twistTurnsPerSecond` turns per second of flight so the stream lays a
+ * corkscrew; the two tips spin opposite ways. Strength is a smoothstep from
+ * `minSpeed` to `fullSpeed` (forward m/s) times one from `minTurnDeg` to
+ * `fullTurnDeg` (the ship's turn rate, degrees a second) times the speed-FX
+ * slider. Nothing in 2016 drew it; a look.
+ */
+export interface EditionWingVortices extends EditionFeature {
+  readonly minSpeed: number
+  readonly fullSpeed: number
+  readonly minTurnDeg: number
+  readonly fullTurnDeg: number
+  /** Puffs a second from EACH tip at full strength. */
+  readonly rate: number
+  readonly lifetime: number
+  readonly size: number
+  readonly radius: number
+  readonly radiusGrow: number
+  readonly spinTurnsPerSecond: number
+  readonly twistTurnsPerSecond: number
+  readonly alpha: number
+  /** sRGB 0-1. */
+  readonly colour: readonly [number, number, number]
+}
+
+/**
+ * DEV-926: **a vapour cone near top speed.** Matt, 2026-10-12, picking every
+ * swing in `docs/plan/GPU-PARTICLES.md` section 5 (*"all plz!"*), of which this
+ * is "a vapour cone near top speed". The mist a fast aircraft draws round
+ * itself: a ring of soft white particles, `radius` round the hull at
+ * `aftMetres` behind its origin, thrown back on a cone of `angleDeg` at `drift`
+ * m/s and RIDING the ship (`simulationSpace: local`), so it holds its shape
+ * through a bank. It fades in from `minSpeed` to `fullSpeed` (forward m/s; top
+ * speed is about 437) and answers to the speed-FX comfort slider, as the
+ * streaks do (vection). Nothing in 2016 drew one; a look, so Classic is off.
+ */
+export interface EditionVapourCone extends EditionFeature {
+  readonly minSpeed: number
+  readonly fullSpeed: number
+  /** Particles a second at full strength. */
+  readonly rate: number
+  readonly radius: number
+  readonly angleDeg: number
+  readonly aftMetres: number
+  readonly drift: number
+  readonly lifetime: number
+  readonly size: number
+  /** 0-1: how opaque the mist is at its densest. */
+  readonly alpha: number
+  /** sRGB 0-1. */
+  readonly colour: readonly [number, number, number]
+}
+
+/**
+ * DEV-927: **a shockwave where boost engages.** From the same pick: "a boost
+ * shockwave". The instant boost is pressed at `minSpeed` or more, a ring of
+ * `count` soft particles leaves the hull in the plane across the line of
+ * flight at `speed` m/s, held back by `drag`, RIDING the ship (a ring left in
+ * the air was behind the chase camera before it had grown). At most one every
+ * `cooldownSeconds`. Answers to the speed-FX slider (a slider of 0 throws
+ * none). Nothing in 2016 drew one; a look.
+ */
+export interface EditionBoostShockwave extends EditionFeature {
+  readonly minSpeed: number
+  readonly count: number
+  readonly radius: number
+  readonly speed: number
+  readonly drag: number
+  readonly lifetime: number
+  readonly size: number
+  readonly alpha: number
+  readonly cooldownSeconds: number
+  /** sRGB 0-1. */
+  readonly colour: readonly [number, number, number]
 }
 
 /**
@@ -2603,6 +2701,30 @@ export interface EditionVrOverrides {
    * name the same paths without the file having to know which are on.
    */
   readonly disable: readonly string[]
+  /**
+   * VR-only VALUES for named fields of named features. DEV-934 (lever 5 of
+   * `docs/plan/ANNIVERSARY-VR-FRAMERATE.md`), DEV-935 (lever 8).
+   *
+   * ── Why this does not reopen the trap the header above names ─────────────
+   *
+   * The trap was a deep partial preset: any number could acquire a second
+   * value, and every FUTURE field could too, silently. This is narrower in
+   * the four ways that argument needs, each enforced by `validateEdition`:
+   * a path is an `editionFeatures()` path and a LOOK key (`edition-split.ts`),
+   * so no rule can differ in a headset; a field is one the feature already
+   * has, so nothing new appears; `enabled` is refused, so turning things off
+   * stays `disable`'s and nothing can be turned ON in VR; and the value has
+   * the flat value's exact shape. So "what does VR look like" is still
+   * answered by reading two short lists, and a future field has one value
+   * until somebody writes a second one down here, by name.
+   *
+   * What it gives up, said plainly: the VR look is no longer strictly a
+   * SUBSET of the flat one. A narrower streak is not "off". Each entry's
+   * `note` says what a player sees change and why it is cheaper.
+   *
+   * `note` inside an entry is prose and is never applied.
+   */
+  readonly override?: Readonly<Record<string, Readonly<Record<string, unknown>>>>
 }
 
 export class EditionSchemaError extends Error {
@@ -2618,6 +2740,101 @@ const isFeature = (f: unknown): f is EditionFeature =>
 /** `n & (n - 1)` is zero for exactly the powers of two, and for zero. */
 const isPowerOfTwo = (n: unknown): n is number =>
   typeof n === 'number' && Number.isInteger(n) && n > 0 && (n & (n - 1)) === 0
+
+/**
+ * Same JSON shape, recursively: numbers finite, arrays the same length,
+ * objects the same keys. DEV-934: a VR value may move a number, never add a
+ * field, drop a rung or change a type.
+ */
+const sameShape = (flat: unknown, vr: unknown): boolean => {
+  if (typeof flat === 'number') return typeof vr === 'number' && Number.isFinite(vr)
+  if (Array.isArray(flat)) {
+    return (
+      Array.isArray(vr) && vr.length === flat.length && flat.every((f, i) => sameShape(f, vr[i]))
+    )
+  }
+  if (typeof flat === 'object' && flat !== null) {
+    if (typeof vr !== 'object' || vr === null || Array.isArray(vr)) return false
+    const a = Object.keys(flat)
+    const b = Object.keys(vr)
+    return (
+      a.length === b.length &&
+      a.every((k) => k in vr && sameShape((flat as never)[k], (vr as never)[k]))
+    )
+  }
+  return typeof vr === typeof flat
+}
+
+/** The `vr.override` half of `validateEdition`. DEV-934; the rules are on the type. */
+const validateVrOverride = (
+  id: string,
+  vr: EditionVrOverrides,
+  features: ReadonlyMap<string, unknown>,
+): void => {
+  const override = vr.override
+  if (override === undefined) return
+  if (typeof override !== 'object' || override === null || Array.isArray(override)) {
+    throw new EditionSchemaError(id, 'vr.override must be an object keyed by feature path')
+  }
+  for (const [path, fields] of Object.entries(override)) {
+    const feature = features.get(path) as Record<string, unknown> | undefined
+    if (!features.has(path) || feature === undefined) {
+      throw new EditionSchemaError(
+        id,
+        `vr.override names "${path}", which is not one of editionFeatures()`,
+      )
+    }
+    // A rule that differed in a headset would split every board (D35).
+    if (editionKeyClass(path) !== 'look') {
+      throw new EditionSchemaError(id, `vr.override names "${path}", which is a RULES key`)
+    }
+    // Dead text: the feature is off in VR, so no value of it is ever drawn.
+    if (vr.disable.includes(path)) {
+      throw new EditionSchemaError(id, `vr.override names "${path}", which vr.disable turns off`)
+    }
+    if (typeof fields !== 'object' || fields === null || Array.isArray(fields)) {
+      throw new EditionSchemaError(id, `vr.override.${path} must be an object of fields`)
+    }
+    let applied = 0
+    for (const [key, value] of Object.entries(fields)) {
+      const where = `vr.override.${path}.${key}`
+      if (key === 'note') {
+        if (typeof value !== 'string') throw new EditionSchemaError(id, `${where} must be prose`)
+        continue
+      }
+      if (key === 'enabled') {
+        throw new EditionSchemaError(id, `${where}: on and off are vr.disable's, not a value`)
+      }
+      if (!(key in feature)) {
+        throw new EditionSchemaError(id, `${where} is not a field ${path} has`)
+      }
+      if (!sameShape(feature[key], value)) {
+        throw new EditionSchemaError(id, `${where} is not the same shape as the flat value`)
+      }
+      applied += 1
+    }
+    if (applied === 0) throw new EditionSchemaError(id, `vr.override.${path} sets nothing`)
+  }
+  // DEV-935. The rungs' MESHES are made once, at world build, from whichever
+  // preset is live then (flat or VR). So a VR table may move where each rung
+  // starts and never what it keeps, or a world built in the headset would
+  // carry different meshes from one built at the monitor.
+  const rungs = (override['props.meshLod'] as { rungs?: unknown } | undefined)?.rungs
+  if (rungs !== undefined) {
+    const flat = (features.get('props.meshLod') as EditionMeshLod).rungs
+    let lastFrom = 0
+    for (const [i, rung] of (rungs as readonly EditionMeshLodRung[]).entries()) {
+      const where = `vr.override.props.meshLod.rungs[${i}]`
+      if (rung.keep !== flat[i]?.keep) {
+        throw new EditionSchemaError(id, `${where}.keep must equal the flat rung's`)
+      }
+      if (!(rung.from > lastFrom)) {
+        throw new EditionSchemaError(id, `${where}.from must be metres, above the rung before it`)
+      }
+      lastFrom = rung.from
+    }
+  }
+}
 
 /**
  * The runtime check, on the shape the code actually reads.
@@ -2646,6 +2863,7 @@ export const validateEdition = (edition: Edition): Edition => {
     ['render.haze', r.haze],
     ['render.illustrative', r.illustrative],
     ['render.shadows', r.shadows],
+    ['render.missionShadows', r.missionShadows],
     ['render.shipShadow', r.shipShadow],
     ['render.cockpitShadow', r.cockpitShadow],
     ['render.cockpitSelfShadow', r.cockpitSelfShadow],
@@ -2672,6 +2890,9 @@ export const validateEdition = (edition: Edition): Edition => {
     ['fx.waterSpray', edition.fx?.waterSpray],
     ['fx.propBurst', edition.fx?.propBurst],
     ['fx.splash', edition.fx?.splash],
+    ['fx.vapourCone', edition.fx?.vapourCone],
+    ['fx.boostShockwave', edition.fx?.boostShockwave],
+    ['fx.wingVortices', edition.fx?.wingVortices],
     ['menu.holoTerrainColours', edition.menu?.holoTerrainColours],
     ['menu.medalOutline', edition.menu?.medalOutline],
     ['cockpit.shake', edition.cockpit?.shake],
@@ -2750,6 +2971,7 @@ export const validateEdition = (edition: Edition): Edition => {
     if (new Set(vr.disable).size !== vr.disable.length) {
       throw new EditionSchemaError(id, 'vr.disable repeats a path')
     }
+    validateVrOverride(id, vr, new Map(features))
   }
   // The shake's own numbers, because a hole in them is not `undefined.enabled`
   // at frame 400 — it is a silent NaN that propagates into `art_pivot.position`
@@ -3320,6 +3542,9 @@ export const validateEdition = (edition: Edition): Edition => {
     )
   }
   validateSplash(id, edition.fx.splash)
+  validateVapourCone(id, edition.fx.vapourCone)
+  validateBoostShockwave(id, edition.fx.boostShockwave)
+  validateWingVortices(id, edition.fx.wingVortices)
   validateGatePulse(id, edition.fx.gatePulse)
   validateBoundaryFuzz(id, edition.boundary.fuzz)
   validateGameplay(id, edition.gameplay)
@@ -4456,6 +4681,111 @@ const validateRacerLivery = (id: string, rl: EditionRacerLivery): void => {
  * nobody, a zero `refSpeed` a NaN scale, and a cone past flat throws into the
  * sea. Checked on both presets, since Classic's is what a flip would read.
  */
+/** An sRGB triple, 0-1, or a schema error naming `path`. */
+const validateColour3 = (id: string, path: string, c: readonly number[] | undefined): void => {
+  if (
+    !Array.isArray(c) ||
+    c.length !== 3 ||
+    !c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1)
+  ) {
+    throw new EditionSchemaError(id, `${path} must be three sRGB numbers, 0..1`)
+  }
+}
+
+/** DEV-926. A zero lifetime or size draws nothing; a cone past flat throws mist forward. */
+const validateVapourCone = (id: string, v: EditionVapourCone): void => {
+  for (const key of [
+    'minSpeed',
+    'fullSpeed',
+    'rate',
+    'radius',
+    'angleDeg',
+    'aftMetres',
+    'drift',
+    'lifetime',
+    'size',
+    'alpha',
+  ] as const) {
+    if (!Number.isFinite(v?.[key]) || v[key] < 0) {
+      throw new EditionSchemaError(id, `fx.vapourCone.${key} must be a non-negative number`)
+    }
+  }
+  if (!(v.fullSpeed > v.minSpeed)) {
+    throw new EditionSchemaError(id, 'fx.vapourCone.fullSpeed must be above minSpeed')
+  }
+  if (!(v.lifetime > 0) || !(v.size > 0) || !(v.rate > 0)) {
+    throw new EditionSchemaError(id, 'fx.vapourCone.lifetime, size and rate must be above zero')
+  }
+  if (v.alpha > 1 || v.angleDeg >= 90) {
+    throw new EditionSchemaError(id, 'fx.vapourCone.alpha must be 0..1 and angleDeg below 90')
+  }
+  validateColour3(id, 'fx.vapourCone.colour', v.colour)
+}
+
+/** DEV-927. A count of 0 is a shockwave of nobody. */
+const validateBoostShockwave = (id: string, b: EditionBoostShockwave): void => {
+  for (const key of [
+    'minSpeed',
+    'count',
+    'radius',
+    'speed',
+    'drag',
+    'lifetime',
+    'size',
+    'alpha',
+    'cooldownSeconds',
+  ] as const) {
+    if (!Number.isFinite(b?.[key]) || b[key] < 0) {
+      throw new EditionSchemaError(id, `fx.boostShockwave.${key} must be a non-negative number`)
+    }
+  }
+  if (!Number.isInteger(b.count) || b.count < 1) {
+    throw new EditionSchemaError(id, 'fx.boostShockwave.count must be a whole number of 1 or more')
+  }
+  if (!(b.lifetime > 0) || !(b.size > 0) || b.alpha > 1) {
+    throw new EditionSchemaError(
+      id,
+      'fx.boostShockwave.lifetime and size must be above zero and alpha 0..1',
+    )
+  }
+  validateColour3(id, 'fx.boostShockwave.colour', b.colour)
+}
+
+/** DEV-928. Every number non-negative; the two ranges must open upward. */
+const validateWingVortices = (id: string, v: EditionWingVortices): void => {
+  for (const key of [
+    'minSpeed',
+    'fullSpeed',
+    'minTurnDeg',
+    'fullTurnDeg',
+    'rate',
+    'lifetime',
+    'size',
+    'radius',
+    'radiusGrow',
+    'spinTurnsPerSecond',
+    'twistTurnsPerSecond',
+    'alpha',
+  ] as const) {
+    if (!Number.isFinite(v?.[key]) || v[key] < 0) {
+      throw new EditionSchemaError(id, `fx.wingVortices.${key} must be a non-negative number`)
+    }
+  }
+  if (!(v.fullSpeed > v.minSpeed) || !(v.fullTurnDeg > v.minTurnDeg)) {
+    throw new EditionSchemaError(
+      id,
+      'fx.wingVortices.fullSpeed and fullTurnDeg must be above minSpeed and minTurnDeg',
+    )
+  }
+  if (!(v.lifetime > 0) || !(v.size > 0) || !(v.rate > 0) || v.alpha > 1) {
+    throw new EditionSchemaError(
+      id,
+      'fx.wingVortices.lifetime, size and rate must be above zero and alpha 0..1',
+    )
+  }
+  validateColour3(id, 'fx.wingVortices.colour', v.colour)
+}
+
 const validateSplash = (id: string, sp: EditionSplash): void => {
   for (const key of [
     'emitters',
@@ -4548,6 +4878,7 @@ export const editionFeatures = (e: Edition): readonly [string, EditionFeature][]
   ['render.haze', e.render.haze],
   ['render.illustrative', e.render.illustrative],
   ['render.shadows', e.render.shadows],
+  ['render.missionShadows', e.render.missionShadows],
   ['render.shipShadow', e.render.shipShadow],
   ['render.cockpitShadow', e.render.cockpitShadow],
   ['render.cockpitSelfShadow', e.render.cockpitSelfShadow],
@@ -4575,6 +4906,9 @@ export const editionFeatures = (e: Edition): readonly [string, EditionFeature][]
   ['fx.waterSpray', e.fx.waterSpray],
   ['fx.propBurst', e.fx.propBurst],
   ['fx.splash', e.fx.splash],
+  ['fx.vapourCone', e.fx.vapourCone],
+  ['fx.boostShockwave', e.fx.boostShockwave],
+  ['fx.wingVortices', e.fx.wingVortices],
   ['menu.holoTerrainColours', e.menu.holoTerrainColours],
   ['menu.medalOutline', e.menu.medalOutline],
   ['cockpit.shake', e.cockpit.shake],
@@ -4687,12 +5021,38 @@ export const withFeatureOverrides = (
  * The preset as it renders WHILE PRESENTING: `edition.vr.disable` applied.
  *
  * A thin reading of `withFeatureOverrides`: the VR layer can only ever turn
- * things OFF, which is what keeps the VR look a SUBSET of the flat one.
+ * things OFF, which is what keeps the VR look a SUBSET of the flat one. Then,
+ * since DEV-934, `vr.override`'s named values (look keys, existing fields,
+ * the flat shape; `EditionVrOverrides.override` says why that is still narrow).
  */
-export const applyVrOverrides = (edition: Edition): Edition => {
-  const paths = edition.vr?.disable
-  if (!paths || paths.length === 0) return edition
-  return withFeatureOverrides(edition, Object.fromEntries(paths.map((p) => [p, false])))
+export const applyVrOverrides = (
+  edition: Edition,
+  /**
+   * DEV-934: `vr.override` paths to leave at their FLAT values, for the worn
+   * A/B's off arm (`?vrFxTrim=0`, `?vrMeshLod=0`, `boot/app/pins.ts`).
+   * `disable` is not affected: its off arm is `?feature=<path>:on`.
+   */
+  skipValue: (path: string) => boolean = () => false,
+): Edition => {
+  const paths = edition.vr?.disable ?? []
+  const off =
+    paths.length === 0
+      ? edition
+      : withFeatureOverrides(edition, Object.fromEntries(paths.map((p) => [p, false])))
+  const values = Object.entries(edition.vr?.override ?? {}).filter(([p]) => !skipValue(p))
+  if (values.length === 0) return off
+  // Its own copy when `disable` returned the input by identity, so the flat
+  // preset is never written to.
+  const next = off === edition ? (structuredClone(edition) as Edition) : off
+  const target = new Map(editionFeatures(next))
+  for (const [path, fields] of values) {
+    const feature = target.get(path) as Record<string, unknown> | undefined
+    if (!feature) continue
+    for (const [key, value] of Object.entries(fields)) {
+      if (key !== 'note') feature[key] = structuredClone(value)
+    }
+  }
+  return next
 }
 
 // ── The life pass (DEV-447 …) ─────────────────────────────────────────────

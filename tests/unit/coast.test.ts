@@ -304,7 +304,9 @@ describe('the same point, two ways', () => {
     // A chunk well away from the origin and off the grid diagonal: (0,0) is open
     // sea at u,v ~ 0.03 and was blind to both of DEV-007's bugs, which is the
     // standing example of why a corner spot-check is not a verification.
-    const chunk = generateChunk(grid, sampler, sampler, params, 9, 5, 0)
+    // 2016's skirt to the sea, so `meshY === 0` finds it: the skirt's depth is
+    // DEV-929's subject (`terrain-skirts.test.ts`), not this test's.
+    const chunk = generateChunk(grid, sampler, sampler, params, 9, 5, 0, 'sea')
     const errors: number[] = []
     let skirt = 0
     for (let i = 0; i < chunk.positions.length; i += 3) {
@@ -366,7 +368,9 @@ describe('the same point, two ways', () => {
     const params = terrainParams(environmentTerrains('simonet').land)
     const grid = buildVertexGrid(sampler, params)
     const originY = -81.69
-    const chunk = generateChunk(grid, sampler, sampler, params, 9, 5, 0)
+    // 2016's skirt to the sea, so `meshY === 0` finds it: the skirt's depth is
+    // DEV-929's subject (`terrain-skirts.test.ts`), not this test's.
+    const chunk = generateChunk(grid, sampler, sampler, params, 9, 5, 0, 'sea')
     const rgb: Rgb = { r: 0, g: 0, b: 0 }
     const medianError = (mirrored: boolean): number => {
       const errors: number[] = []

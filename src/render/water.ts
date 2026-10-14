@@ -351,6 +351,9 @@ export interface Water {
    * Until this is called — and on any environment whose land map never arrives —
    * the coast is inert whatever the preset says, because a depth read against a
    * map that is not there is worse than no shore at all. See `render/coast.ts`.
+   *
+   * DEV-936: the sea takes `heightMap`. It frees the map a later call replaces,
+   * and the one it holds when its material is disposed; the caller keeps none.
    */
   setCoastSource(map: CoastMap | null, heightMap: THREE.Texture | null): void
   /**
@@ -1679,6 +1682,12 @@ ${REFLECT_HOOK}`,
   // preset from `editionState` at construction and the terrains land seconds
   // later, so the two orders both happen every run.
   let coastSource: CoastMap | null = null
+  // DEV-936: the sea OWNS the coast map it samples, from the moment it is
+  // handed one: `build.ts` makes a 1024 x 1024 height texture per world and
+  // keeps no handle, so the one it replaces and the one held when the plate's
+  // material is disposed (`LoadedTerrain.dispose`) are freed here, or every
+  // ocean world leaves one on the GPU.
+  material.addEventListener('dispose', () => uniforms.uCoastMap.value.dispose())
 
   return {
     displace: d,
@@ -1696,7 +1705,9 @@ ${REFLECT_HOOK}`,
     },
     setCoastSource(map, heightMap) {
       coastSource = map
+      const was = uniforms.uCoastMap.value
       uniforms.uCoastMap.value = heightMap ?? placeholderCoastMap()
+      if (was !== uniforms.uCoastMap.value) was.dispose()
       if (map) {
         uniforms.uCoastPlane.value.set(
           map.originX,

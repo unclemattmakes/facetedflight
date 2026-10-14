@@ -122,6 +122,7 @@ import type { Edge } from '@/input/edge'
 import { nextPaused } from '@/input/escape-pause'
 import type { FocusEdge } from '@/input/focus-edge'
 import {
+  beginPadFrame,
   gamepadBack,
   gamepadCameraToggle,
   gamepadConfirm,
@@ -189,10 +190,11 @@ import { createCodePlate, placeCodePlateInRoom } from '@/render/room-code-plate'
 import type { SceneTint } from '@/render/scene-tint'
 import type { SeaReflection } from '@/render/sea-reflection'
 import type { SunShadows } from '@/render/shadows'
-import { shadowsEnabled } from '@/render/shadows'
+import { missionShadowsEnabled } from '@/render/shadows'
 import { marmosetSunIntensity } from '@/render/skyshop-ibl'
 import { fovAddFor, type SpringArm, type SurfaceHeightAt } from '@/render/spring-arm'
 import { ARRIVAL_DROP } from '@/render/start-deck'
+import type { StaticScene } from '@/render/static-scene'
 import {
   ENTER_VR_ROW_ID,
   MAKING_OF_PATH,
@@ -230,7 +232,7 @@ import {
 import { energyRaceFraction, energyRaceSpec, payGate, stepEnergyRace } from '@/sim/energy-race'
 import type { HoverJetSheet } from '@/sim/hoverjet'
 import type { FixedStepClock } from '@/sim/integrator'
-import { stepFixed } from '@/sim/integrator'
+import { stepFixed, XR_MAX_CATCHUP_TICKS } from '@/sim/integrator'
 import type { HeadPhase } from '@/sim/jumpseat-head'
 import type { StrandedPhase } from '@/sim/jumpseat-stranded'
 import type { LaunchState } from '@/sim/launch'
@@ -247,6 +249,7 @@ import type { AutopilotState } from './autopilot-state'
 import { chaseCamera } from './chase-camera'
 import type { createEditorHost } from './editor-host'
 import type { createLessonHost } from './flight/lesson'
+import { frameSecondsBetween } from './frame-seconds'
 import type { createLetterPlate } from './hangar/letter-plate'
 import type { createMenuReticleHost } from './hangar/menu-reticle'
 import type { createMenus } from './hangar/menus'
@@ -302,6 +305,9 @@ import { SNAP_AT_PIN } from './pins'
  */
 const FORWARD_AXIS = Object.freeze(v3(0, 0, 1))
 const _fwd = v3()
+/** DEV-928: the wing tips, world space, refilled every frame. Volatile (trap 19). */
+const _swingTips = { port: new THREE.Vector3(), starboard: new THREE.Vector3() }
+
 const forwardSpeedOf = (f: Flight): number => {
   const b = f.jet.body
   // The ship's local +Z in world space, dotted with velocity.
@@ -330,6 +336,25 @@ const _listenerEye = new THREE.Vector3()
 
 /** Volatile. One racer's world position, inside the racer-engine sync. */
 const _racerWorld = new THREE.Vector3()
+// DEV-941: the two per-frame `getObjectByName` walks, resolved once. Each
+// entry is trusted only while it is still attached (a mission switch removes
+// the old world, which nulls `parent`), so a rebuilt world is searched again.
+let _missionProbe: THREE.LightProbe | null = null
+const _racerNodes = new WeakMap<THREE.Object3D, Map<string, THREE.Object3D>>()
+function racerNode(group: THREE.Object3D, id: string): THREE.Object3D | undefined {
+  let byId = _racerNodes.get(group)
+  if (!byId) {
+    byId = new Map()
+    _racerNodes.set(group, byId)
+  }
+  let node = byId.get(id)
+  if (!node || node.parent !== group) {
+    node = group.getObjectByName(`racer:${id}`)
+    if (node) byId.set(id, node)
+    else byId.delete(id)
+  }
+  return node
+}
 /** DEV-868: one watch per world (keyed by its particle field), so a rebuilt course starts fresh. */
 const ringTakeWatches = new WeakMap<object, RingTakeWatch>()
 
@@ -449,6 +474,8 @@ export interface FrameCtx {
   /** APP-SPLIT: bag, owner in phase 3 (written here). */
   cloudWhite: number
   readonly cockpitSelfShadow: CockpitSelfShadow
+  /** DEV-937: freezes what never moves; ticked before each mission render. */
+  readonly staticScene: StaticScene
   readonly codeClosePlate: () => void
   readonly codeFocus: FocusEdge
   readonly codeJoinFrame: () => void
@@ -862,6 +889,7 @@ export const createFrame = (ctx: FrameCtx) => {
     closePausePages,
     cloudShadow,
     cockpitSelfShadow,
+    staticScene,
     codeClosePlate,
     codeFocus,
     codeJoinFrame,
@@ -1064,7 +1092,7 @@ export const createFrame = (ctx: FrameCtx) => {
     } else if (!render.renderer.xr.isPresenting && ctx.xrProbe !== IDLE_XR_PROBE) {
       ctx.xrProbe = IDLE_XR_PROBE
     }
-    const frameSeconds = ctx.lastTime === 0 ? FIXED_DT : (time - ctx.lastTime) / 1000
+    const frameSeconds = frameSecondsBetween(time, ctx.lastTime, FIXED_DT)
     ctx.lastTime = time
 
     // Step 1 (APP-SPLIT §1c): the fade, then the screen swap at its black
@@ -1177,6 +1205,7 @@ export const createFrame = (ctx: FrameCtx) => {
     // before anything reads them this frame.
     const turned = turnScreen.up
     setPadsHeld(turned)
+    beginPadFrame() // DEV-942: one getGamepads() for the whole frame
     const pad = readGamepad(inputOpts)
     const keys = keyboard.read(frameSeconds, inputOpts)
     // XR controllers are NOT in `navigator.getGamepads()` — not before a
@@ -2688,1277 +2717,1291 @@ export const createFrame = (ctx: FrameCtx) => {
     tvView.frame() // DEV-480
     const tickBefore = clock.tick
     const simT0 = performance.now()
-    const alpha = stepFixed(clock, stepSeconds, (dt) => {
-      run.elapsed += dt
-      if (!handles.flight) return
-      // DEV-371: D30's runTainted, the autopilot's half. At ANY tick of the
-      // run, the ride included: a lap the autopilot touched is not a lap the
-      // player flew, and nothing downstream can tell which ticks it flew.
-      // DEV-601: and the run's, which every mode has (a lap run is a race's).
-      if (pilot.autopilot) {
-        handles.lapRun?.taintRun('autopilot')
-        mission.autopilotFlew = true
-      }
-
-      // ── DEV-146: the other mission's ships ──────────────────────────
-      //
-      // ABOVE the lift's early return, and that is the one decision in this
-      // wiring. The grid below does NOT move until GO — five racers leaving
-      // their pads is the start of YOUR race and it waits for you (DEV-125) —
-      // but traffic is not in your race. It is the island having something
-      // else going on, and a sky that stands still until the lift lets go is a
-      // diorama. So it flies through the ride and the 3-2-1, on the same fixed
-      // step and the same crash rule as everything else, and the player's SIM
-      // position goes with it for one purpose only: how far away a ship is
-      // before its finished lap is recycled.
-      //
-      // (`int_01_jumpSeat`, the one mission this is authored on today, spawns
-      // `direct` with no lift at all, so the return below never fires there.
-      // This is placed for the pairing that does have one rather than for the
-      // one that does not.)
-      handles.liveTraffic?.step(
-        handles.autopilotTerrain,
-        dt,
-        handles.collisionTerrain,
-        editionState.current.gameplay.crash,
-        handles.flight.jet.body.position,
-      )
-      // DEV-613: the traffic across the bay goes into the sea like any racer.
-      if (handles.liveTraffic) {
-        for (const ship of handles.liveTraffic.racers) {
-          const c = ship.ground.collision
-          splashCraft(`traffic ${ship.spec.id}`, ship.jet.body, c.struck, c.impactSpeed, dt)
+    // DEV-943: a presenting headset (not a room, which syncs to wall time,
+    // DEV-389) replays at most 3 ticks after a hitch, not 20.
+    const catchupCap =
+      render.renderer.xr.isPresenting && !roomRaceLive()
+        ? XR_MAX_CATCHUP_TICKS * FIXED_DT
+        : undefined
+    const alpha = stepFixed(
+      clock,
+      stepSeconds,
+      (dt) => {
+        run.elapsed += dt
+        if (!handles.flight) return
+        // DEV-371: D30's runTainted, the autopilot's half. At ANY tick of the
+        // run, the ride included: a lap the autopilot touched is not a lap the
+        // player flew, and nothing downstream can tell which ticks it flew.
+        // DEV-601: and the run's, which every mode has (a lap run is a race's).
+        if (pilot.autopilot) {
+          handles.lapRun?.taintRun('autopilot')
+          mission.autopilotFlew = true
         }
-      }
-      // DEV-377: the lesson, also above the lift's return — step 0 is the launch.
-      tickLesson(dt, actions)
 
-      // DEV-483: TV's exhibition owns the step — the racers on its own GO, and
-      // nothing below: no lift, no flight, no mission, no lap.
-      if (exhibitionTick(dt)) return
-
-      // The ride, and the countdown after it. Both run on the fixed step so the
-      // opening is identical on every machine, which is what makes the ghost
-      // race comparable at all (D4).
-      if (ctx.rideSpec && launchHoldsShip(ctx.launch)) {
-        roomStepCountdown(dt) // DEV-389: a room's countdown starts on its step
-        stepLaunch(ctx.launch, ctx.rideSpec, dt)
-        audioLaunch()
-        // DEV-424: the lift's motor follows the platform, off this step's rise.
-        audio.stepLift({ rise: ctx.launch.rise })
-        // The ship is kinematic and attached to the platform, exactly as
-        // `LaunchElevator.StartLaunch()` leaves it. No flight, no scoring, no
-        // clock — so nothing below this line runs.
-        // DEV-477: in a room, the lift holds the ship at its start's own height.
-        handles.flight.rideElevator(ctx.launch.rise + (roomCore.room ? roomCore.roomHeldLift : 0))
-        handles.elevator?.setRise(ctx.launch.rise)
-        return
-      }
-
-      // The lift has let go by the time we get here, so the GO beat belongs
-      // on this side of the early return above.
-      audioLaunch()
-      // DEV-371: the release is tick 0 of the lap, BEFORE the first flight
-      // step, where `mission.elapsed` reads 0. A no-op on every later tick.
-      handles.lapRun?.release(handles.flight.jet.body, editionState.rules.id)
-
-      // ── DEV-343: nothing of the run moves while you are not in it ────
-      //
-      // The early return above is the ONLY thing that holds a run, and it holds
-      // a run with a lift. A mission with none — all six JumpSeat missions, whose
-      // `spawn.launch` is null so `restingPhase` puts them at `flying` from the
-      // first tick — was never held at all: in the hangar the seat ran its 7.5 s
-      // `Trigger_EnableJumpShip` countdown, went live, fell onto its rig, and the
-      // mission clock counted the whole time. Measured on `rookie_02_jumpSeat`:
-      // 10.4 s on the clock after 10 idle seconds, and after Pause → Exit and 20 s
-      // in the hangar, 24.1 s at re-boarding — the same-course door boards
-      // without a `restartRun`, so the results time and the stored best carried
-      // the menu. The HoverJet was immune only because its lift rests at
-      // `waiting` and returns above.
-      //
-      // 2016 has no such state to copy: a JumpSeat scene loads with you in it,
-      // and `Trigger_EnableJumpShip`'s T = 0 IS the load. The port's load is
-      // boarding, so off the mission screen the run simply does not step — the
-      // seat stays where the restart put it, and the countdown starts when you
-      // arrive. Placed AFTER the lift's return, so a HoverJet in the hangar goes
-      // through exactly the code it always did.
-      if (router.screen !== 'mission') return
-
-      // ── The autopilot decides on the FIXED STEP, like everything else ──
-      //
-      // It used to decide once per FRAME, and the same input was then applied to
-      // however many sim steps that frame happened to contain — two on a slow
-      // frame, none on a fast one. So the controller's effective rate rode the
-      // frame rate, and a run was NOT reproducible: the same course produced a
-      // stall at gate 6 one run and none the next, which is why three sessions
-      // of screenshots could not pin it down.
-      //
-      // The AI racers never had this — `stepAiRacer` calls the controller
-      // itself, on the fixed step — and that asymmetry is the tell: they were
-      // consistent while the player proxy was not, on the same code.
-      //
-      // CLAUDE.md rule 5: a decision that sees a frame delta is not a sim
-      // decision. This one was, and it was the player's.
-      // ── two vehicles, two controllers ───────────────────────────────
-      //
-      // `sim/autopilot.ts` commands a vehicle that thrusts along body +Z. The
-      // JumpSeat thrusts along body +Y, so pointed at it the HoverJet's
-      // controller flies it into the nearest hillside — which is exactly what
-      // `?autopilot=1` did on all six JumpSeat missions until now, and why
-      // Target Practice had never been played. `jumpSeatAutopilotOf` returns
-      // null on a HoverJet, so the branch below is untouched on seven of
-      // thirteen missions.
-      //
-      // Both are stepped ONCE PER FIXED STEP, inside this loop. DEV-027.
-      const jumpSeatPilot = pilot.autopilot ? jumpSeatAutopilotOf(handles.flight) : null
-      // DEV-399: and a third. The glider's pilot spends HEIGHT, which neither
-      // controller above can — pointed at a gate below it, the HoverJet's
-      // arrives at 170 m/s with nothing left, and at one above, it stalls.
-      // Null on every other aircraft, so the two branches are untouched.
-      const gliderPilot = pilot.autopilot ? gliderAutopilotOf(handles.flight) : null
-      if (jumpSeatPilot) {
-        actions = jumpSeatPilot.step(mission.targets.padTaken)
-      } else if (gliderPilot) {
-        // The next ring, then the finish — the HoverJet branch's order, gate
-        // to gate: a glider course carries no authored line to follow.
-        const next = nextGate(mission.course.gates, mission.course.passed)
-        const aim =
-          next >= 0
-            ? (mission.course.gates[next]?.centre ?? null)
-            : mission.finishGate && !mission.finishCrossed
-              ? mission.finishGate
-              : null
-        if (aim) actions = gliderPilot.step(aim)
-      } else if (pilot.autopilot) {
-        const target = nextGate(mission.course.gates, mission.course.passed)
-        // After the last ring, aim at the FINISH GATE — the same synthetic gate
-        // `stepAiRacer` flies home to, and for the same reason. `nextGate`
-        // returns -1 once every ring is taken, which used to be the end of the
-        // run; since DEV-045 it is not, and the autopilot was left with no
-        // target for the last 234.6 m. It still got there, by flying straight
-        // until it blundered into a 68 m sphere, and the lap spec's wall clock
-        // went from 1.4 min to 3.2 min saying so.
-        const finishGate =
-          target < 0 && mission.finishGate && !mission.finishCrossed
-            ? {
-                centre: {
-                  x: mission.finishGate.x,
-                  y: mission.finishGate.y,
-                  z: mission.finishGate.z,
-                },
-                radius: mission.finishGate.radius,
-                points: 0,
-                triggerOnce: true,
-              }
-            : null
-        const gate = target >= 0 ? mission.course.gates[target] : finishGate
-        // The authored line stops at the last ring, so the run home is flown
-        // gate-to-gate: asking `routeGuidance` for a point past the end of its
-        // own spline measures nothing.
-        const onCourse = target >= 0
-        if (gate) {
-          // Follow the LINE where there is one. Aiming at a gate centre makes
-          // the ship fly straight segments between rings and overshoot every
-          // corner — which is the 186 m/s overshoot that put it into a hillside
-          // at gate 6. A lookahead sliding along the spline corners because the
-          // target corners, and being NEAR the line is better evidence of safe
-          // air than a terrain probe: 23 % of the authored line sits below this
-          // controller's own `minClearance`.
-          let aim = gate.centre
-          let offset = Number.POSITIVE_INFINITY
-          // What corner braking compares against: the next RING when aiming
-          // gate to gate, a point further along the LINE when following it.
-          // The last ring's is the finish, and the run home has none: past the
-          // last ring `target` is -1, and `gates[target + 1]` was RING 0, a
-          // hairpin braked for in the last 1.7 s of every lap (DEV-394).
-          let cornerRef: { x: number; y: number; z: number } | null =
-            target >= 0
-              ? (mission.course.gates[target + 1]?.centre ?? mission.finishGate ?? null)
-              : null
-          let profileSpeed = Number.POSITIVE_INFINITY
-          // DEV-394: and the run HOME on the line too, where the line runs
-          // through the finish (`routeArcThrough`) — a finish off the last
-          // leg's bearing is otherwise flown at straight, across the line's bend.
-          const homeArc = onCourse ? Number.NaN : (ctx.guide?.finishArc ?? Number.NaN)
-          if (ctx.guide && (onCourse || Number.isFinite(homeArc))) {
-            // The profile tops out at THIS jet's speed (DEV-382 follow-up).
-            profileGuideFor(ctx.guide, handles.flight.jet.sheet)
-            const v = handles.flight.jet.body.velocity
-            // DEV-524: the options are `playerRouteOptions`', the one list the
-            // tests fly the player's proxy on — and since DEV-524 they carry
-            // DEV-494's aim floor, so the player's autopilot rounds a hairpin
-            // the way the racers do rather than parking half a lead short of it.
-            const onLine = routeGuidance(
-              ctx.guide.route,
-              autoCursor,
-              handles.flight.jet.body.position,
-              playerRouteOptions(
-                DEFAULT_AUTOPILOT,
-                Math.hypot(v.x, v.y, v.z),
-                onCourse ? (ctx.guide.gateArc[target] ?? Number.POSITIVE_INFINITY) : homeArc,
-                gate.centre,
-                autoBeyond,
-              ),
-              autoAim,
-            )
-            aim = autoAim
-            // Off the line's help, the ground rule comes back.
-            offset = onLine ? autoCursor.offset : Number.POSITIVE_INFINITY
-            // And corner braking measures the LINE's bend rather than the next
-            // ring, because `aim` is a point on the line and not a ring.
-            if (onLine) cornerRef = autoBeyond
-            // Look the profile up a little AHEAD, not underfoot: the point of a
-            // backward-pass profile is that it tells you to slow before you
-            // arrive, and reading it at the ship's own position throws that away.
-            if (onLine) {
-              profileSpeed = speedLimitAt(
-                ctx.guide.route,
-                autoCursor.s + Math.hypot(v.x, v.y, v.z) * DEFAULT_AUTOPILOT.profileLookSeconds,
-              )
-            }
-          }
-          autopilotActions(
-            handles.flight.jet.body,
-            aim,
-            autoInput,
-            DEFAULT_AUTOPILOT,
-            // The ground. Without it the autopilot aims straight at gate centres
-            // and, once the speed chain takes it past 280 m/s, flies through the
-            // island — 62 terrain strikes in one lap, where the 2016 ghost's
-            // closest approach over its whole run was 26 m.
-            handles.autopilotTerrain,
-            offset,
-            cornerRef,
-            profileSpeed,
-            // DEV-394: the speed law holds its target in THIS jet's thrust.
-            hoverJetOf(handles.flight),
-          )
-          // `HoverJetInput` is `FlightActions` without `airbrake`: the sim owns
-          // that type and may not import the input layer's (CLAUDE.md rule 4).
-          actions = { ...autoInput, airbrake: false }
-        }
-      }
-
-      // ── Held where it hit (DEV-126) ─────────────────────────────────
-      //
-      // A crashed ship is not integrated, exactly as a ship on the lift is not:
-      // the hold is the sim's own clock, run by `stepCrashAndBoundary` below,
-      // and the curtain covers it. The stick is still read — `actions` above
-      // is what the engine note and the lean are fed — it just moves nothing.
-      // ── DEV-143: boost costs energy ─────────────────────────────────
-      //
-      // BEFORE `flight.step`, and it rewrites `actions.boost` rather than
-      // reaching into the flight model: `sim/hoverjet.ts` asks one question of
-      // the stick — *is boost held* — and the tank's answer is what the stick
-      // means now. Doing it here means the thrust, the engine note (`boost:
-      // actions.boost` below), the cockpit shake and the particle stages all
-      // see the SAME boolean and cannot disagree about whether this tick was
-      // boosted, which is what a second flag on the jet would have risked.
-      //
-      // HoverJet only — the JumpSeat's boost is analog and burns its own fuel.
-      // Classic does not step it at all, so a Classic run is the shipped one
-      // and the tank is still full if somebody flips the preset mid-flight.
-      //
-      // NOT in the energy race, which has its own, bigger tank and would
-      // otherwise be charging for boost twice out of two different pockets.
-      // The two blocks are mutually exclusive on the mode row's own flag.
-      const energyPowered = rulesFor(ctx.RUNNING_MODE).energyPowered
-      if (
-        !energyPowered &&
-        editionState.current.gameplay.energy.enabled &&
-        ctx.level.vehicle === 'hoverjet'
-      ) {
-        // `flight.jet.sheet`: the tank burns at THIS jet's rates (DEV-380).
-        const spec = energySpec(
-          editionState.current.gameplay.energy.rechargeScale,
-          handles.flight.jet.sheet,
-          editionState.current.gameplay.energy.lockoutScale,
-          editionState.current.gameplay.energy.reengage,
-        )
-        // DEV-853: Free Flight's boost never runs out. Full before the step (so
-        // an empty start lights at once) and full after it (so the bar reads it).
-        const infiniteBoost = rulesFor(ctx.RUNNING_MODE).infiniteBoost
-        if (infiniteBoost) fillEnergy(run.energy, spec)
-        // DEV-410: `boostPower` is the part of this tick's boost the tank paid
-        // for. It is 1 unless the tank is empty with no lockout.
-        // DEV-640: a press with nothing to light is a dry click. The tank's own
-        // answer BEFORE this tick's step, on the raw stick's rising edge.
-        if (
-          isDryPress(
-            boostPress.step(actions.boost),
-            boostAvailable(run.energy),
-            ctx.launch.phase === 'flying' && !crashHoldsShip(run.crash),
-          )
-        ) {
-          audio.event({ type: 'tank.dry' })
-        }
-        const boost = stepEnergy(run.energy, spec, actions.boost, dt)
-        if (infiniteBoost) fillEnergy(run.energy, spec)
-        actions = { ...actions, boost, boostPower: run.energy.power }
-        // THE MOMENT, on the event line — the channel G2's gate bonus uses.
-        // Two edges, and both are things the player has to be told rather than
-        // left to infer: the trigger going dead under their finger, and it
-        // coming back. `until` is the same 1.5 s the crash banner takes.
-        const nowAvailable = boostAvailable(run.energy)
-        if (nowAvailable !== run.boostWasAvailable) {
-          run.award = nowAvailable
-            ? {
-                text: uiString(ctx.level, 'boostReady', 'BOOST READY'),
-                tone: 'gain',
-                until: mission.elapsed + 1.5,
-              }
-            : {
-                text: uiString(ctx.level, 'boostOut', 'BOOST OUT'),
-                tone: 'loss',
-                until: mission.elapsed + 1.5,
-              }
-          run.boostWasAvailable = nowAvailable
-          // DEV-640: the tank running dry, sputtered and flashed (amber, on the
-          // gate pulse's edge quad, so a headset sees it too: edge only).
-          if (!nowAvailable) {
-            audio.event({ type: 'tank.empty' })
-            fireAccentFlash(...TANK_FEEL.flashColor, TANK_FEEL.flashScale)
-          }
-        }
-      }
-      // DEV-636/637: the boost, felt: a hum while it burns (an empty tank has
-      // already turned `actions.boost` off above) and a shove at a stage.
-      boostFeel.step(Boolean(actions.boost), forwardSpeedOf(handles.flight))
-      // ── DEV-144: the energy race ────────────────────────────────────
-      //
-      // The tank is a clock. Flying spends it, boosting spends it five times
-      // faster, and only a gate puts anything back. At zero the engines go out
-      // and gravity comes back on — `LaunchElevator.FinishLaunch()` reversed —
-      // and from there it is a falling body that DEV-126's crash rule ends.
-      //
-      // `energyPowered` is a MODE ROW property and not a name comparison, which
-      // is what `tests/unit/mode-rules.test.ts` makes checkable: a fourth mode
-      // is a row, not a ladder.
-      let raceDied = false
-      if (energyPowered) {
-        const raceSpec = energyRaceSpec(
-          editionState.current.gameplay.energyRace.drainScale,
-          editionState.current.gameplay.energyRace.gatePayFraction,
-          handles.flight.jet.sheet,
-        )
-        const wasPowered = run.energyRace.powered
-        // `enginesOn` is `Energy_System.cs`'s — the THROTTLE axis, not the
-        // airspeed. Coasting costs nothing, which is 2016's structure and turns
-        // out to be the mode's most interesting decision: cutting the engine on
-        // a straight saves the tank and costs you a clock that is still running.
+        // ── DEV-146: the other mission's ships ──────────────────────────
         //
-        // Only while actually flying: a ship on the elevator has not launched,
-        // and draining the tank through a 15.5 s ride would end the run before
-        // the player had touched anything.
-        if (ctx.launch.phase === 'flying' && !crashHoldsShip(run.crash)) {
-          stepEnergyRace(run.energyRace, raceSpec, actions.throttle > 0, actions.boost, dt)
-        }
-        if (!run.energyRace.powered) {
-          // Dead stick. The stick is still READ — the engine note and the lean
-          // are fed from `actions` — it just commands nothing.
-          actions = { ...actions, throttle: 0, boost: false }
-          handles.flight.setPowered?.(false)
-          if (wasPowered) {
-            run.award = {
-              text: uiString(ctx.level, 'energyOut', 'ENERGY OUT'),
-              tone: 'loss',
-              until: mission.elapsed + 3,
-            }
-            audio.event({ type: 'ship.struck' })
-            console.info('energy race: tank empty — engines out, gravity on')
-          }
-        }
-        // A powerless ship that has hit something has finished this run. The
-        // crash rule is DEV-126's and it would otherwise put the wreck back on
-        // the course with an empty tank, which is a reset into another fall.
-        raceDied = !run.energyRace.powered && (crashHoldsShip(run.crash) || handles.flight.struck)
-      }
-      // DEV-403: the JumpSeat's head meets the forest the rest of the seat meets
-      // below, under the same gate — so null on Classic and wherever the props
-      // did not load. A no-op on the HoverJet, which has no such rule.
-      handles.flight.setProps?.(
-        handles.livePropColliders && handles.livePropCollision && handles.livePropsLive
-          ? handles.livePropColliders
-          : null,
-      )
-      // DEV-790: a lesson step may hold the student to a speed (lesson 1's
-      // first two steps), by cutting the throttle and boost at the ceiling.
-      if (lessonHost.liveLesson) {
-        const v = handles.flight.jet.body.velocity
-        actions = capStudentActions(
-          actions,
-          Math.hypot(v.x, v.y, v.z),
-          lessonHost.liveLesson.studentCap(),
-        )
-      }
-      if (!crashHoldsShip(run.crash)) handles.flight.step(actions)
-      // DEV-640: did boost burn on this step: the lens push and the cabin glow
-      // follow it (a HoverJet only: the JumpSeat's boost is its own).
-      ctx.boostBurning =
-        ctx.level.vehicle === 'hoverjet' && actions.boost && !crashHoldsShip(run.crash)
-      // ── DEV-136: the props ─────────────────────────────────────────────
-      //
-      // AFTER the flight model and its own ground rule have moved the body,
-      // so a tree is tested where the ship ended the tick. The hull is the
-      // HoverJet's five spheres on both vehicles: the JumpSeat's own hull is
-      // not exposed by its flight, and a seat and a jet are the same few
-      // metres across — noted in the row. The AI racers test the SAME
-      // colliders, with their own state, in `liveRacers.step` below (DEV-147).
-      if (handles.livePropColliders && handles.livePropCollision && handles.livePropsLive) {
-        stepPropCollision(
-          handles.livePropCollision,
-          handles.flight.jet.body,
-          HOVERJET_GROUND.collision.hull,
-          handles.livePropColliders,
-          editionState.current.gameplay.propCollision,
-        )
-        breakProps(handles.livePropCollision.hits, handles.flight.jet.body.velocity, 'player')
-      }
-      // DEV-613: into the sea, or back out of it.
-      splashCraft(
-        'player',
-        handles.flight.jet.body,
-        handles.flight.struck,
-        handles.flight.impactSpeed,
-        dt,
-      )
-      // ── the continuous layer ────────────────────────────────────────
-      //
-      // The FIXED step, not the frame. `engine.ts` is a state machine at
-      // 82 Hz, and driving it on a frame delta would make the loop swaps ride
-      // the frame rate — which is DEV-027's mistake wearing a different hat.
-      // `released` is what gates the idle loop: 2016's `Ship_HoverShip` ships
-      // `m_Enabled: 0` and nothing runs its `Start()` until the top of the
-      // shaft, which is why nothing at all sounds while you are on the lift.
-      {
-        const v = handles.flight.jet.body.velocity
-        // DEV-383: on the jumping spider the boost gesture IS the charge, and
-        // the jet is OFF while one builds (`sim/jumpseat.ts`, `thrustGas`). So
-        // the ladder hears no afterburner on a spider ever, and no thrust while
-        // it charges — the charge tone speaks instead.
-        const jump = handles.flight.jump
-        audio.stepFlight({
-          speed: Math.hypot(v.x, v.y, v.z),
-          throttle: jump && jump.charge > 0 ? 0 : actions.throttle,
-          boost: jump ? false : actions.boost,
-          released: ctx.launch.phase === 'flying',
-          jumpCharge: jump?.charge,
-        })
-      }
-
-      // Out of bounds. Stepped AFTER the flight model so it judges where the
-      // ship actually is this tick, not where it was.
-      // ── out of bounds ───────────────────────────────────────────────
-      //
-      // Once a SECOND, not once a tick: `boundaryCountdown` is already a
-      // ceil()'d integer of seconds remaining, so a change in it is exactly one
-      // beat of the alarm. 13 s on every shipped mission, and disabled outright
-      // in 6 of 13 — where it is disabled, `boundarySpec` is null and this
-      // never runs at all, which is the honest behaviour rather than a silent
-      // fallback (see `Boundary` in the level schema).
-      if (ctx.boundarySpec) {
-        const left = boundaryCountdown(ctx.boundary, ctx.boundarySpec)
-        if (left !== null && left !== ctx.audioBoundaryLeft) {
-          audio.event({ type: 'boundary.warning', secondsLeft: left })
-        }
-        ctx.audioBoundaryLeft = left
-      }
-      // The boundary and the crash, stepped together under one rule
-      // (`sim/crash.ts`): a dying ship cannot crash, a crashed ship freezes
-      // the boundary clock, and no tick resets the ship twice. On Classic the
-      // crash spec is off and this is `stepBoundary` alone.
-      const hazards = stepCrashAndBoundary(
-        run.crash,
-        // The HoverJet's rule. The JumpSeat's crash is 2016's own, the head
-        // strike (DEV-403), which its seam steps and the block below restarts
-        // on; here it gets the spec with the flag off. The glider flies the
-        // HoverJet's hull (DEV-399) and takes its rule: a wing that hits the
-        // sea at speed is a wreck, and one that did not crash would slide on
-        // the water until the clock ran out.
-        ctx.level.vehicle !== 'jumpseat' ? editionState.current.gameplay.crash : NO_CRASH,
-        ctx.boundary,
-        ctx.boundarySpec,
-        handles.flight.jet.body,
-        handles.flight.impactSpeed,
-        crashCourseNow(),
-        handles.collisionTerrain,
-        dt,
-        // DEV-185: the forest the reset has to miss. Null on Classic, on a
-        // mission whose props did not load, and with `?props=0` — and then the
-        // reset is planned exactly as it was before this argument existed.
-        handles.livePropColliders
-          ? { colliders: handles.livePropColliders, hull: HOVERJET_GROUND.collision.hull }
-          : null,
-      )
-      // ── DEV-342: a dry JumpSeat that no pad can reach ────────────────
-      //
-      // The thruster LATCHES off at an empty tank and only a pad's refuel
-      // sphere relights it, so a seat that runs dry out of every sphere's reach
-      // lands and sits there for ever — on the Simonet sea it floats at about
-      // 1 km/h — with no clock ending in Target Practice and nothing on screen
-      // saying why. 2016 had the same soft-lock (its sea is a solid
-      // `TerrainCollider` and the pilot's head stays clear of it); Matt's call is
-      // that it restarts the run, the way the two lines below already restart it
-      // for a boundary death and an empty energy tank. The RULE is
-      // `sim/jumpseat-stranded.ts` and the seam steps it; this only says it out
-      // loud, drops the curtain and restarts. ABSENT on a HoverJet, so `ok`.
-      const strandedPhase: StrandedPhase = handles.flight.stranded?.phase ?? 'ok'
-      if (strandedPhase === 'stranding' && run.strandedShown === 'ok') {
-        // Up for the whole of what follows — the wait, then the fade — so the
-        // reason is on screen until the screen goes black. A stranding that is
-        // broken (the seat slid off a ledge) leaves it up a little longer, and
-        // the tank really is empty.
-        run.award = {
-          text: uiString(ctx.level, 'fuelOut', 'OUT OF FUEL'),
-          tone: 'loss',
-          until: mission.elapsed + STRANDED_BANNER_SECONDS,
-        }
-        console.info('out of fuel — dry, out of reach of every pad, and grounded')
-      }
-      run.strandedShown = strandedPhase
-      const strandedDied = handles.flight.stranded?.restart === true
-      // ── DEV-403: the JumpSeat's head touched something ───────────────
-      //
-      // 2016's own JumpSeat death: `Trigger_Reset` on `collider_head` fades out,
-      // waits a second and reloads the scene. Matt's call (2026-09-25): exactly
-      // that, on both presets. The RULE is `sim/jumpseat-head.ts` and the seam
-      // steps it with the stranded one, one death at a time; this raises the
-      // HoverJet crash's own banner — 2016 showed nothing but the fade, and a
-      // restart with no reason on screen reads as a bug — drops the curtain and
-      // restarts. ABSENT on a HoverJet, so `ok`.
-      const headPhase: HeadPhase = handles.flight.headStrike?.phase ?? 'ok'
-      if (headPhase === 'dying' && run.headShown === 'ok') {
-        run.award = {
-          text: uiString(ctx.level, 'crashed', 'CRASHED'),
-          tone: 'loss',
-          until: mission.elapsed + 1.5,
-        }
-        console.info("head strike — the pilot's head touched something (DEV-403)")
-      }
-      run.headShown = headPhase
-      const headDied = handles.flight.headStrike?.restart === true
-      // A run ended by an empty tank restarts exactly as an out-of-bounds death
-      // does — score, rings and clock back to zero. That is how this port says
-      // "mission failed" and it is 2016's own answer too: `PlayerBoundary`
-      // reloads the scene. DEV-144. A head strike is the same reload (DEV-403).
-      const restarted = hazards.restarted || raceDied || strandedDied || headDied
-      if (restarted) {
-        stats.crash(
-          headDied ? 'head-strike' : strandedDied ? 'fuel' : raceDied ? 'crash' : 'out-of-bounds',
+        // ABOVE the lift's early return, and that is the one decision in this
+        // wiring. The grid below does NOT move until GO — five racers leaving
+        // their pads is the start of YOUR race and it waits for you (DEV-125) —
+        // but traffic is not in your race. It is the island having something
+        // else going on, and a sky that stands still until the lift lets go is a
+        // diorama. So it flies through the ride and the 3-2-1, on the same fixed
+        // step and the same crash rule as everything else, and the player's SIM
+        // position goes with it for one purpose only: how far away a ship is
+        // before its finished lap is recycled.
+        //
+        // (`int_01_jumpSeat`, the one mission this is authored on today, spawns
+        // `direct` with no lift at all, so the return below never fires there.
+        // This is placed for the pairing that does have one rather than for the
+        // one that does not.)
+        handles.liveTraffic?.step(
+          handles.autopilotTerrain,
+          dt,
+          handles.collisionTerrain,
+          editionState.current.gameplay.crash,
           handles.flight.jet.body.position,
         )
-      }
-      // ── the death curtain (DEV-107) ────────────────────────────────
-      //
-      // 2016's shape exactly, and the port already had two thirds of it without
-      // drawing any: `Trigger_Kill.RestartLevel()` snaps the fader to
-      // `fadeTime = 0.1` and holds black for 2.5 s while the scene reloads, and
-      // `sim/boundary.ts` has run that 2.5 s as its `dying` phase since long
-      // before there was a curtain to hold. So the hold is NOT a number handed
-      // to the fade — it is the sim's own clock, and the curtain simply waits
-      // to be released. One clock, in the layer that owns it.
-      //
-      // The way back in is `LOAD_FADE_SECONDS`, because 2016's reloaded scene
-      // fades in on its own fresh fader at that duration
-      // (`LoadLevelArt.LoadLevel()` -> `fader.FadeIn()`); the 0.1 died with the
-      // object that was overridden.
-      //
-      // Read off the PHASE rather than off the respawn, so every exit from
-      // `dying` lifts it — including a mission swap that replaces `boundary`
-      // outright. And never over a screen change already in flight: two
-      // transitions behind one curtain is how you arrive somewhere neither
-      // asked for.
-      //
-      // A stranded JumpSeat (DEV-342) comes down the SAME curtain on its own
-      // phase, and at its own pace: the JumpSeat's 2016 death is not
-      // `Trigger_Kill`'s snap but `Trigger_Reset`'s, which fades on the gameplay
-      // fader's own `fadeTime` — `LOAD_FADE_SECONDS` — so the banner above is
-      // readable while it goes. A head strike (DEV-403) IS `Trigger_Reset`, so
-      // it comes down the same curtain at the same pace.
-      const jumpSeatDying = strandedPhase === 'dying' || headPhase === 'dying'
-      if (ctx.boundary.phase === 'dying' || jumpSeatDying) {
-        if (!run.dyingCurtain && !router.pendingScreen) {
-          run.dyingCurtain = true
-          fade.begin({
-            outSeconds: jumpSeatDying ? LOAD_FADE_SECONDS : KILL_FADE_SECONDS,
-            inSeconds: LOAD_FADE_SECONDS,
-            holdSeconds: 'released',
-          })
+        // DEV-613: the traffic across the bay goes into the sea like any racer.
+        if (handles.liveTraffic) {
+          for (const ship of handles.liveTraffic.racers) {
+            const c = ship.ground.collision
+            splashCraft(`traffic ${ship.spec.id}`, ship.jet.body, c.struck, c.impactSpeed, dt)
+          }
         }
-      } else if (run.dyingCurtain) {
-        run.dyingCurtain = false
-        fade.release()
-      }
-      if (restarted) {
-        // 2016 reloads the whole scene, so the run restarts: score, rings and
-        // clock all go back to zero. Harsh, and it is what the game does.
-        handles.flight.respawn()
-        flybyFeel.reset() // DEV-636: a respawn is a teleport, not a racer passing
-        crashFeel.clear()
-        // And the boundary is a fresh trigger, DISARMED, whatever ended the
-        // run: 2016's reload makes a new `PlayerBoundary` that has fired
-        // nothing, and only the respawn marker being inside re-arms it (DEV-074).
-        // `stepBoundary` disarms itself on its own death; a head strike
-        // (DEV-403), a dry tank (DEV-342) or a race death left it armed, and
-        // `int_01_jumpSeat` — whose marker is 2.6 km outside its sphere — took
-        // an out-of-bounds restart 13 s after every head strike. Found by
-        // `tests/e2e/completion.spec.ts`, twice in a row.
-        ctx.boundary = createBoundary()
-        audio.event({ type: 'ship.respawn' })
-        ctx.audioFinishCrossed = false
-        Object.assign(mission, startMission(ctx.level, MODE_REQUEST()))
-        // DEV-371: the clock is back to zero with the ship on the marker, so
-        // the lap begins again there, and its first pose was PLACED.
-        handles.lapRun?.restart(handles.flight.jet.body, editionState.rules.id)
-        editorRecordPlaced() // DEV-491: a respawn is no path anyone flew
-        run.elapsed = 0
-        // The course is rebuilt, so the gates come back (DEV-122).
-        handles.liveRings?.reset()
-        document.body.dataset.score = '0'
-        document.body.dataset.rings = `0/${mission.countTotal}`
-        delete document.body.dataset.finished
-        run.award = null
-        console.info(
-          headDied
-            ? 'head strike — run restarted at the respawn marker'
-            : strandedDied
-              ? 'out of fuel — run restarted at the respawn marker'
-              : 'out of bounds — run restarted at the respawn marker',
-        )
-      }
-      // ── the crash curtain (DEV-126) ────────────────────────────────
-      //
-      // Snap to black over the wreck (`KILL_FADE_SECONDS`, 2016's death snap),
-      // hold for the sim's `holdSeconds`, and come back on the cut fade
-      // (DEV-107's 0.35 s) — about a second all told. `'released'` so the sim
-      // decides when, the same contract the death curtain has; and never over
-      // a screen change or a death already in flight.
-      //
-      // DEV-643/797: ONE timeline, hold, splash, curtain (`boot/feel-events.ts`).
-      // The crash tick shakes, jolts and rumbles and holds the last frame for
-      // ~100 ms (flat only; the sim is not paused); the world then draws live
-      // while the sim's hold runs, so the player sees their own wreck and its
-      // splash; the curtain starts once `crash.heldFor` reaches 0.4 s.
-      if (hazards.crash === 'crashed') {
-        crashFeel.begin(performance.now(), render.renderer.xr.isPresenting)
-        // The impact cue. A contact that BEGAN this tick fires `ship.struck`
-        // below anyway; a slide that ran into a wall did not begin this tick,
-        // and a crash with no bang is a cut to black for no reason.
-        if (!handles.flight.struck)
-          audio.event({ type: 'ship.struck', impact: run.crash.impactSpeed })
-        document.body.dataset.crashes = String(run.crash.count)
-        stats.crash('crash', handles.flight.jet.body.position)
-        console.info(
-          `crash \u2014 ${run.crash.impactSpeed.toFixed(0)} m/s into the surface; back on the line at ${run.crash.reset.s.toFixed(0)} m`,
-        )
-      } else if (hazards.crash === 'reset') {
-        // The sim has already placed the body; this collapses the drawn pose
-        // onto it and cools the engine, the way the respawn does.
-        handles.flight.placeAt(
-          run.crash.reset.position,
-          run.crash.reset.orientation,
-          run.crash.reset.velocity,
-        )
-        // The ship was PUT there. `placeMission` is the one door for that:
-        // the mission must not sweep a segment from the wreck to the line, AND
-        // a ring the reset lands inside is not a ring that was flown through
-        // (DEV-149 — a trigger fires on an edge).
-        placeMission(mission, run.crash.reset.position)
-        // DEV-371: and the lap marks the tick, so a rescore re-seeds there too.
-        handles.lapRun?.placed()
-        editorRecordPlaced() // DEV-491
-        if (run.crashCurtain) {
-          run.crashCurtain = false
-          fade.release()
-        }
-        // DEV-636/643: a teleport must not read as a racer passing, nor carry a
-        // boost stage or a hold across the cut.
-        crashFeel.clear()
-        flybyFeel.reset()
-        boostFeel.reset()
-        audio.event({ type: 'ship.respawn' })
-        run.award = {
-          text: uiString(ctx.level, 'crashed', 'CRASHED'),
-          tone: 'loss',
-          until: mission.elapsed + 1.5,
-        }
-      }
-      // DEV-797: the curtain comes down once the player has watched the wreck for
-      // `CRASH_CURTAIN_DELAY_SECONDS` of the sim's own hold. Keyed on the PHASE
-      // and `heldFor` (the sim's clock), not on the crash tick, so it is the same
-      // however fast the frames come. Never over a screen change or a death
-      // already in flight.
-      if (
-        run.crash.phase === 'crashed' &&
-        !run.crashCurtain &&
-        !router.pendingScreen &&
-        !run.dyingCurtain &&
-        crashFeel.curtainDue(run.crash.heldFor)
-      ) {
-        run.crashCurtain = true
-        fade.begin({
-          outSeconds: KILL_FADE_SECONDS,
-          inSeconds: CUT_FADE_SECONDS,
-          holdSeconds: 'released',
-        })
-      }
-      // ── DEV-343: the JumpSeat's run starts at GO, like the HoverJet's ──
-      //
-      // The seat is stepped through its 7.5 s `Trigger_EnableJumpShip`
-      // countdown — it has to fall onto its rig and settle, and that is the
-      // flight model's business — but nothing below this line is: no racers,
-      // no scoring, and no mission clock until the thruster exists. That is the
-      // HoverJet's shape exactly (its lift's early return keeps all of this
-      // from running through the ride and the 3-2-1), it is Matt's call
-      // (2026-09-24, "At GO"), and it is what `tests/unit/helpers/jumpseat-run.ts`
-      // had always done, so the harness that measured DEV-056's times and the
-      // game now read the same clock.
-      //
-      // BELOW the curtain and the restart, deliberately: a death respawns the
-      // seat into a fresh countdown, and a return above them would leave the
-      // curtain down for all 7.5 s of it. Absent on a HoverJet.
-      if (handles.flight.countdownHolds) return
-      // Scored in SIM space, from the body the flight model just moved — not
-      // from the rendered mesh, which is a frame behind and in three space.
-      // The opposition flies the same fixed step the player does — same
-      // flight model, same gates, same dt. That is the whole point of DEV-026
-      // and it is also what makes a race reproducible.
-      // And the same crash rule (DEV-126), from the same preset, onto their own
-      // line — with no curtain, because nobody is sitting in them. And the same
-      // FOREST (DEV-147): the very same collider array the player just tested,
-      // so a tree either of you knocks down is down for both.
-      handles.liveRacers?.step(
-        handles.autopilotTerrain,
-        dt,
-        handles.collisionTerrain,
-        editionState.current.gameplay.crash,
-        handles.livePropColliders
-          ? {
-              colliders: handles.livePropColliders,
-              spec: editionState.current.gameplay.propCollision,
-            }
-          : null,
-        // DEV-364: their lanes, and the air they share with you. Off the live
-        // preset, like the crash rule. The player's body takes part while it is
-        // flying — AFTER `flight.step` moved it, so a racer is avoided and
-        // pushed where the player is now — and not while a crash holds it: a
-        // wreck under the curtain is not in the air.
-        {
-          separation: editionState.current.gameplay.racers.separation,
-          // DEV-391: nothing touches in a room (§6.7): every pose is stale.
-          contact: roomActive() ? null : editionState.current.gameplay.racers.contact,
-          player: crashHoldsShip(run.crash) ? null : handles.flight.jet.body,
-          // The DEV-364 follow-up: a hit costs the player speed and knocks
-          // its nose and wings, in the sim, on the tick of it.
-          hit: roomActive() ? null : editionState.current.gameplay.racers.hit,
-          // DEV-391: a room's other humans, avoided where each is drawn.
-          others: roomActive() ? roomOthersNow() : null,
-        },
-      )
-      // … and is heard, and felt in the cockpit (`game/racer-hit.ts`). The
-      // count on the body is the game's own receipt, as `crashes` is.
-      // DEV-649: the tick each racer took each gate, stamped HERE in the fixed
-      // step (not per frame), so a split is two measured times at one gate.
-      if (handles.liveRacers) splits.observe(handles.liveRacers.racers)
-      const hitCue = handles.liveRacers
-        ? takeRacerHit(handles.liveRacers.hit, hitJolt, time / 1000)
-        : null
-      if (hitCue && handles.liveRacers) {
-        audio.event(hitCue)
-        feel.shake(TRAUMA.racerHit) // DEV-636; the cockpit jolt is `hitJolt`'s own
-        feel.haptic('hit')
-        document.body.dataset.racerHits = String(handles.liveRacers.hit.total)
-      }
-      // What they broke, drawn. Read AFTER the step, from each racer's own
-      // `props` state — never from a shared one (trap 19).
-      if (handles.liveRacers && handles.livePropColliders && handles.livePropsLive) {
-        for (const racer of handles.liveRacers.racers) {
-          breakProps(racer.props.hits, racer.jet.body.velocity, `racer ${racer.spec.id}`)
-        }
-      }
-      // DEV-613: the racers into the sea and out of it, the player's rule.
-      if (handles.liveRacers) {
-        for (const racer of handles.liveRacers.racers) {
-          const c = racer.ground.collision
-          splashCraft(`racer ${racer.spec.id}`, racer.jet.body, c.struck, c.impactSpeed, dt)
-        }
-      }
+        // DEV-377: the lesson, also above the lift's return — step 0 is the launch.
+        tickLesson(dt, actions)
 
-      // G1 and G2's inputs (DEV-110). The two the mission cannot see for
-      // itself — how far the ground is and how fast the ship is going — come off
-      // the flight model, and the two specs come off the preset. On Classic both
-      // specs are inert (`maxBonus` 0, `cleanCentredness` 1), so this call is
-      // the shipped 2016 scorer with three numbers it cannot use.
-      const gameplay = editionState.current.gameplay
-      const gate = stepMission(mission, ctx.level, handles.flight.jet.body.position, dt, {
-        // The NEAREST surface within the ramp's reach, not the belly alone
-        // (DEV-112): a canyon wall off the wingtip pays like a ridge under the
-        // hull. The JumpSeat has no probes yet and answers with its belly.
-        clearance:
-          handles.flight.nearestSurface?.(gameplay.proximity.farMetres) ?? handles.flight.clearance,
-        speed: forwardSpeedOf(handles.flight),
-        struck: handles.flight.struck,
-        proximity: gameplay.proximity,
-        gateEvents: gameplay.gateEvents,
-        // The JumpSeat's feet, for the pad plates (DEV-120). Null on a HoverJet,
-        // and `stepMission` then sweeps the body as it always has.
-        probes: contactProbesOf(handles.flight) ?? undefined,
-      })
-      // ── DEV-371: the lap, AFTER the step ─────────────────────────────
-      //
-      // The pose `stepMission` just scored, at the tick `mission.elapsed` now
-      // reads: after the flight model, the props, a crash reset and the
-      // racers' pushes (DEV-364) have all had the body. On the finish tick the
-      // lap is cut, rescored from its own poses and offered to the store.
-      const flownLap = handles.lapRun?.step(
-        dt,
-        handles.flight.jet.body,
-        { ring: gate, finishCrossed: mission.finishCrossed, finished: mission.finished },
-        editionState.rules.id,
-      )
-      if (flownLap) {
-        const kept = flownLap.stored
-          ? 'kept as your best'
-          : flownLap.improved
-            ? 'better, and NOT stored'
-            : 'not your best'
-        console.info(
-          `lap: ${flownLap.seconds?.toFixed(4) ?? 'DNF'} s by its own poses ` +
-            `(live ${mission.finishAt?.toFixed(4) ?? '-'}), ${flownLap.gates} rings, ` +
-            `${flownLap.doc.keyCount} keys of ${flownLap.finishTick + 1} ticks, ${kept}` +
-            (flownLap.tainted ? ` (tainted: ${flownLap.reasons.join(', ')})` : '') +
-            `, ${flownLap.keptMs.toFixed(1)} ms`,
-        )
-      }
-      // DEV-491: and the editor's recording flight, the same pose at the same tick.
-      editorRecordStep(handles.flight.jet.body)
-      roomStep(
-        handles.flight.jet.body,
-        actions,
-        crashHoldsShip(run.crash),
-        mission.finishCrossed,
-        mission.course.passed,
-      ) // DEV-388, DEV-390
-      // ── what else happened this step ────────────────────────────────
-      //
-      // Four channels rather than one index, because the consumers differ: a
-      // ring drives the speed chain and the gate burst, a pad plate greys out,
-      // an orb disappears, and a mid-air medal raises a banner. `mission.event`
-      // is owned by the MissionState, never a module scratch — trap 19.
-      const ev = mission.event
-      if (ev.padZone >= 0) {
-        handles.livePadArt?.takeZone(ev.padZone)
-        // DEV-415: 2016's `jumpPad_fx`, fired beside the same `CollectRing` cue.
-        const scoredPad = mission.targets.zones[ev.padZone]?.pad
-        if (scoredPad !== undefined) handles.liveFx?.burstPad(scoredPad)
-        // The streak, said out loud. An accuracy chain the player cannot see is
-        // a spreadsheet — `padBanner` words it and says whether it is a gain or
-        // a loss, and `hud.ts` inks it accordingly.
-        const hit = padBanner(ev, mission.countTotal)
-        if (hit)
-          run.award = { text: hit.text, tone: hit.tone, until: mission.elapsed + hit.seconds }
-        // `TriggerCheckpoint.cs:90` and `Trigger_JumpTarget.cs:66` play the SAME
-        // MasterAudio cue, `CollectRing`, so a pad plate and a ring sound alike
-        // in 2016 and do here.
-        audio.event({ type: 'gate.passed', index: ev.padZone })
-        document.body.dataset.score = String(mission.score)
-        document.body.dataset.rings = `${mission.counted}/${mission.countTotal}`
-        document.body.dataset.multiplier = String(streakMultiplier(mission))
-      }
-      if (ev.orb >= 0) {
-        handles.liveOrbArt?.collect(ev.orb)
-        audio.event({ type: 'gate.passed', index: ev.orb })
-        document.body.dataset.score = String(mission.score)
-        document.body.dataset.rings = `${mission.counted}/${mission.countTotal}`
-      }
-      if (ev.awarded) {
-        // 2.5 s is `LevelEnd.DisableMedalUI()`'s own wait, not a guess.
-        run.award = {
-          text: medalBanner(ctx.level, ev.awarded),
-          tone: 'gain',
-          until: mission.elapsed + 2.5,
+        // DEV-483: TV's exhibition owns the step — the racers on its own GO, and
+        // nothing below: no lift, no flight, no mission, no lap.
+        if (exhibitionTick(dt)) return
+
+        // The ride, and the countdown after it. Both run on the fixed step so the
+        // opening is identical on every machine, which is what makes the ghost
+        // race comparable at all (D4).
+        if (ctx.rideSpec && launchHoldsShip(ctx.launch)) {
+          roomStepCountdown(dt) // DEV-389: a room's countdown starts on its step
+          stepLaunch(ctx.launch, ctx.rideSpec, dt)
+          audioLaunch()
+          // DEV-424: the lift's motor follows the platform, off this step's rise.
+          audio.stepLift({ rise: ctx.launch.rise })
+          // The ship is kinematic and attached to the platform, exactly as
+          // `LaunchElevator.StartLaunch()` leaves it. No flight, no scoring, no
+          // clock — so nothing below this line runs.
+          // DEV-477: in a room, the lift holds the ship at its start's own height.
+          handles.flight.rideElevator(ctx.launch.rise + (roomCore.room ? roomCore.roomHeldLift : 0))
+          handles.elevator?.setRise(ctx.launch.rise)
+          return
         }
-        audio.event({ type: 'run.medal', medal: ev.awarded })
-        document.body.dataset.medal = ev.awarded
-      }
-      // Terrain contact. Once per contact, not once per tick of a slide.
-      if (handles.flight.struck) {
-        audio.event({ type: 'ship.struck', impact: handles.flight.impactSpeed })
-        console.info('struck terrain')
-      }
-      // DEV-639: the speed chain running out is a loss too. The edge is read
-      // BEFORE this tick's gate re-raises the stacks, so a gate cannot hide it.
-      if (
-        chainWatch.step(handles.flight.jet.chain.stacks, crashHoldsShip(run.crash)) &&
-        gatesJudged()
-      ) {
-        ladderChainExpired(gateLadder)
-        audio.event({ type: 'gate.loss', loss: 'chain' })
-      }
-      if (gate >= 0) {
-        // THE speed chain. Every gate adds 18 to `maxSpeed`, falling back after
-        // 5.5 s without one — terminal goes 182 -> 340 m/s over twenty-one
-        // gates. `scoring.energyBoost` is true on every shipped ring; this is
-        // the thing that was extracted and never read. See `sim/speed-chain.ts`.
-        // `kind: 'ring'` is what S4's gate whoosh fires on, and it is only on
-        // this one of the three `gate.passed` sites: a ring is a 24 x 35 m hole
-        // you fly THROUGH, where a pad plate and an orb are not. 2016 plays the
-        // same `CollectRing` cue for all three, so the map itself does not
-        // branch on it. DEV-084.
-        // DEV-638/639: the sim's verdict on this gate, put on the ladder. Judged
-        // only where the rules have clean gates and a ring scores: elsewhere the
-        // gate is exactly the cue 2016 plays. A gate that is not clean is a MISS
-        // (`sim/gate-quality.ts`'s `recordGate` already decided; nothing is
-        // recomputed here), and a miss that broke a streak is the louder loss.
-        const gateJudged = gatesJudged()
-        if (gateJudged) ladderGate(gateLadder, mission.event.gateClean)
-        const gateIsClean = gateJudged && mission.event.gateClean
-        audio.event(
-          gateJudged
-            ? {
-                type: 'gate.passed',
-                index: gate,
-                kind: 'ring',
-                clean: gateIsClean,
-                streak: gateLadder.streak,
+
+        // The lift has let go by the time we get here, so the GO beat belongs
+        // on this side of the early return above.
+        audioLaunch()
+        // DEV-371: the release is tick 0 of the lap, BEFORE the first flight
+        // step, where `mission.elapsed` reads 0. A no-op on every later tick.
+        handles.lapRun?.release(handles.flight.jet.body, editionState.rules.id)
+
+        // ── DEV-343: nothing of the run moves while you are not in it ────
+        //
+        // The early return above is the ONLY thing that holds a run, and it holds
+        // a run with a lift. A mission with none — all six JumpSeat missions, whose
+        // `spawn.launch` is null so `restingPhase` puts them at `flying` from the
+        // first tick — was never held at all: in the hangar the seat ran its 7.5 s
+        // `Trigger_EnableJumpShip` countdown, went live, fell onto its rig, and the
+        // mission clock counted the whole time. Measured on `rookie_02_jumpSeat`:
+        // 10.4 s on the clock after 10 idle seconds, and after Pause → Exit and 20 s
+        // in the hangar, 24.1 s at re-boarding — the same-course door boards
+        // without a `restartRun`, so the results time and the stored best carried
+        // the menu. The HoverJet was immune only because its lift rests at
+        // `waiting` and returns above.
+        //
+        // 2016 has no such state to copy: a JumpSeat scene loads with you in it,
+        // and `Trigger_EnableJumpShip`'s T = 0 IS the load. The port's load is
+        // boarding, so off the mission screen the run simply does not step — the
+        // seat stays where the restart put it, and the countdown starts when you
+        // arrive. Placed AFTER the lift's return, so a HoverJet in the hangar goes
+        // through exactly the code it always did.
+        if (router.screen !== 'mission') return
+
+        // ── The autopilot decides on the FIXED STEP, like everything else ──
+        //
+        // It used to decide once per FRAME, and the same input was then applied to
+        // however many sim steps that frame happened to contain — two on a slow
+        // frame, none on a fast one. So the controller's effective rate rode the
+        // frame rate, and a run was NOT reproducible: the same course produced a
+        // stall at gate 6 one run and none the next, which is why three sessions
+        // of screenshots could not pin it down.
+        //
+        // The AI racers never had this — `stepAiRacer` calls the controller
+        // itself, on the fixed step — and that asymmetry is the tell: they were
+        // consistent while the player proxy was not, on the same code.
+        //
+        // CLAUDE.md rule 5: a decision that sees a frame delta is not a sim
+        // decision. This one was, and it was the player's.
+        // ── two vehicles, two controllers ───────────────────────────────
+        //
+        // `sim/autopilot.ts` commands a vehicle that thrusts along body +Z. The
+        // JumpSeat thrusts along body +Y, so pointed at it the HoverJet's
+        // controller flies it into the nearest hillside — which is exactly what
+        // `?autopilot=1` did on all six JumpSeat missions until now, and why
+        // Target Practice had never been played. `jumpSeatAutopilotOf` returns
+        // null on a HoverJet, so the branch below is untouched on seven of
+        // thirteen missions.
+        //
+        // Both are stepped ONCE PER FIXED STEP, inside this loop. DEV-027.
+        const jumpSeatPilot = pilot.autopilot ? jumpSeatAutopilotOf(handles.flight) : null
+        // DEV-399: and a third. The glider's pilot spends HEIGHT, which neither
+        // controller above can — pointed at a gate below it, the HoverJet's
+        // arrives at 170 m/s with nothing left, and at one above, it stalls.
+        // Null on every other aircraft, so the two branches are untouched.
+        const gliderPilot = pilot.autopilot ? gliderAutopilotOf(handles.flight) : null
+        if (jumpSeatPilot) {
+          actions = jumpSeatPilot.step(mission.targets.padTaken)
+        } else if (gliderPilot) {
+          // The next ring, then the finish — the HoverJet branch's order, gate
+          // to gate: a glider course carries no authored line to follow.
+          const next = nextGate(mission.course.gates, mission.course.passed)
+          const aim =
+            next >= 0
+              ? (mission.course.gates[next]?.centre ?? null)
+              : mission.finishGate && !mission.finishCrossed
+                ? mission.finishGate
+                : null
+          if (aim) actions = gliderPilot.step(aim)
+        } else if (pilot.autopilot) {
+          const target = nextGate(mission.course.gates, mission.course.passed)
+          // After the last ring, aim at the FINISH GATE — the same synthetic gate
+          // `stepAiRacer` flies home to, and for the same reason. `nextGate`
+          // returns -1 once every ring is taken, which used to be the end of the
+          // run; since DEV-045 it is not, and the autopilot was left with no
+          // target for the last 234.6 m. It still got there, by flying straight
+          // until it blundered into a 68 m sphere, and the lap spec's wall clock
+          // went from 1.4 min to 3.2 min saying so.
+          const finishGate =
+            target < 0 && mission.finishGate && !mission.finishCrossed
+              ? {
+                  centre: {
+                    x: mission.finishGate.x,
+                    y: mission.finishGate.y,
+                    z: mission.finishGate.z,
+                  },
+                  radius: mission.finishGate.radius,
+                  points: 0,
+                  triggerOnce: true,
+                }
+              : null
+          const gate = target >= 0 ? mission.course.gates[target] : finishGate
+          // The authored line stops at the last ring, so the run home is flown
+          // gate-to-gate: asking `routeGuidance` for a point past the end of its
+          // own spline measures nothing.
+          const onCourse = target >= 0
+          if (gate) {
+            // Follow the LINE where there is one. Aiming at a gate centre makes
+            // the ship fly straight segments between rings and overshoot every
+            // corner — which is the 186 m/s overshoot that put it into a hillside
+            // at gate 6. A lookahead sliding along the spline corners because the
+            // target corners, and being NEAR the line is better evidence of safe
+            // air than a terrain probe: 23 % of the authored line sits below this
+            // controller's own `minClearance`.
+            let aim = gate.centre
+            let offset = Number.POSITIVE_INFINITY
+            // What corner braking compares against: the next RING when aiming
+            // gate to gate, a point further along the LINE when following it.
+            // The last ring's is the finish, and the run home has none: past the
+            // last ring `target` is -1, and `gates[target + 1]` was RING 0, a
+            // hairpin braked for in the last 1.7 s of every lap (DEV-394).
+            let cornerRef: { x: number; y: number; z: number } | null =
+              target >= 0
+                ? (mission.course.gates[target + 1]?.centre ?? mission.finishGate ?? null)
+                : null
+            let profileSpeed = Number.POSITIVE_INFINITY
+            // DEV-394: and the run HOME on the line too, where the line runs
+            // through the finish (`routeArcThrough`) — a finish off the last
+            // leg's bearing is otherwise flown at straight, across the line's bend.
+            const homeArc = onCourse ? Number.NaN : (ctx.guide?.finishArc ?? Number.NaN)
+            if (ctx.guide && (onCourse || Number.isFinite(homeArc))) {
+              // The profile tops out at THIS jet's speed (DEV-382 follow-up).
+              profileGuideFor(ctx.guide, handles.flight.jet.sheet)
+              const v = handles.flight.jet.body.velocity
+              // DEV-524: the options are `playerRouteOptions`', the one list the
+              // tests fly the player's proxy on — and since DEV-524 they carry
+              // DEV-494's aim floor, so the player's autopilot rounds a hairpin
+              // the way the racers do rather than parking half a lead short of it.
+              const onLine = routeGuidance(
+                ctx.guide.route,
+                autoCursor,
+                handles.flight.jet.body.position,
+                playerRouteOptions(
+                  DEFAULT_AUTOPILOT,
+                  Math.hypot(v.x, v.y, v.z),
+                  onCourse ? (ctx.guide.gateArc[target] ?? Number.POSITIVE_INFINITY) : homeArc,
+                  gate.centre,
+                  autoBeyond,
+                ),
+                autoAim,
+              )
+              aim = autoAim
+              // Off the line's help, the ground rule comes back.
+              offset = onLine ? autoCursor.offset : Number.POSITIVE_INFINITY
+              // And corner braking measures the LINE's bend rather than the next
+              // ring, because `aim` is a point on the line and not a ring.
+              if (onLine) cornerRef = autoBeyond
+              // Look the profile up a little AHEAD, not underfoot: the point of a
+              // backward-pass profile is that it tells you to slow before you
+              // arrive, and reading it at the ship's own position throws that away.
+              if (onLine) {
+                profileSpeed = speedLimitAt(
+                  ctx.guide.route,
+                  autoCursor.s + Math.hypot(v.x, v.y, v.z) * DEFAULT_AUTOPILOT.profileLookSeconds,
+                )
               }
-            : { type: 'gate.passed', index: gate, kind: 'ring' },
-        )
-        // DEV-845: a gate taken in time keeps the chain whether or not it was
-        // clean, so it voices no loss. Only the chain running out does (above).
-        // DEV-638 (d): the +18 m/s read as a shove. Flat only and slider-scaled
-        // inside `feel`. The LENS is the look's (D35): the Classic look is exactly
-        // 2016's one lens, so a kick runs only where the look has a lens at all.
-        if (lensIsLive()) {
-          feel.fovKick(GATE_FEEL.fovKickDegrees, GATE_FEEL.fovKickSeconds)
+            }
+            autopilotActions(
+              handles.flight.jet.body,
+              aim,
+              autoInput,
+              DEFAULT_AUTOPILOT,
+              // The ground. Without it the autopilot aims straight at gate centres
+              // and, once the speed chain takes it past 280 m/s, flies through the
+              // island — 62 terrain strikes in one lap, where the 2016 ghost's
+              // closest approach over its whole run was 26 m.
+              handles.autopilotTerrain,
+              offset,
+              cornerRef,
+              profileSpeed,
+              // DEV-394: the speed law holds its target in THIS jet's thrust.
+              hoverJetOf(handles.flight),
+            )
+            // `HoverJetInput` is `FlightActions` without `airbrake`: the sim owns
+            // that type and may not import the input layer's (CLAUDE.md rule 4).
+            actions = { ...autoInput, airbrake: false }
+          }
         }
-        // DEV-637: the gate, felt. A clean one is the double tick.
-        feel.haptic(mission.event.gateClean ? 'cleanGate' : 'gate')
-        // S6's third channel (DEV-108), on exactly the same condition and for
-        // exactly the same reason as the whoosh above: a ring is a 24 x 35 m
-        // hole you fly THROUGH, and a pad plate and an orb are not. Scaled by
-        // the speed FX comfort slider, which §2.6 names S6's pulse in — at
-        // `off` the peak is zero and nothing is drawn. A CLEAN gate pulses
-        // harder (DEV-638), still clamped to the full pulse.
-        gatePulse.fire(
-          editionState.current.fx.gatePulse,
-          forwardSpeedOf(handles.flight),
-          editionState.speedFx,
-          gateIsClean ? GATE_FEEL.cleanPulseScale : 1,
-        )
-        chainGate(handles.flight.jet.chain)
-        // And the gate pays the tank (DEV-144). Beside `chainGate` on purpose:
-        // both are "what a ring gives you", both are 2016's own
-        // `TriggerCheckpoint` branches (`IncreaseSpeed()` and `AddEnergy()`),
-        // and a gate that raised the speed ceiling without refuelling you would
-        // be half a ring. `payGate` clamps at the tank and refuses a dead ship,
-        // so a wreck tumbling through a ring does not restart its engines.
-        if (energyPowered) {
-          const racePaid = run.energyRace.paid
-          payGate(
-            run.energyRace,
-            energyRaceSpec(
-              editionState.current.gameplay.energyRace.drainScale,
-              editionState.current.gameplay.energyRace.gatePayFraction,
-            ),
-          )
-          // DEV-640: a ring that put fuel back is a rising tick.
-          if (run.energyRace.paid > racePaid) audio.event({ type: 'tank.fill' })
-        } else if (
+
+        // ── Held where it hit (DEV-126) ─────────────────────────────────
+        //
+        // A crashed ship is not integrated, exactly as a ship on the lift is not:
+        // the hold is the sim's own clock, run by `stepCrashAndBoundary` below,
+        // and the curtain covers it. The stick is still read — `actions` above
+        // is what the engine note and the lean are fed — it just moves nothing.
+        // ── DEV-143: boost costs energy ─────────────────────────────────
+        //
+        // BEFORE `flight.step`, and it rewrites `actions.boost` rather than
+        // reaching into the flight model: `sim/hoverjet.ts` asks one question of
+        // the stick — *is boost held* — and the tank's answer is what the stick
+        // means now. Doing it here means the thrust, the engine note (`boost:
+        // actions.boost` below), the cockpit shake and the particle stages all
+        // see the SAME boolean and cannot disagree about whether this tick was
+        // boosted, which is what a second flag on the jet would have risked.
+        //
+        // HoverJet only — the JumpSeat's boost is analog and burns its own fuel.
+        // Classic does not step it at all, so a Classic run is the shipped one
+        // and the tank is still full if somebody flips the preset mid-flight.
+        //
+        // NOT in the energy race, which has its own, bigger tank and would
+        // otherwise be charging for boost twice out of two different pockets.
+        // The two blocks are mutually exclusive on the mode row's own flag.
+        const energyPowered = rulesFor(ctx.RUNNING_MODE).energyPowered
+        if (
+          !energyPowered &&
           editionState.current.gameplay.energy.enabled &&
           ctx.level.vehicle === 'hoverjet'
         ) {
-          // DEV-410: and the boost tank takes the ring too. It is the same "what
-          // a ring gives you", on the tank the energy race does not use. It is
-          // Anniversary's `ringRefill`, and Classic is off by its flag.
-          const tankBefore = run.energy.energy
-          refillEnergy(
-            run.energy,
-            energySpec(
-              editionState.current.gameplay.energy.rechargeScale,
-              handles.flight.jet.sheet,
-              editionState.current.gameplay.energy.lockoutScale,
-              editionState.current.gameplay.energy.reengage,
-            ),
-            editionState.current.gameplay.energy.ringRefill,
+          // `flight.jet.sheet`: the tank burns at THIS jet's rates (DEV-380).
+          const spec = energySpec(
+            editionState.current.gameplay.energy.rechargeScale,
+            handles.flight.jet.sheet,
+            editionState.current.gameplay.energy.lockoutScale,
+            editionState.current.gameplay.energy.reengage,
           )
-          // DEV-640: a ring that put fuel back is a rising tick.
-          if (run.energy.energy > tankBefore) audio.event({ type: 'tank.fill' })
-        }
-        // The gate's one-shot burst — 0.25 s, two bursts, 100-450 m/s. The four
-        // CONTINUOUS ringBurst systems are already running on every gate and are
-        // not touched here.
-        handles.liveFx?.burstRing(gate)
-        // DEV-638/639: a clean gate's second layer, a missed gate's grey flash.
-        if (gateIsClean) handles.liveFx?.burstRingSparkle(gate, 'clean')
-        else if (gateJudged) handles.liveFx?.burstRingSparkle(gate, 'miss')
-        // The gate goes away (DEV-122). Stamped in SIM seconds, because that
-        // is the clock 2016's coroutine counted and the one the run pauses
-        // with. THIS site only: it is the player's pass, and 2016's "npc"
-        // branch never hid a gate — a racer through the same ring leaves it
-        // standing for you.
-        // DEV-869: a viewer (FF-TV, a watch link) has no gate to hide: every ring
-        // stays up for them. Per view, because the state below is the renderer's.
-        if (!(tvActive() || roomCore.watch !== null)) handles.liveRings?.pass(gate, mission.elapsed)
-        document.body.dataset.score = String(mission.score)
-        document.body.dataset.rings = `${mission.counted}/${mission.countTotal}`
-        // ── G2's gate banner, and G1's bonus on it (DEV-110) ──────────
-        //
-        // ONE line for both, because they describe the same gate and the panel
-        // has one event row — the pad streak and the mid-run medal already share
-        // it, and a second row would change the panel's silhouette for a case
-        // that lasts a second and a half.
-        //
-        // They compose rather than compete: a clean gate flown on the deck says
-        // "CLEAN x3  +60", which is the sentence the two levers are jointly
-        // making. Either half alone says only its own half, and neither says
-        // anything on Classic, where the specs cannot produce either.
-        //
-        // AFTER the dataset writes, so a spec reading `data-score` is reading
-        // the run and not this.
-        const parts: string[] = []
-        // DEV-649: the split is no longer a line on every gate's banner (it was
-        // DEV-371's `GHOST +0.42` at every ring). It shows every fourth gate and
-        // at the last, for two seconds, against the ghost or the racers ahead
-        // and behind (`game/split-times.ts`), through the event line and the
-        // flat race strip. Behind the gate banner's own flag, because the
-        // Classic gate row is 2016's, which had no split.
-        const ghost = handles.lapRun?.ghost ?? null
-        if (editionState.current.gameplay.gateEvents.enabled) {
-          splits.playerPass(
-            gate,
-            mission.elapsed,
-            mission.countTotal,
-            ghost
-              ? {
-                  label: ghostName(ghost),
-                  ringTimes: ghost.result.ringTimes,
-                }
-              : null,
-          )
-        }
-        if (mission.event.gateClean) {
-          // DEV-638: the LADDER's count, which is the sim's streak until a chain
-          // expiry, which the sim does not know about but a player does.
-          const streak = gateJudged ? gateLadder.run : mission.gateEvents.cleanStreak
-          parts.push(streak > 1 ? `CLEAN x${streak}` : 'CLEAN')
-        }
-        // NAMED, since DEV-154. It used to read `+60`, and on the one row the
-        // gate has just written `CLEAN x3` onto that is a number a player adds
-        // to the gate — which is exactly what Matt reported: he could see the
-        // gate feedback and had never seen the proximity lever pay. It had been
-        // paying, in the one place it would be read as something else. NEAR MISS
-        // is the word on this banner and on the results panel (`+ 780 near miss`),
-        // since DEV-893 (Matt: reckless flying pays, so call it that, not low).
-        if (mission.event.proximityBonus > 0)
-          parts.push(`NEAR MISS +${mission.event.proximityBonus}`)
-        if (parts.length > 0) {
-          // 1.6 s, the pad streak's own window — the same surface, so the same
-          // dwell, rather than a second number for the same row. (A split takes
-          // the row over for its own two seconds instead, DEV-649: see the HUD's
-          // `award` below.)
-          run.award = {
-            text: parts.join('  '),
-            tone: 'gain',
-            until: mission.elapsed + 1.6,
-          }
-        }
-        console.info(
-          `ring ${mission.ringsPassed}/${mission.ringsTotal} — ` +
-            `${mission.score} pts at ${mission.elapsed.toFixed(1)}s` +
-            (mission.event.proximityBonus > 0 ? ` (+${mission.event.proximityBonus} prox)` : '') +
-            (mission.event.gateClean ? ` clean x${mission.gateEvents.cleanStreak}` : '') +
-            // The CENTREDNESS itself, not only whether it passed the threshold.
-            // `cleanCentredness` is a tuning number and a boolean cannot say
-            // whether it is reachable — the first autopilot lap scored zero
-            // clean gates out of twenty-one and this line is what told us why.
-            (editionState.current.gameplay.gateEvents.enabled
-              ? ` c=${mission.event.gateCentredness.toFixed(2)}`
-              : ''),
-        )
-      }
-      // A NEAR MISS is not a gate event and does not share the gate's banner: it
-      // fires between gates, on its own cooldown, and it must never overwrite a
-      // CLEAN that is still up — the gate is the thing the player did on purpose.
-      // Only raised when nothing else holds the row.
-      //
-      // Gated on the preset's flag, which DEV-110 left off: Classic's spec
-      // carries the same 8 m threshold, so a Classic run under a ridge was
-      // showing CLOSE — a banner for a mechanic that preset does not have, and
-      // the one place its panel was not the panel that shipped. Found reading
-      // the wiring for DEV-112; fixed here because the points now ride on it.
-      //
-      // "+25" beside it is what the near miss just banked into G1's pool (the
-      // Anniversary score, never the medal), worded like the gate's "+18" so the
-      // two are one vocabulary. The event line draws the text; `hud.ts` is
-      // untouched, and Classic's panel stays pixel-identical because this
-      // branch cannot be reached there.
-      if (
-        editionState.current.gameplay.gateEvents.enabled &&
-        mission.event.nearMiss &&
-        !(run.award && mission.elapsed < run.award.until)
-      ) {
-        const paid = mission.event.nearMissPoints
-        // DEV-642: the half ANNIVERSARY S4 asked for and nobody built: a whoosh
-        // from the side the terrain was on (`flight.surface.probe`), a small
-        // cockpit jolt, a small flat shake and a sharp tick in the hands.
-        audio.event({
-          type: 'ship.nearMiss',
-          at: nearMissAt(
-            _nearAt,
-            readHeadPosition(render.renderer.xr, render.camera, _nearEye),
-            _nearRight.setFromMatrixColumn(render.camera.matrixWorld, 0),
-            handles.flight.surface?.probe ?? -1,
-          ),
-        })
-        feel.shake(TRAUMA.nearMiss)
-        feel.jolt(JOLTS.nearMiss)
-        feel.haptic('nearMiss')
-        run.award = {
-          text: paid > 0 ? `CLOSE  +${paid}` : 'CLOSE',
-          tone: 'gain',
-          until: mission.elapsed + 0.8,
-        }
-        console.info(
-          `near miss at ${mission.elapsed.toFixed(1)}s — ` +
-            `${mission.proximity.clearance.toFixed(1)} m` +
-            (handles.flight.surface ? ` (probe ${handles.flight.surface.probe})` : '') +
-            (paid > 0 ? ` +${paid} prox` : ''),
-        )
-      }
-      // ── THE LOW LINE, said out loud (DEV-154) ───────────────────────
-      //
-      // Matt, having flown G1/G2: *"i've yet to see scoring influenced by
-      // flying near objects/terrain. maybe ui would help similar to the new
-      // gate score bonus ui"*.
-      //
-      // The meter has been paying at gates since DEV-110 — but the payout is
-      // pushed onto the GATE's own banner as a bare `+60` beside `CLEAN x3`,
-      // where a player reads it as what the gate was worth. The one channel
-      // that is unambiguously the low line's had no voice at all. This is it,
-      // and it is the LINE channel's, which banks every tick on every mission.
-      //
-      // LOWEST PRIORITY of the three things that reach this row, and the order
-      // is deliberate: a gate is what you did on purpose, a near miss is a
-      // moment, and this is a rate — the one that can afford to wait. On a
-      // deck-level pass the CLOSE banners will take the row and these will fill
-      // the gaps, which is the right way round.
-      //
-      // Behind the same flag as the meter itself: `perSecond` and `awardStep`
-      // are both 0 on Classic, so `lowPoints` cannot be positive there and this
-      // branch is unreachable — but the flag is checked anyway, for the reason
-      // DEV-112 found the hard way one row up.
-      if (
-        editionState.current.gameplay.proximity.enabled &&
-        mission.event.lowPoints > 0 &&
-        !(run.award && mission.elapsed < run.award.until)
-      ) {
-        run.award = {
-          text: `NEAR MISS +${mission.event.lowPoints}`,
-          tone: 'gain',
-          until: mission.elapsed + 0.8,
-        }
-        // Printed for the same reason DEV-110 prints the gate's centredness:
-        // `perSecond` and `awardStep` are tuning numbers, and a banner that
-        // sometimes loses the row to a gate cannot tell you whether the CADENCE
-        // is right. The line carries the meter and the pool, so a lap's worth
-        // of them says how often a player is actually told.
-        console.info(
-          `low +${mission.event.lowPoints} at ${mission.elapsed.toFixed(1)}s — ` +
-            `meter ${mission.proximity.level.toFixed(2)}, ` +
-            `${mission.proximity.clearance.toFixed(0)} m, pool ${mission.proximity.bonus}`,
-        )
-      }
-      // Crossing the gate and the run ENDING are two different moments — the
-      // clock running out also finishes a run, and there is nothing to
-      // celebrate about that. This is the crossing.
-      if (mission.finishCrossed && !ctx.audioFinishCrossed) {
-        ctx.audioFinishCrossed = true
-        audio.event({ type: 'run.finish' })
-        stats.count('finishes')
-        stats.stage('finished')
-      }
-      if (mission.finished && document.body.dataset.finished !== 'true') {
-        document.body.dataset.finished = 'true'
-        // Null where the MODE awards no medal. 2016 awards none in Target
-        // Practice — three independent reasons, and one of its six missions has
-        // no thresholds at all — so `'none'` would be a claim the game never
-        // made. `results.ts` and the HUD both draw nothing for either.
-        // DEV-469: a "fly from here" is PART of a course, and keeps the whole
-        // course's medals, so it awards none and keeps no best.
-        // DEV-601: nor does a run the autopilot flew any of.
-        const unrecorded = editorPartialRun() || mission.autopilotFlew
-        const medal = (unrecorded ? null : medalFor(mission, ctx.level)) ?? 'none'
-        if (!unrecorded && medalFor(mission, ctx.level)) {
-          audio.event({ type: 'run.medal', medal })
-          // DEV-644: the line, in the medal's own colour (edge only: a headset sees it too).
-          const tier = medalTierOf(medal)
-          if (tier) {
-            const c = medalColour(tier)
-            fireAccentFlash(c.r, c.g, c.b, FINISH_FEEL.pulseScale)
-          }
-        }
-        // ── the results panel ─────────────────────────────────────────
-        //
-        // Recorded ONCE, here, guarded by the same `dataset.finished` flag that
-        // guards the console line — `stepFixed` runs this block eighty times a
-        // second and a best written every tick would be a best written with the
-        // clock still moving.
-        // The MODE is half the key since DEV-204: a score is only comparable to
-        // another score under the same rules, and `RUNNING_MODE` is the rules
-        // this run was actually scored under.
-        const outcome = unrecorded
-          ? null
-          : recordRun(
-              ctx.level.id,
-              ctx.RUNNING_MODE,
-              {
-                score: missionScore(mission),
-                timeSeconds: mission.elapsed,
-                // The objective's count, as the panel shows it (DEV-344). The ring
-                // counters are 0 on every JumpSeat mission.
-                gates: mission.counted,
-              },
-              undefined,
-              // DEV-382: under THIS flight's variant, whose record it is.
-              handles.flight?.variant ?? STANDARD_VARIANT_ID,
-              // DEV-393: compared with the stored best as it reads TODAY.
-              bestRule(ctx.level, ctx.RUNNING_MODE),
-              // DEV-538: on an overridden course, that course's record only.
-              ctx.level.courseKey ?? null,
+          // DEV-853: Free Flight's boost never runs out. Full before the step (so
+          // an empty start lights at once) and full after it (so the bar reads it).
+          const infiniteBoost = rulesFor(ctx.RUNNING_MODE).infiniteBoost
+          if (infiniteBoost) fillEnergy(run.energy, spec)
+          // DEV-410: `boostPower` is the part of this tick's boost the tank paid
+          // for. It is 1 unless the tank is empty with no lockout.
+          // DEV-640: a press with nothing to light is a dry click. The tank's own
+          // answer BEFORE this tick's step, on the raw stick's rising edge.
+          if (
+            isDryPress(
+              boostPress.step(actions.boost),
+              boostAvailable(run.energy),
+              ctx.launch.phase === 'flying' && !crashHoldsShip(run.crash),
             )
-        document.body.dataset.medal = medal
-        stats.attemptEnd('finished', medal)
-        document.body.dataset.finalScore = String(missionScore(mission))
-        document.body.dataset.best = outcome ? String(outcome.best.score) : ''
-        // The run's own numbers, from the MISSION's objective counters — see
-        // `summariseRun` for why not the ring ones (DEV-344). The race joins
-        // them every frame the panel is up, where the panel is drawn.
-        run.lastResult = summariseRun(
-          mission,
-          // APP-SPLIT 2.1: the panel's words and the best, decided in
-          // `game/results-state.ts`'s `runExtras`, where a test reads them.
-          runExtras({
-            level: ctx.level,
-            mode: mission.mode,
-            medal,
-            outcome,
-            storageAvailable: () => safeStorage() !== null,
-            fromEditor: EDITOR_RUN.request !== null,
-            lapLeft: Boolean(handles.lapRun?.last),
-            device: confirmDevice,
-            autopilotFlew: mission.autopilotFlew,
-            medalInput: medalInput(mission), // DEV-650: "N MORE RINGS FOR GOLD"
-          }),
+          ) {
+            audio.event({ type: 'tank.dry' })
+          }
+          const boost = stepEnergy(run.energy, spec, actions.boost, dt)
+          if (infiniteBoost) fillEnergy(run.energy, spec)
+          actions = { ...actions, boost, boostPower: run.energy.power }
+          // THE MOMENT, on the event line — the channel G2's gate bonus uses.
+          // Two edges, and both are things the player has to be told rather than
+          // left to infer: the trigger going dead under their finger, and it
+          // coming back. `until` is the same 1.5 s the crash banner takes.
+          const nowAvailable = boostAvailable(run.energy)
+          if (nowAvailable !== run.boostWasAvailable) {
+            run.award = nowAvailable
+              ? {
+                  text: uiString(ctx.level, 'boostReady', 'BOOST READY'),
+                  tone: 'gain',
+                  until: mission.elapsed + 1.5,
+                }
+              : {
+                  text: uiString(ctx.level, 'boostOut', 'BOOST OUT'),
+                  tone: 'loss',
+                  until: mission.elapsed + 1.5,
+                }
+            run.boostWasAvailable = nowAvailable
+            // DEV-640: the tank running dry, sputtered and flashed (amber, on the
+            // gate pulse's edge quad, so a headset sees it too: edge only).
+            if (!nowAvailable) {
+              audio.event({ type: 'tank.empty' })
+              fireAccentFlash(...TANK_FEEL.flashColor, TANK_FEEL.flashScale)
+            }
+          }
+        }
+        // DEV-636/637: the boost, felt: a hum while it burns (an empty tank has
+        // already turned `actions.boost` off above) and a shove at a stage.
+        boostFeel.step(Boolean(actions.boost), forwardSpeedOf(handles.flight))
+        // ── DEV-144: the energy race ────────────────────────────────────
+        //
+        // The tank is a clock. Flying spends it, boosting spends it five times
+        // faster, and only a gate puts anything back. At zero the engines go out
+        // and gravity comes back on — `LaunchElevator.FinishLaunch()` reversed —
+        // and from there it is a falling body that DEV-126's crash rule ends.
+        //
+        // `energyPowered` is a MODE ROW property and not a name comparison, which
+        // is what `tests/unit/mode-rules.test.ts` makes checkable: a fourth mode
+        // is a row, not a ladder.
+        let raceDied = false
+        if (energyPowered) {
+          const raceSpec = energyRaceSpec(
+            editionState.current.gameplay.energyRace.drainScale,
+            editionState.current.gameplay.energyRace.gatePayFraction,
+            handles.flight.jet.sheet,
+          )
+          const wasPowered = run.energyRace.powered
+          // `enginesOn` is `Energy_System.cs`'s — the THROTTLE axis, not the
+          // airspeed. Coasting costs nothing, which is 2016's structure and turns
+          // out to be the mode's most interesting decision: cutting the engine on
+          // a straight saves the tank and costs you a clock that is still running.
+          //
+          // Only while actually flying: a ship on the elevator has not launched,
+          // and draining the tank through a 15.5 s ride would end the run before
+          // the player had touched anything.
+          if (ctx.launch.phase === 'flying' && !crashHoldsShip(run.crash)) {
+            stepEnergyRace(run.energyRace, raceSpec, actions.throttle > 0, actions.boost, dt)
+          }
+          if (!run.energyRace.powered) {
+            // Dead stick. The stick is still READ — the engine note and the lean
+            // are fed from `actions` — it just commands nothing.
+            actions = { ...actions, throttle: 0, boost: false }
+            handles.flight.setPowered?.(false)
+            if (wasPowered) {
+              run.award = {
+                text: uiString(ctx.level, 'energyOut', 'ENERGY OUT'),
+                tone: 'loss',
+                until: mission.elapsed + 3,
+              }
+              audio.event({ type: 'ship.struck' })
+              console.info('energy race: tank empty — engines out, gravity on')
+            }
+          }
+          // A powerless ship that has hit something has finished this run. The
+          // crash rule is DEV-126's and it would otherwise put the wreck back on
+          // the course with an empty tank, which is a reset into another fall.
+          raceDied = !run.energyRace.powered && (crashHoldsShip(run.crash) || handles.flight.struck)
+        }
+        // DEV-403: the JumpSeat's head meets the forest the rest of the seat meets
+        // below, under the same gate — so null on Classic and wherever the props
+        // did not load. A no-op on the HoverJet, which has no such rule.
+        handles.flight.setProps?.(
+          handles.livePropColliders && handles.livePropCollision && handles.livePropsLive
+            ? handles.livePropColliders
+            : null,
         )
-        console.info(
-          `run over: ${mission.ringsPassed}/${mission.ringsTotal} rings, ` +
-            `${mission.score} pts in ${mission.elapsed.toFixed(1)}s, ` +
-            `time bonus ${mission.timeBonus}, total ${missionScore(mission)}, medal ${medal}` +
-            `${!outcome ? (mission.autopilotFlew ? ' (autopilot: no medal, no best)' : ' (part of a course: no best)') : outcome.improved ? ' · NEW BEST' : ` (best ${outcome.best.score})`}`,
+        // DEV-790: a lesson step may hold the student to a speed (lesson 1's
+        // first two steps), by cutting the throttle and boost at the ceiling.
+        if (lessonHost.liveLesson) {
+          const v = handles.flight.jet.body.velocity
+          actions = capStudentActions(
+            actions,
+            Math.hypot(v.x, v.y, v.z),
+            lessonHost.liveLesson.studentCap(),
+          )
+        }
+        if (!crashHoldsShip(run.crash)) handles.flight.step(actions)
+        // DEV-640: did boost burn on this step: the lens push and the cabin glow
+        // follow it (a HoverJet only: the JumpSeat's boost is its own).
+        ctx.boostBurning =
+          ctx.level.vehicle === 'hoverjet' && actions.boost && !crashHoldsShip(run.crash)
+        // ── DEV-136: the props ─────────────────────────────────────────────
+        //
+        // AFTER the flight model and its own ground rule have moved the body,
+        // so a tree is tested where the ship ended the tick. The hull is the
+        // HoverJet's five spheres on both vehicles: the JumpSeat's own hull is
+        // not exposed by its flight, and a seat and a jet are the same few
+        // metres across — noted in the row. The AI racers test the SAME
+        // colliders, with their own state, in `liveRacers.step` below (DEV-147).
+        if (handles.livePropColliders && handles.livePropCollision && handles.livePropsLive) {
+          stepPropCollision(
+            handles.livePropCollision,
+            handles.flight.jet.body,
+            HOVERJET_GROUND.collision.hull,
+            handles.livePropColliders,
+            editionState.current.gameplay.propCollision,
+          )
+          breakProps(handles.livePropCollision.hits, handles.flight.jet.body.velocity, 'player')
+        }
+        // DEV-613: into the sea, or back out of it.
+        splashCraft(
+          'player',
+          handles.flight.jet.body,
+          handles.flight.struck,
+          handles.flight.impactSpeed,
+          dt,
         )
-      }
-    })
+        // ── the continuous layer ────────────────────────────────────────
+        //
+        // The FIXED step, not the frame. `engine.ts` is a state machine at
+        // 82 Hz, and driving it on a frame delta would make the loop swaps ride
+        // the frame rate — which is DEV-027's mistake wearing a different hat.
+        // `released` is what gates the idle loop: 2016's `Ship_HoverShip` ships
+        // `m_Enabled: 0` and nothing runs its `Start()` until the top of the
+        // shaft, which is why nothing at all sounds while you are on the lift.
+        {
+          const v = handles.flight.jet.body.velocity
+          // DEV-383: on the jumping spider the boost gesture IS the charge, and
+          // the jet is OFF while one builds (`sim/jumpseat.ts`, `thrustGas`). So
+          // the ladder hears no afterburner on a spider ever, and no thrust while
+          // it charges — the charge tone speaks instead.
+          const jump = handles.flight.jump
+          audio.stepFlight({
+            speed: Math.hypot(v.x, v.y, v.z),
+            throttle: jump && jump.charge > 0 ? 0 : actions.throttle,
+            boost: jump ? false : actions.boost,
+            released: ctx.launch.phase === 'flying',
+            jumpCharge: jump?.charge,
+          })
+        }
+
+        // Out of bounds. Stepped AFTER the flight model so it judges where the
+        // ship actually is this tick, not where it was.
+        // ── out of bounds ───────────────────────────────────────────────
+        //
+        // Once a SECOND, not once a tick: `boundaryCountdown` is already a
+        // ceil()'d integer of seconds remaining, so a change in it is exactly one
+        // beat of the alarm. 13 s on every shipped mission, and disabled outright
+        // in 6 of 13 — where it is disabled, `boundarySpec` is null and this
+        // never runs at all, which is the honest behaviour rather than a silent
+        // fallback (see `Boundary` in the level schema).
+        if (ctx.boundarySpec) {
+          const left = boundaryCountdown(ctx.boundary, ctx.boundarySpec)
+          if (left !== null && left !== ctx.audioBoundaryLeft) {
+            audio.event({ type: 'boundary.warning', secondsLeft: left })
+          }
+          ctx.audioBoundaryLeft = left
+        }
+        // The boundary and the crash, stepped together under one rule
+        // (`sim/crash.ts`): a dying ship cannot crash, a crashed ship freezes
+        // the boundary clock, and no tick resets the ship twice. On Classic the
+        // crash spec is off and this is `stepBoundary` alone.
+        const hazards = stepCrashAndBoundary(
+          run.crash,
+          // The HoverJet's rule. The JumpSeat's crash is 2016's own, the head
+          // strike (DEV-403), which its seam steps and the block below restarts
+          // on; here it gets the spec with the flag off. The glider flies the
+          // HoverJet's hull (DEV-399) and takes its rule: a wing that hits the
+          // sea at speed is a wreck, and one that did not crash would slide on
+          // the water until the clock ran out.
+          ctx.level.vehicle !== 'jumpseat' ? editionState.current.gameplay.crash : NO_CRASH,
+          ctx.boundary,
+          ctx.boundarySpec,
+          handles.flight.jet.body,
+          handles.flight.impactSpeed,
+          crashCourseNow(),
+          handles.collisionTerrain,
+          dt,
+          // DEV-185: the forest the reset has to miss. Null on Classic, on a
+          // mission whose props did not load, and with `?props=0` — and then the
+          // reset is planned exactly as it was before this argument existed.
+          handles.livePropColliders
+            ? { colliders: handles.livePropColliders, hull: HOVERJET_GROUND.collision.hull }
+            : null,
+        )
+        // ── DEV-342: a dry JumpSeat that no pad can reach ────────────────
+        //
+        // The thruster LATCHES off at an empty tank and only a pad's refuel
+        // sphere relights it, so a seat that runs dry out of every sphere's reach
+        // lands and sits there for ever — on the Simonet sea it floats at about
+        // 1 km/h — with no clock ending in Target Practice and nothing on screen
+        // saying why. 2016 had the same soft-lock (its sea is a solid
+        // `TerrainCollider` and the pilot's head stays clear of it); Matt's call is
+        // that it restarts the run, the way the two lines below already restart it
+        // for a boundary death and an empty energy tank. The RULE is
+        // `sim/jumpseat-stranded.ts` and the seam steps it; this only says it out
+        // loud, drops the curtain and restarts. ABSENT on a HoverJet, so `ok`.
+        const strandedPhase: StrandedPhase = handles.flight.stranded?.phase ?? 'ok'
+        if (strandedPhase === 'stranding' && run.strandedShown === 'ok') {
+          // Up for the whole of what follows — the wait, then the fade — so the
+          // reason is on screen until the screen goes black. A stranding that is
+          // broken (the seat slid off a ledge) leaves it up a little longer, and
+          // the tank really is empty.
+          run.award = {
+            text: uiString(ctx.level, 'fuelOut', 'OUT OF FUEL'),
+            tone: 'loss',
+            until: mission.elapsed + STRANDED_BANNER_SECONDS,
+          }
+          console.info('out of fuel — dry, out of reach of every pad, and grounded')
+        }
+        run.strandedShown = strandedPhase
+        const strandedDied = handles.flight.stranded?.restart === true
+        // ── DEV-403: the JumpSeat's head touched something ───────────────
+        //
+        // 2016's own JumpSeat death: `Trigger_Reset` on `collider_head` fades out,
+        // waits a second and reloads the scene. Matt's call (2026-09-25): exactly
+        // that, on both presets. The RULE is `sim/jumpseat-head.ts` and the seam
+        // steps it with the stranded one, one death at a time; this raises the
+        // HoverJet crash's own banner — 2016 showed nothing but the fade, and a
+        // restart with no reason on screen reads as a bug — drops the curtain and
+        // restarts. ABSENT on a HoverJet, so `ok`.
+        const headPhase: HeadPhase = handles.flight.headStrike?.phase ?? 'ok'
+        if (headPhase === 'dying' && run.headShown === 'ok') {
+          run.award = {
+            text: uiString(ctx.level, 'crashed', 'CRASHED'),
+            tone: 'loss',
+            until: mission.elapsed + 1.5,
+          }
+          console.info("head strike — the pilot's head touched something (DEV-403)")
+        }
+        run.headShown = headPhase
+        const headDied = handles.flight.headStrike?.restart === true
+        // A run ended by an empty tank restarts exactly as an out-of-bounds death
+        // does — score, rings and clock back to zero. That is how this port says
+        // "mission failed" and it is 2016's own answer too: `PlayerBoundary`
+        // reloads the scene. DEV-144. A head strike is the same reload (DEV-403).
+        const restarted = hazards.restarted || raceDied || strandedDied || headDied
+        if (restarted) {
+          stats.crash(
+            headDied ? 'head-strike' : strandedDied ? 'fuel' : raceDied ? 'crash' : 'out-of-bounds',
+            handles.flight.jet.body.position,
+          )
+        }
+        // ── the death curtain (DEV-107) ────────────────────────────────
+        //
+        // 2016's shape exactly, and the port already had two thirds of it without
+        // drawing any: `Trigger_Kill.RestartLevel()` snaps the fader to
+        // `fadeTime = 0.1` and holds black for 2.5 s while the scene reloads, and
+        // `sim/boundary.ts` has run that 2.5 s as its `dying` phase since long
+        // before there was a curtain to hold. So the hold is NOT a number handed
+        // to the fade — it is the sim's own clock, and the curtain simply waits
+        // to be released. One clock, in the layer that owns it.
+        //
+        // The way back in is `LOAD_FADE_SECONDS`, because 2016's reloaded scene
+        // fades in on its own fresh fader at that duration
+        // (`LoadLevelArt.LoadLevel()` -> `fader.FadeIn()`); the 0.1 died with the
+        // object that was overridden.
+        //
+        // Read off the PHASE rather than off the respawn, so every exit from
+        // `dying` lifts it — including a mission swap that replaces `boundary`
+        // outright. And never over a screen change already in flight: two
+        // transitions behind one curtain is how you arrive somewhere neither
+        // asked for.
+        //
+        // A stranded JumpSeat (DEV-342) comes down the SAME curtain on its own
+        // phase, and at its own pace: the JumpSeat's 2016 death is not
+        // `Trigger_Kill`'s snap but `Trigger_Reset`'s, which fades on the gameplay
+        // fader's own `fadeTime` — `LOAD_FADE_SECONDS` — so the banner above is
+        // readable while it goes. A head strike (DEV-403) IS `Trigger_Reset`, so
+        // it comes down the same curtain at the same pace.
+        const jumpSeatDying = strandedPhase === 'dying' || headPhase === 'dying'
+        if (ctx.boundary.phase === 'dying' || jumpSeatDying) {
+          if (!run.dyingCurtain && !router.pendingScreen) {
+            run.dyingCurtain = true
+            fade.begin({
+              outSeconds: jumpSeatDying ? LOAD_FADE_SECONDS : KILL_FADE_SECONDS,
+              inSeconds: LOAD_FADE_SECONDS,
+              holdSeconds: 'released',
+            })
+          }
+        } else if (run.dyingCurtain) {
+          run.dyingCurtain = false
+          fade.release()
+        }
+        if (restarted) {
+          // 2016 reloads the whole scene, so the run restarts: score, rings and
+          // clock all go back to zero. Harsh, and it is what the game does.
+          handles.flight.respawn()
+          flybyFeel.reset() // DEV-636: a respawn is a teleport, not a racer passing
+          crashFeel.clear()
+          // And the boundary is a fresh trigger, DISARMED, whatever ended the
+          // run: 2016's reload makes a new `PlayerBoundary` that has fired
+          // nothing, and only the respawn marker being inside re-arms it (DEV-074).
+          // `stepBoundary` disarms itself on its own death; a head strike
+          // (DEV-403), a dry tank (DEV-342) or a race death left it armed, and
+          // `int_01_jumpSeat` — whose marker is 2.6 km outside its sphere — took
+          // an out-of-bounds restart 13 s after every head strike. Found by
+          // `tests/e2e/completion.spec.ts`, twice in a row.
+          ctx.boundary = createBoundary()
+          audio.event({ type: 'ship.respawn' })
+          ctx.audioFinishCrossed = false
+          Object.assign(mission, startMission(ctx.level, MODE_REQUEST()))
+          // DEV-371: the clock is back to zero with the ship on the marker, so
+          // the lap begins again there, and its first pose was PLACED.
+          handles.lapRun?.restart(handles.flight.jet.body, editionState.rules.id)
+          editorRecordPlaced() // DEV-491: a respawn is no path anyone flew
+          run.elapsed = 0
+          // The course is rebuilt, so the gates come back (DEV-122).
+          handles.liveRings?.reset()
+          document.body.dataset.score = '0'
+          document.body.dataset.rings = `0/${mission.countTotal}`
+          delete document.body.dataset.finished
+          run.award = null
+          console.info(
+            headDied
+              ? 'head strike — run restarted at the respawn marker'
+              : strandedDied
+                ? 'out of fuel — run restarted at the respawn marker'
+                : 'out of bounds — run restarted at the respawn marker',
+          )
+        }
+        // ── the crash curtain (DEV-126) ────────────────────────────────
+        //
+        // Snap to black over the wreck (`KILL_FADE_SECONDS`, 2016's death snap),
+        // hold for the sim's `holdSeconds`, and come back on the cut fade
+        // (DEV-107's 0.35 s) — about a second all told. `'released'` so the sim
+        // decides when, the same contract the death curtain has; and never over
+        // a screen change or a death already in flight.
+        //
+        // DEV-643/797: ONE timeline, hold, splash, curtain (`boot/feel-events.ts`).
+        // The crash tick shakes, jolts and rumbles and holds the last frame for
+        // ~100 ms (flat only; the sim is not paused); the world then draws live
+        // while the sim's hold runs, so the player sees their own wreck and its
+        // splash; the curtain starts once `crash.heldFor` reaches 0.4 s.
+        if (hazards.crash === 'crashed') {
+          crashFeel.begin(performance.now(), render.renderer.xr.isPresenting)
+          // The impact cue. A contact that BEGAN this tick fires `ship.struck`
+          // below anyway; a slide that ran into a wall did not begin this tick,
+          // and a crash with no bang is a cut to black for no reason.
+          if (!handles.flight.struck)
+            audio.event({ type: 'ship.struck', impact: run.crash.impactSpeed })
+          document.body.dataset.crashes = String(run.crash.count)
+          stats.crash('crash', handles.flight.jet.body.position)
+          console.info(
+            `crash \u2014 ${run.crash.impactSpeed.toFixed(0)} m/s into the surface; back on the line at ${run.crash.reset.s.toFixed(0)} m`,
+          )
+        } else if (hazards.crash === 'reset') {
+          // The sim has already placed the body; this collapses the drawn pose
+          // onto it and cools the engine, the way the respawn does.
+          handles.flight.placeAt(
+            run.crash.reset.position,
+            run.crash.reset.orientation,
+            run.crash.reset.velocity,
+          )
+          // The ship was PUT there. `placeMission` is the one door for that:
+          // the mission must not sweep a segment from the wreck to the line, AND
+          // a ring the reset lands inside is not a ring that was flown through
+          // (DEV-149 — a trigger fires on an edge).
+          placeMission(mission, run.crash.reset.position)
+          // DEV-371: and the lap marks the tick, so a rescore re-seeds there too.
+          handles.lapRun?.placed()
+          editorRecordPlaced() // DEV-491
+          if (run.crashCurtain) {
+            run.crashCurtain = false
+            fade.release()
+          }
+          // DEV-636/643: a teleport must not read as a racer passing, nor carry a
+          // boost stage or a hold across the cut.
+          crashFeel.clear()
+          flybyFeel.reset()
+          boostFeel.reset()
+          audio.event({ type: 'ship.respawn' })
+          run.award = {
+            text: uiString(ctx.level, 'crashed', 'CRASHED'),
+            tone: 'loss',
+            until: mission.elapsed + 1.5,
+          }
+        }
+        // DEV-797: the curtain comes down once the player has watched the wreck for
+        // `CRASH_CURTAIN_DELAY_SECONDS` of the sim's own hold. Keyed on the PHASE
+        // and `heldFor` (the sim's clock), not on the crash tick, so it is the same
+        // however fast the frames come. Never over a screen change or a death
+        // already in flight.
+        if (
+          run.crash.phase === 'crashed' &&
+          !run.crashCurtain &&
+          !router.pendingScreen &&
+          !run.dyingCurtain &&
+          crashFeel.curtainDue(run.crash.heldFor)
+        ) {
+          run.crashCurtain = true
+          fade.begin({
+            outSeconds: KILL_FADE_SECONDS,
+            inSeconds: CUT_FADE_SECONDS,
+            holdSeconds: 'released',
+          })
+        }
+        // ── DEV-343: the JumpSeat's run starts at GO, like the HoverJet's ──
+        //
+        // The seat is stepped through its 7.5 s `Trigger_EnableJumpShip`
+        // countdown — it has to fall onto its rig and settle, and that is the
+        // flight model's business — but nothing below this line is: no racers,
+        // no scoring, and no mission clock until the thruster exists. That is the
+        // HoverJet's shape exactly (its lift's early return keeps all of this
+        // from running through the ride and the 3-2-1), it is Matt's call
+        // (2026-09-24, "At GO"), and it is what `tests/unit/helpers/jumpseat-run.ts`
+        // had always done, so the harness that measured DEV-056's times and the
+        // game now read the same clock.
+        //
+        // BELOW the curtain and the restart, deliberately: a death respawns the
+        // seat into a fresh countdown, and a return above them would leave the
+        // curtain down for all 7.5 s of it. Absent on a HoverJet.
+        if (handles.flight.countdownHolds) return
+        // Scored in SIM space, from the body the flight model just moved — not
+        // from the rendered mesh, which is a frame behind and in three space.
+        // The opposition flies the same fixed step the player does — same
+        // flight model, same gates, same dt. That is the whole point of DEV-026
+        // and it is also what makes a race reproducible.
+        // And the same crash rule (DEV-126), from the same preset, onto their own
+        // line — with no curtain, because nobody is sitting in them. And the same
+        // FOREST (DEV-147): the very same collider array the player just tested,
+        // so a tree either of you knocks down is down for both.
+        handles.liveRacers?.step(
+          handles.autopilotTerrain,
+          dt,
+          handles.collisionTerrain,
+          editionState.current.gameplay.crash,
+          handles.livePropColliders
+            ? {
+                colliders: handles.livePropColliders,
+                spec: editionState.current.gameplay.propCollision,
+              }
+            : null,
+          // DEV-364: their lanes, and the air they share with you. Off the live
+          // preset, like the crash rule. The player's body takes part while it is
+          // flying — AFTER `flight.step` moved it, so a racer is avoided and
+          // pushed where the player is now — and not while a crash holds it: a
+          // wreck under the curtain is not in the air.
+          {
+            separation: editionState.current.gameplay.racers.separation,
+            // DEV-391: nothing touches in a room (§6.7): every pose is stale.
+            contact: roomActive() ? null : editionState.current.gameplay.racers.contact,
+            player: crashHoldsShip(run.crash) ? null : handles.flight.jet.body,
+            // The DEV-364 follow-up: a hit costs the player speed and knocks
+            // its nose and wings, in the sim, on the tick of it.
+            hit: roomActive() ? null : editionState.current.gameplay.racers.hit,
+            // DEV-391: a room's other humans, avoided where each is drawn.
+            others: roomActive() ? roomOthersNow() : null,
+          },
+        )
+        // … and is heard, and felt in the cockpit (`game/racer-hit.ts`). The
+        // count on the body is the game's own receipt, as `crashes` is.
+        // DEV-649: the tick each racer took each gate, stamped HERE in the fixed
+        // step (not per frame), so a split is two measured times at one gate.
+        if (handles.liveRacers) splits.observe(handles.liveRacers.racers)
+        const hitCue = handles.liveRacers
+          ? takeRacerHit(handles.liveRacers.hit, hitJolt, time / 1000)
+          : null
+        if (hitCue && handles.liveRacers) {
+          audio.event(hitCue)
+          feel.shake(TRAUMA.racerHit) // DEV-636; the cockpit jolt is `hitJolt`'s own
+          feel.haptic('hit')
+          document.body.dataset.racerHits = String(handles.liveRacers.hit.total)
+        }
+        // What they broke, drawn. Read AFTER the step, from each racer's own
+        // `props` state — never from a shared one (trap 19).
+        if (handles.liveRacers && handles.livePropColliders && handles.livePropsLive) {
+          for (const racer of handles.liveRacers.racers) {
+            breakProps(racer.props.hits, racer.jet.body.velocity, `racer ${racer.spec.id}`)
+          }
+        }
+        // DEV-613: the racers into the sea and out of it, the player's rule.
+        if (handles.liveRacers) {
+          for (const racer of handles.liveRacers.racers) {
+            const c = racer.ground.collision
+            splashCraft(`racer ${racer.spec.id}`, racer.jet.body, c.struck, c.impactSpeed, dt)
+          }
+        }
+
+        // G1 and G2's inputs (DEV-110). The two the mission cannot see for
+        // itself — how far the ground is and how fast the ship is going — come off
+        // the flight model, and the two specs come off the preset. On Classic both
+        // specs are inert (`maxBonus` 0, `cleanCentredness` 1), so this call is
+        // the shipped 2016 scorer with three numbers it cannot use.
+        const gameplay = editionState.current.gameplay
+        const gate = stepMission(mission, ctx.level, handles.flight.jet.body.position, dt, {
+          // The NEAREST surface within the ramp's reach, not the belly alone
+          // (DEV-112): a canyon wall off the wingtip pays like a ridge under the
+          // hull. The JumpSeat has no probes yet and answers with its belly.
+          clearance:
+            handles.flight.nearestSurface?.(gameplay.proximity.farMetres) ??
+            handles.flight.clearance,
+          speed: forwardSpeedOf(handles.flight),
+          struck: handles.flight.struck,
+          proximity: gameplay.proximity,
+          gateEvents: gameplay.gateEvents,
+          // The JumpSeat's feet, for the pad plates (DEV-120). Null on a HoverJet,
+          // and `stepMission` then sweeps the body as it always has.
+          probes: contactProbesOf(handles.flight) ?? undefined,
+        })
+        // ── DEV-371: the lap, AFTER the step ─────────────────────────────
+        //
+        // The pose `stepMission` just scored, at the tick `mission.elapsed` now
+        // reads: after the flight model, the props, a crash reset and the
+        // racers' pushes (DEV-364) have all had the body. On the finish tick the
+        // lap is cut, rescored from its own poses and offered to the store.
+        const flownLap = handles.lapRun?.step(
+          dt,
+          handles.flight.jet.body,
+          { ring: gate, finishCrossed: mission.finishCrossed, finished: mission.finished },
+          editionState.rules.id,
+        )
+        if (flownLap) {
+          const kept = flownLap.stored
+            ? 'kept as your best'
+            : flownLap.improved
+              ? 'better, and NOT stored'
+              : 'not your best'
+          console.info(
+            `lap: ${flownLap.seconds?.toFixed(4) ?? 'DNF'} s by its own poses ` +
+              `(live ${mission.finishAt?.toFixed(4) ?? '-'}), ${flownLap.gates} rings, ` +
+              `${flownLap.doc.keyCount} keys of ${flownLap.finishTick + 1} ticks, ${kept}` +
+              (flownLap.tainted ? ` (tainted: ${flownLap.reasons.join(', ')})` : '') +
+              `, ${flownLap.keptMs.toFixed(1)} ms`,
+          )
+        }
+        // DEV-491: and the editor's recording flight, the same pose at the same tick.
+        editorRecordStep(handles.flight.jet.body)
+        roomStep(
+          handles.flight.jet.body,
+          actions,
+          crashHoldsShip(run.crash),
+          mission.finishCrossed,
+          mission.course.passed,
+        ) // DEV-388, DEV-390
+        // ── what else happened this step ────────────────────────────────
+        //
+        // Four channels rather than one index, because the consumers differ: a
+        // ring drives the speed chain and the gate burst, a pad plate greys out,
+        // an orb disappears, and a mid-air medal raises a banner. `mission.event`
+        // is owned by the MissionState, never a module scratch — trap 19.
+        const ev = mission.event
+        if (ev.padZone >= 0) {
+          handles.livePadArt?.takeZone(ev.padZone)
+          // DEV-415: 2016's `jumpPad_fx`, fired beside the same `CollectRing` cue.
+          const scoredPad = mission.targets.zones[ev.padZone]?.pad
+          if (scoredPad !== undefined) handles.liveFx?.burstPad(scoredPad)
+          // The streak, said out loud. An accuracy chain the player cannot see is
+          // a spreadsheet — `padBanner` words it and says whether it is a gain or
+          // a loss, and `hud.ts` inks it accordingly.
+          const hit = padBanner(ev, mission.countTotal)
+          if (hit)
+            run.award = { text: hit.text, tone: hit.tone, until: mission.elapsed + hit.seconds }
+          // `TriggerCheckpoint.cs:90` and `Trigger_JumpTarget.cs:66` play the SAME
+          // MasterAudio cue, `CollectRing`, so a pad plate and a ring sound alike
+          // in 2016 and do here.
+          audio.event({ type: 'gate.passed', index: ev.padZone })
+          document.body.dataset.score = String(mission.score)
+          document.body.dataset.rings = `${mission.counted}/${mission.countTotal}`
+          document.body.dataset.multiplier = String(streakMultiplier(mission))
+        }
+        if (ev.orb >= 0) {
+          handles.liveOrbArt?.collect(ev.orb)
+          audio.event({ type: 'gate.passed', index: ev.orb })
+          document.body.dataset.score = String(mission.score)
+          document.body.dataset.rings = `${mission.counted}/${mission.countTotal}`
+        }
+        if (ev.awarded) {
+          // 2.5 s is `LevelEnd.DisableMedalUI()`'s own wait, not a guess.
+          run.award = {
+            text: medalBanner(ctx.level, ev.awarded),
+            tone: 'gain',
+            until: mission.elapsed + 2.5,
+          }
+          audio.event({ type: 'run.medal', medal: ev.awarded })
+          document.body.dataset.medal = ev.awarded
+        }
+        // Terrain contact. Once per contact, not once per tick of a slide.
+        if (handles.flight.struck) {
+          audio.event({ type: 'ship.struck', impact: handles.flight.impactSpeed })
+          console.info('struck terrain')
+        }
+        // DEV-639: the speed chain running out is a loss too. The edge is read
+        // BEFORE this tick's gate re-raises the stacks, so a gate cannot hide it.
+        if (
+          chainWatch.step(handles.flight.jet.chain.stacks, crashHoldsShip(run.crash)) &&
+          gatesJudged()
+        ) {
+          ladderChainExpired(gateLadder)
+          audio.event({ type: 'gate.loss', loss: 'chain' })
+        }
+        if (gate >= 0) {
+          // THE speed chain. Every gate adds 18 to `maxSpeed`, falling back after
+          // 5.5 s without one — terminal goes 182 -> 340 m/s over twenty-one
+          // gates. `scoring.energyBoost` is true on every shipped ring; this is
+          // the thing that was extracted and never read. See `sim/speed-chain.ts`.
+          // `kind: 'ring'` is what S4's gate whoosh fires on, and it is only on
+          // this one of the three `gate.passed` sites: a ring is a 24 x 35 m hole
+          // you fly THROUGH, where a pad plate and an orb are not. 2016 plays the
+          // same `CollectRing` cue for all three, so the map itself does not
+          // branch on it. DEV-084.
+          // DEV-638/639: the sim's verdict on this gate, put on the ladder. Judged
+          // only where the rules have clean gates and a ring scores: elsewhere the
+          // gate is exactly the cue 2016 plays. A gate that is not clean is a MISS
+          // (`sim/gate-quality.ts`'s `recordGate` already decided; nothing is
+          // recomputed here), and a miss that broke a streak is the louder loss.
+          const gateJudged = gatesJudged()
+          if (gateJudged) ladderGate(gateLadder, mission.event.gateClean)
+          const gateIsClean = gateJudged && mission.event.gateClean
+          audio.event(
+            gateJudged
+              ? {
+                  type: 'gate.passed',
+                  index: gate,
+                  kind: 'ring',
+                  clean: gateIsClean,
+                  streak: gateLadder.streak,
+                }
+              : { type: 'gate.passed', index: gate, kind: 'ring' },
+          )
+          // DEV-845: a gate taken in time keeps the chain whether or not it was
+          // clean, so it voices no loss. Only the chain running out does (above).
+          // DEV-638 (d): the +18 m/s read as a shove. Flat only and slider-scaled
+          // inside `feel`. The LENS is the look's (D35): the Classic look is exactly
+          // 2016's one lens, so a kick runs only where the look has a lens at all.
+          if (lensIsLive()) {
+            feel.fovKick(GATE_FEEL.fovKickDegrees, GATE_FEEL.fovKickSeconds)
+          }
+          // DEV-637: the gate, felt. A clean one is the double tick.
+          feel.haptic(mission.event.gateClean ? 'cleanGate' : 'gate')
+          // S6's third channel (DEV-108), on exactly the same condition and for
+          // exactly the same reason as the whoosh above: a ring is a 24 x 35 m
+          // hole you fly THROUGH, and a pad plate and an orb are not. Scaled by
+          // the speed FX comfort slider, which §2.6 names S6's pulse in — at
+          // `off` the peak is zero and nothing is drawn. A CLEAN gate pulses
+          // harder (DEV-638), still clamped to the full pulse.
+          gatePulse.fire(
+            editionState.current.fx.gatePulse,
+            forwardSpeedOf(handles.flight),
+            editionState.speedFx,
+            gateIsClean ? GATE_FEEL.cleanPulseScale : 1,
+          )
+          chainGate(handles.flight.jet.chain)
+          // And the gate pays the tank (DEV-144). Beside `chainGate` on purpose:
+          // both are "what a ring gives you", both are 2016's own
+          // `TriggerCheckpoint` branches (`IncreaseSpeed()` and `AddEnergy()`),
+          // and a gate that raised the speed ceiling without refuelling you would
+          // be half a ring. `payGate` clamps at the tank and refuses a dead ship,
+          // so a wreck tumbling through a ring does not restart its engines.
+          if (energyPowered) {
+            const racePaid = run.energyRace.paid
+            payGate(
+              run.energyRace,
+              energyRaceSpec(
+                editionState.current.gameplay.energyRace.drainScale,
+                editionState.current.gameplay.energyRace.gatePayFraction,
+              ),
+            )
+            // DEV-640: a ring that put fuel back is a rising tick.
+            if (run.energyRace.paid > racePaid) audio.event({ type: 'tank.fill' })
+          } else if (
+            editionState.current.gameplay.energy.enabled &&
+            ctx.level.vehicle === 'hoverjet'
+          ) {
+            // DEV-410: and the boost tank takes the ring too. It is the same "what
+            // a ring gives you", on the tank the energy race does not use. It is
+            // Anniversary's `ringRefill`, and Classic is off by its flag.
+            const tankBefore = run.energy.energy
+            refillEnergy(
+              run.energy,
+              energySpec(
+                editionState.current.gameplay.energy.rechargeScale,
+                handles.flight.jet.sheet,
+                editionState.current.gameplay.energy.lockoutScale,
+                editionState.current.gameplay.energy.reengage,
+              ),
+              editionState.current.gameplay.energy.ringRefill,
+            )
+            // DEV-640: a ring that put fuel back is a rising tick.
+            if (run.energy.energy > tankBefore) audio.event({ type: 'tank.fill' })
+          }
+          // The gate's one-shot burst — 0.25 s, two bursts, 100-450 m/s. The four
+          // CONTINUOUS ringBurst systems are already running on every gate and are
+          // not touched here.
+          handles.liveFx?.burstRing(gate)
+          // DEV-638/639: a clean gate's second layer, a missed gate's grey flash.
+          if (gateIsClean) handles.liveFx?.burstRingSparkle(gate, 'clean')
+          else if (gateJudged) handles.liveFx?.burstRingSparkle(gate, 'miss')
+          // The gate goes away (DEV-122). Stamped in SIM seconds, because that
+          // is the clock 2016's coroutine counted and the one the run pauses
+          // with. THIS site only: it is the player's pass, and 2016's "npc"
+          // branch never hid a gate — a racer through the same ring leaves it
+          // standing for you.
+          // DEV-869: a viewer (FF-TV, a watch link) has no gate to hide: every ring
+          // stays up for them. Per view, because the state below is the renderer's.
+          if (!(tvActive() || roomCore.watch !== null))
+            handles.liveRings?.pass(gate, mission.elapsed)
+          document.body.dataset.score = String(mission.score)
+          document.body.dataset.rings = `${mission.counted}/${mission.countTotal}`
+          // ── G2's gate banner, and G1's bonus on it (DEV-110) ──────────
+          //
+          // ONE line for both, because they describe the same gate and the panel
+          // has one event row — the pad streak and the mid-run medal already share
+          // it, and a second row would change the panel's silhouette for a case
+          // that lasts a second and a half.
+          //
+          // They compose rather than compete: a clean gate flown on the deck says
+          // "CLEAN x3  +60", which is the sentence the two levers are jointly
+          // making. Either half alone says only its own half, and neither says
+          // anything on Classic, where the specs cannot produce either.
+          //
+          // AFTER the dataset writes, so a spec reading `data-score` is reading
+          // the run and not this.
+          const parts: string[] = []
+          // DEV-649: the split is no longer a line on every gate's banner (it was
+          // DEV-371's `GHOST +0.42` at every ring). It shows every fourth gate and
+          // at the last, for two seconds, against the ghost or the racers ahead
+          // and behind (`game/split-times.ts`), through the event line and the
+          // flat race strip. Behind the gate banner's own flag, because the
+          // Classic gate row is 2016's, which had no split.
+          const ghost = handles.lapRun?.ghost ?? null
+          if (editionState.current.gameplay.gateEvents.enabled) {
+            splits.playerPass(
+              gate,
+              mission.elapsed,
+              mission.countTotal,
+              ghost
+                ? {
+                    label: ghostName(ghost),
+                    ringTimes: ghost.result.ringTimes,
+                  }
+                : null,
+            )
+          }
+          if (mission.event.gateClean) {
+            // DEV-638: the LADDER's count, which is the sim's streak until a chain
+            // expiry, which the sim does not know about but a player does.
+            const streak = gateJudged ? gateLadder.run : mission.gateEvents.cleanStreak
+            parts.push(streak > 1 ? `CLEAN x${streak}` : 'CLEAN')
+          }
+          // NAMED, since DEV-154. It used to read `+60`, and on the one row the
+          // gate has just written `CLEAN x3` onto that is a number a player adds
+          // to the gate — which is exactly what Matt reported: he could see the
+          // gate feedback and had never seen the proximity lever pay. It had been
+          // paying, in the one place it would be read as something else. NEAR MISS
+          // is the word on this banner and on the results panel (`+ 780 near miss`),
+          // since DEV-893 (Matt: reckless flying pays, so call it that, not low).
+          if (mission.event.proximityBonus > 0)
+            parts.push(`NEAR MISS +${mission.event.proximityBonus}`)
+          if (parts.length > 0) {
+            // 1.6 s, the pad streak's own window — the same surface, so the same
+            // dwell, rather than a second number for the same row. (A split takes
+            // the row over for its own two seconds instead, DEV-649: see the HUD's
+            // `award` below.)
+            run.award = {
+              text: parts.join('  '),
+              tone: 'gain',
+              until: mission.elapsed + 1.6,
+            }
+          }
+          console.info(
+            `ring ${mission.ringsPassed}/${mission.ringsTotal} — ` +
+              `${mission.score} pts at ${mission.elapsed.toFixed(1)}s` +
+              (mission.event.proximityBonus > 0 ? ` (+${mission.event.proximityBonus} prox)` : '') +
+              (mission.event.gateClean ? ` clean x${mission.gateEvents.cleanStreak}` : '') +
+              // The CENTREDNESS itself, not only whether it passed the threshold.
+              // `cleanCentredness` is a tuning number and a boolean cannot say
+              // whether it is reachable — the first autopilot lap scored zero
+              // clean gates out of twenty-one and this line is what told us why.
+              (editionState.current.gameplay.gateEvents.enabled
+                ? ` c=${mission.event.gateCentredness.toFixed(2)}`
+                : ''),
+          )
+        }
+        // A NEAR MISS is not a gate event and does not share the gate's banner: it
+        // fires between gates, on its own cooldown, and it must never overwrite a
+        // CLEAN that is still up — the gate is the thing the player did on purpose.
+        // Only raised when nothing else holds the row.
+        //
+        // Gated on the preset's flag, which DEV-110 left off: Classic's spec
+        // carries the same 8 m threshold, so a Classic run under a ridge was
+        // showing CLOSE — a banner for a mechanic that preset does not have, and
+        // the one place its panel was not the panel that shipped. Found reading
+        // the wiring for DEV-112; fixed here because the points now ride on it.
+        //
+        // "+25" beside it is what the near miss just banked into G1's pool (the
+        // Anniversary score, never the medal), worded like the gate's "+18" so the
+        // two are one vocabulary. The event line draws the text; `hud.ts` is
+        // untouched, and Classic's panel stays pixel-identical because this
+        // branch cannot be reached there.
+        if (
+          editionState.current.gameplay.gateEvents.enabled &&
+          mission.event.nearMiss &&
+          !(run.award && mission.elapsed < run.award.until)
+        ) {
+          const paid = mission.event.nearMissPoints
+          // DEV-642: the half ANNIVERSARY S4 asked for and nobody built: a whoosh
+          // from the side the terrain was on (`flight.surface.probe`), a small
+          // cockpit jolt, a small flat shake and a sharp tick in the hands.
+          audio.event({
+            type: 'ship.nearMiss',
+            at: nearMissAt(
+              _nearAt,
+              readHeadPosition(render.renderer.xr, render.camera, _nearEye),
+              _nearRight.setFromMatrixColumn(render.camera.matrixWorld, 0),
+              handles.flight.surface?.probe ?? -1,
+            ),
+          })
+          feel.shake(TRAUMA.nearMiss)
+          feel.jolt(JOLTS.nearMiss)
+          feel.haptic('nearMiss')
+          run.award = {
+            text: paid > 0 ? `CLOSE  +${paid}` : 'CLOSE',
+            tone: 'gain',
+            until: mission.elapsed + 0.8,
+          }
+          console.info(
+            `near miss at ${mission.elapsed.toFixed(1)}s — ` +
+              `${mission.proximity.clearance.toFixed(1)} m` +
+              (handles.flight.surface ? ` (probe ${handles.flight.surface.probe})` : '') +
+              (paid > 0 ? ` +${paid} prox` : ''),
+          )
+        }
+        // ── THE LOW LINE, said out loud (DEV-154) ───────────────────────
+        //
+        // Matt, having flown G1/G2: *"i've yet to see scoring influenced by
+        // flying near objects/terrain. maybe ui would help similar to the new
+        // gate score bonus ui"*.
+        //
+        // The meter has been paying at gates since DEV-110 — but the payout is
+        // pushed onto the GATE's own banner as a bare `+60` beside `CLEAN x3`,
+        // where a player reads it as what the gate was worth. The one channel
+        // that is unambiguously the low line's had no voice at all. This is it,
+        // and it is the LINE channel's, which banks every tick on every mission.
+        //
+        // LOWEST PRIORITY of the three things that reach this row, and the order
+        // is deliberate: a gate is what you did on purpose, a near miss is a
+        // moment, and this is a rate — the one that can afford to wait. On a
+        // deck-level pass the CLOSE banners will take the row and these will fill
+        // the gaps, which is the right way round.
+        //
+        // Behind the same flag as the meter itself: `perSecond` and `awardStep`
+        // are both 0 on Classic, so `lowPoints` cannot be positive there and this
+        // branch is unreachable — but the flag is checked anyway, for the reason
+        // DEV-112 found the hard way one row up.
+        if (
+          editionState.current.gameplay.proximity.enabled &&
+          mission.event.lowPoints > 0 &&
+          !(run.award && mission.elapsed < run.award.until)
+        ) {
+          run.award = {
+            text: `NEAR MISS +${mission.event.lowPoints}`,
+            tone: 'gain',
+            until: mission.elapsed + 0.8,
+          }
+          // Printed for the same reason DEV-110 prints the gate's centredness:
+          // `perSecond` and `awardStep` are tuning numbers, and a banner that
+          // sometimes loses the row to a gate cannot tell you whether the CADENCE
+          // is right. The line carries the meter and the pool, so a lap's worth
+          // of them says how often a player is actually told.
+          console.info(
+            `low +${mission.event.lowPoints} at ${mission.elapsed.toFixed(1)}s — ` +
+              `meter ${mission.proximity.level.toFixed(2)}, ` +
+              `${mission.proximity.clearance.toFixed(0)} m, pool ${mission.proximity.bonus}`,
+          )
+        }
+        // Crossing the gate and the run ENDING are two different moments — the
+        // clock running out also finishes a run, and there is nothing to
+        // celebrate about that. This is the crossing.
+        if (mission.finishCrossed && !ctx.audioFinishCrossed) {
+          ctx.audioFinishCrossed = true
+          audio.event({ type: 'run.finish' })
+          stats.count('finishes')
+          stats.stage('finished')
+        }
+        if (mission.finished && document.body.dataset.finished !== 'true') {
+          document.body.dataset.finished = 'true'
+          // Null where the MODE awards no medal. 2016 awards none in Target
+          // Practice — three independent reasons, and one of its six missions has
+          // no thresholds at all — so `'none'` would be a claim the game never
+          // made. `results.ts` and the HUD both draw nothing for either.
+          // DEV-469: a "fly from here" is PART of a course, and keeps the whole
+          // course's medals, so it awards none and keeps no best.
+          // DEV-601: nor does a run the autopilot flew any of.
+          const unrecorded = editorPartialRun() || mission.autopilotFlew
+          const medal = (unrecorded ? null : medalFor(mission, ctx.level)) ?? 'none'
+          if (!unrecorded && medalFor(mission, ctx.level)) {
+            audio.event({ type: 'run.medal', medal })
+            // DEV-644: the line, in the medal's own colour (edge only: a headset sees it too).
+            const tier = medalTierOf(medal)
+            if (tier) {
+              const c = medalColour(tier)
+              fireAccentFlash(c.r, c.g, c.b, FINISH_FEEL.pulseScale)
+            }
+          }
+          // ── the results panel ─────────────────────────────────────────
+          //
+          // Recorded ONCE, here, guarded by the same `dataset.finished` flag that
+          // guards the console line — `stepFixed` runs this block eighty times a
+          // second and a best written every tick would be a best written with the
+          // clock still moving.
+          // The MODE is half the key since DEV-204: a score is only comparable to
+          // another score under the same rules, and `RUNNING_MODE` is the rules
+          // this run was actually scored under.
+          const outcome = unrecorded
+            ? null
+            : recordRun(
+                ctx.level.id,
+                ctx.RUNNING_MODE,
+                {
+                  score: missionScore(mission),
+                  timeSeconds: mission.elapsed,
+                  // The objective's count, as the panel shows it (DEV-344). The ring
+                  // counters are 0 on every JumpSeat mission.
+                  gates: mission.counted,
+                },
+                undefined,
+                // DEV-382: under THIS flight's variant, whose record it is.
+                handles.flight?.variant ?? STANDARD_VARIANT_ID,
+                // DEV-393: compared with the stored best as it reads TODAY.
+                bestRule(ctx.level, ctx.RUNNING_MODE),
+                // DEV-538: on an overridden course, that course's record only.
+                ctx.level.courseKey ?? null,
+              )
+          document.body.dataset.medal = medal
+          stats.attemptEnd('finished', medal)
+          document.body.dataset.finalScore = String(missionScore(mission))
+          document.body.dataset.best = outcome ? String(outcome.best.score) : ''
+          // The run's own numbers, from the MISSION's objective counters — see
+          // `summariseRun` for why not the ring ones (DEV-344). The race joins
+          // them every frame the panel is up, where the panel is drawn.
+          run.lastResult = summariseRun(
+            mission,
+            // APP-SPLIT 2.1: the panel's words and the best, decided in
+            // `game/results-state.ts`'s `runExtras`, where a test reads them.
+            runExtras({
+              level: ctx.level,
+              mode: mission.mode,
+              medal,
+              outcome,
+              storageAvailable: () => safeStorage() !== null,
+              fromEditor: EDITOR_RUN.request !== null,
+              lapLeft: Boolean(handles.lapRun?.last),
+              device: confirmDevice,
+              autopilotFlew: mission.autopilotFlew,
+              medalInput: medalInput(mission), // DEV-650: "N MORE RINGS FOR GOLD"
+            }),
+          )
+          console.info(
+            `run over: ${mission.ringsPassed}/${mission.ringsTotal} rings, ` +
+              `${mission.score} pts in ${mission.elapsed.toFixed(1)}s, ` +
+              `time bonus ${mission.timeBonus}, total ${missionScore(mission)}, medal ${medal}` +
+              `${!outcome ? (mission.autopilotFlew ? ' (autopilot: no medal, no best)' : ' (part of a course: no best)') : outcome.improved ? ' · NEW BEST' : ` (best ${outcome.best.score})`}`,
+          )
+        }
+      },
+      FIXED_DT,
+      catchupCap,
+    )
     const simMs = performance.now() - simT0
     const ticksThisFrame = clock.tick - tickBefore
     // DEV-445: the lift, drawn where the ship on it is drawn. The step above
@@ -4047,8 +4090,12 @@ export const createFrame = (ctx: FrameCtx) => {
         // Miss it and the diagnostic flag quietly lights the title valley with
         // BOTH skies — which is the sort of thing that reads as "the title
         // screen is brighter under ?ambient=sky" and gets blamed on the sky.
-        const missionProbe = (render.scene.getObjectByName('skyshop-ibl') ??
-          render.scene.getObjectByName('sky-radiance-ibl')) as THREE.LightProbe | undefined
+        if (!_missionProbe || !_missionProbe.parent) {
+          _missionProbe = (render.scene.getObjectByName('skyshop-ibl') ??
+            render.scene.getObjectByName('sky-radiance-ibl') ??
+            null) as THREE.LightProbe | null
+        }
+        const missionProbe = _missionProbe
         if (missionProbe) {
           handles.missionProbeGain ??= missionProbe.intensity
           missionProbe.intensity = onTitle ? 0 : handles.missionProbeGain
@@ -4105,7 +4152,8 @@ export const createFrame = (ctx: FrameCtx) => {
     // second seam for the same object is a second thing to keep in step.
     handles.flight?.setShipShadow(
       editionState.current.render.shipShadow.enabled &&
-        shadowsEnabled(editionState.current, editionState.settings),
+        // DEV-932: the hull is drawn for the MISSION's map; no map, no draw.
+        missionShadowsEnabled(editionState.current, editionState.settings),
     )
 
     if (router.screen === 'title' && handles.title) {
@@ -4904,7 +4952,7 @@ export const createFrame = (ctx: FrameCtx) => {
       const racers = handles.liveRacers
       audio.racerEngines.sync(
         racers.racers.map((racer) => {
-          const node = racers.group.getObjectByName(`racer:${racer.spec.id}`)
+          const node = racerNode(racers.group, racer.spec.id)
           const at = node ? node.getWorldPosition(_racerWorld) : _racerWorld.set(0, 0, 0)
           // The SIM velocity, not a frame difference of the interpolated pose:
           // this feeds a pitch curve, not a Doppler, and the sim's own number
@@ -4988,6 +5036,23 @@ export const createFrame = (ctx: FrameCtx) => {
           thirdPersonLive,
           handles.flight.engineAsk?.thrusting ?? false,
           handles.flight.engineAsk?.boosting ?? false,
+        )
+        // DEV-926 / DEV-927: the vapour cone and the boost shockwave, under
+        // the spray's three "no"s (the hangar, the pause, the lift): paused at
+        // speed, the sim's forward speed is still high and the mist would
+        // stream on over the pause plate.
+        const swingsLive =
+          router.screen === 'mission' && !pause.paused && !launchHoldsShip(ctx.launch)
+        // DEV-928: the wing tips, where the flight has wings (not the JumpSeat).
+        const tipsOk = handles.flight.wingTipsWorld !== undefined
+        if (tipsOk) handles.flight.wingTipsWorld?.(_swingTips.port, _swingTips.starboard)
+        handles.liveFx.updateSwings(
+          f,
+          swingsLive ? forwardSpeedOf(handles.flight) : 0,
+          swingsLive && (handles.flight.engineAsk?.boosting ?? false),
+          editionState.speedFx,
+          time / 1000,
+          tipsOk ? _swingTips : null,
         )
         // DEV-429: the sea's spray under a HoverJet skimming it. The body's
         // own SIM numbers; `active` is the buffet's three "no"s — the hangar,
@@ -5945,6 +6010,9 @@ export const createFrame = (ctx: FrameCtx) => {
     // the sim has not paused, and a held picture under a moving head would be
     // nausea). Everything above this line ran.
     if (!crashFeel.holdsFrame(performance.now(), render.renderer.xr.isPresenting)) {
+      // DEV-937: the lift and the AI pads freeze once the race is live, and thaw
+      // for a restart's ride.
+      if (stage === render.scene) staticScene.tick(!ctx.launchSpec || ctx.launch.phase === 'flying')
       if (stage === render.scene) cockpitSelfShadow.update()
       if (stage === render.scene) nearShadow.update(render.scene, render.camera) // DEV-582
       if (stage === render.scene) seaReflection.update(render.scene, render.camera) // DEV-583

@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/net/fetch-json.ts: the client's half of "ask the server, read JSON or
 // nothing" (code-reuse audit BE-16).
 //

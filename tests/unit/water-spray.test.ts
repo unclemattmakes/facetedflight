@@ -26,7 +26,7 @@ import {
   waterSpraySpec,
 } from '@/game/particle-fx'
 import { WORLD } from '@/generated/constants.generated'
-import { createParticleField } from '@/render/particles'
+import { createParticleField, particleAttribute } from '@/render/particles'
 import { flipPosition } from '@/render/unity-space'
 import type { HeightField } from '@/sim/terrain/height-field'
 import anniversaryJson from '../../content/editions/anniversary.json'
@@ -147,9 +147,8 @@ describe('DEV-429: which way it goes (geometry against the sheet and the rendere
     e.play()
     const camera = new THREE.PerspectiveCamera()
     for (let k = 0; k < 20 && f.alive < 60; k++) f.update(0.005, camera)
-    const g = (f.object as THREE.Mesh).geometry
-    const vel = g.getAttribute('iVelocity')
-    const pos = g.getAttribute('iPosition')
+    const vel = particleAttribute(f, 'iVelocity')
+    const pos = particleAttribute(f, 'iPosition')
     const mean = new THREE.Vector3()
     const born = new THREE.Vector3()
     for (let i = 0; i < f.alive; i++) {

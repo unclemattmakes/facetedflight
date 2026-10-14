@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/perf-recorder.ts — what the last few seconds of frames actually did.
 //
 // ANNIVERSARY.md §4.3: *"There is adaptive resolution and an engaged-frames

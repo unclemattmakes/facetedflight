@@ -61,6 +61,7 @@ import { sunHeightPatchFragment } from '@/render/far-shadow'
 import {
   fitSunShadow,
   lightBasis,
+  missionShadowsEnabled,
   shadowBiasFor,
   shadowsEnabled,
   type Vec3,
@@ -805,20 +806,26 @@ describe('§7 the presets, and why there is no eighth Advanced row', () => {
     expect(ADVANCED_FEATURES.some((f) => f.path === 'render.cockpitSelfShadow')).toBe(false)
     expect(ADVANCED_FEATURES.length, 'seven toggles; the page header says why').toBe(7)
     // The safety of that: wherever the SHADOWS row reads off, so is this.
-    const row = ADVANCED_FEATURES.find((f) => f.path === 'render.shadows')
+    // DEV-932: the row's path is the MISSION's map now; it still reads the
+    // machinery too, so all four combinations are swept.
+    const row = ADVANCED_FEATURES.find((f) => f.id === 'shadows')
     expect(row?.effective).toBeDefined()
     for (const settings of [HIGH, LOW]) {
       for (const shadowsOn of [true, false]) {
-        const e = {
-          ...anniversary,
-          render: {
-            ...anniversary.render,
-            shadows: { ...anniversary.render.shadows, enabled: shadowsOn },
-          },
-        } as Edition
-        const shadowsRow = row?.effective?.(e, { settings, presenting: false }) ?? true
-        expect(shadowsRow).toBe(shadowsEnabled(e, settings))
-        if (!shadowsRow) expect(cockpitSelfShadowEnabled(e, settings)).toBe(false)
+        for (const missionOn of [true, false]) {
+          const e = {
+            ...anniversary,
+            render: {
+              ...anniversary.render,
+              shadows: { ...anniversary.render.shadows, enabled: shadowsOn },
+              missionShadows: { ...anniversary.render.missionShadows, enabled: missionOn },
+            },
+          } as Edition
+          const shadowsRow = row?.effective?.(e, { settings, presenting: false }) ?? true
+          expect(shadowsRow).toBe(missionShadowsEnabled(e, settings))
+          expect(shadowsRow).toBe(shadowsEnabled(e, settings) && missionOn)
+          if (!shadowsRow) expect(cockpitSelfShadowEnabled(e, settings)).toBe(false)
+        }
       }
     }
   })

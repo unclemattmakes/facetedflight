@@ -299,7 +299,7 @@ describe('a forced row shows the renderer, and says what is forcing it (DEV-302)
     // off at quality low is not forced and keeps its ordinary note. A row that
     // showed the forcing note whenever the gate was shut would tell a player
     // their own press had been overruled when it had not.
-    const off = withFeatureOverrides(ANNIVERSARY, { 'render.shadows': false })
+    const off = withFeatureOverrides(ANNIVERSARY, { 'render.missionShadows': false })
     const f = ADVANCED_FEATURES.find((x) => x.id === 'shadows')
     if (f === undefined) throw new Error('no shadows row')
     expect(effectiveState(f, ANNIVERSARY, AT_LOW)).toEqual({ on: false, forced: true })
@@ -313,7 +313,7 @@ describe('a forced row shows the renderer, and says what is forcing it (DEV-302)
     // starts refusing at `low` — or while presenting — and which has no
     // `effective` arm goes red here rather than in a headset.
     const gated: Record<string, string> = {
-      'render.shadows': 'src/render/shadows.ts',
+      'render.missionShadows': 'src/render/shadows.ts',
       'terrain.detailRing': 'src/game/terrain/detail-ring.ts',
       'render.bloom': 'src/render/bloom.ts',
     }

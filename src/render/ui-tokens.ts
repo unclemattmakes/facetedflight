@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/render/ui-tokens.ts: the UI's palette, type and scale, in one place.
 //
 // DEV-647. Matt, 2026-10-05: *"i'd love the overall UI aesthetic to be
@@ -114,8 +115,20 @@ export const UI_MONO_STACK = 'ui-monospace, SFMono-Regular, Menlo, Consolas, mon
  * stands in (caps labels read heavier on a plate); CRYSTAL is named at 400, its
  * only weight, the moment it has loaded.
  */
-export const uiFont = (px: number, weight = 700): string =>
-  `${hudFontLoaded() ? 400 : weight} ${px}px ${UI_STACK}`
+export const uiFont = (px: number, weight = 700, theme: UiTheme = DEFAULT_UI_THEME): string =>
+  `${theme.loaded() ? 400 : weight} ${px}px ${theme.stack}`
+
+/**
+ * The face as a value a sequel passes its own: the CSS stack, and whether the
+ * face has loaded (a one-weight face is named at 400 only once it has). The
+ * default is CRYSTAL, `UI_STACK` and `hudFontLoaded`.
+ */
+export interface UiTheme {
+  readonly stack: string
+  readonly loaded: () => boolean
+}
+
+export const DEFAULT_UI_THEME: UiTheme = { stack: UI_STACK, loaded: hudFontLoaded }
 
 /**
  * The type scale: THREE sizes (and one hero), as ratios of a surface's title size. A painter

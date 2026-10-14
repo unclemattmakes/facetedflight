@@ -59,6 +59,7 @@ export const EDITION_KEY_CLASS: Readonly<Record<string, EditionKeyRow>> = {
   'render.haze': look('aerial perspective'),
   'render.illustrative': look('the diffuse warp on the land'),
   'render.shadows': look('cast shadows'),
+  'render.missionShadows': look('the mission sun’s map, apart from the menus’ (DEV-932)'),
   'render.shipShadow': look('the ship’s own shadow'),
   'render.cockpitShadow': look('the cockpit’s shadow'),
   'render.cockpitSelfShadow': look('the cockpit shadowing itself'),
@@ -88,6 +89,11 @@ export const EDITION_KEY_CLASS: Readonly<Record<string, EditionKeyRow>> = {
   // DEV-613: a look. Nothing a splash does reaches the sim, and 2016 threw none,
   // so a Classic-look crash into the sea goes in without one.
   'fx.splash': look('a splash where anything crosses the sea'),
+  // DEV-926 / DEV-927: looks; nothing either draws reaches the sim, and 2016 drew neither.
+  'fx.vapourCone': look('a vapour cone near top speed'),
+  'fx.boostShockwave': look('a ring of air where boost engages'),
+  // DEV-928: a look, like the two before it.
+  'fx.wingVortices': look('wing-tip vortices in a hard turn'),
   // DEV-464: on the RULES side, where the strike is. It is not a broken prop's
   // facets (those are the fracture, which the colliders already bring on both
   // looks); it is the only thing a STANDING strike draws. As a look, Classic
@@ -231,7 +237,19 @@ export const lookOnRules = (look: Edition, rules: Edition): Edition => {
     ...(look.vr?.disable ?? []).filter((p) => vrPathClass(p) === 'look'),
     ...(rules.vr?.disable ?? []).filter((p) => vrPathClass(p) === 'rules'),
   ]
-  if (disable.length > 0) out.vr = { ...(look.vr ?? rules.vr), disable }
-  else delete out.vr
+  // DEV-934: the VR values by the same rows. The loader refuses a rules path in
+  // `vr.override`, so in practice this is the look's own, and a Classic look
+  // over Anniversary's rules carries none of Anniversary's VR values.
+  const override = Object.fromEntries([
+    ...Object.entries(look.vr?.override ?? {}).filter(([p]) => vrPathClass(p) === 'look'),
+    ...Object.entries(rules.vr?.override ?? {}).filter(([p]) => vrPathClass(p) === 'rules'),
+  ])
+  const hasOverride = Object.keys(override).length > 0
+  if (disable.length > 0 || hasOverride) {
+    const vr: Record<string, unknown> = { ...(look.vr ?? rules.vr), disable }
+    if (hasOverride) vr.override = override
+    else delete vr.override
+    out.vr = vr
+  } else delete out.vr
   return out as unknown as Edition
 }

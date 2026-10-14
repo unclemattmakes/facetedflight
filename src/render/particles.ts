@@ -114,6 +114,16 @@
 import * as THREE from 'three'
 import { evaluateCurve } from '@/sim/art-lean'
 import { fnv1a32 } from '@/sim/math/hash'
+import {
+  bakeParticleLut,
+  createGpuStore,
+  evaluateGpuSlot,
+  type GpuMotion,
+  type GpuParticleState,
+  type GpuStore,
+  gpuVertexShader,
+  type ParticleEngine,
+} from './gpu-particles'
 
 /** `_TintColor` on TriParticle.mat, and the x2 Particles/Additive applies. */
 export const TRI_PARTICLE_TINT = [0.867647, 0.867647, 0.867647, 0.87] as const
@@ -249,6 +259,18 @@ export interface MinMaxGradientLike {
   readonly min: GradientLike | null
 }
 
+const NO_KEYS: readonly CurveKeyLike[] = []
+/**
+ * One argument object, refilled per call, because `evaluateCurve` takes a
+ * `{ keys }` and reads nothing else. A new one per particle per frame was
+ * garbage the frame paid for later (DEV-920).
+ */
+const _curveArg: { keys: readonly CurveKeyLike[] } = { keys: NO_KEYS }
+const curveAt = (keys: readonly CurveKeyLike[] | null, t: number): number => {
+  _curveArg.keys = keys ?? NO_KEYS
+  return evaluateCurve(_curveArg, t)
+}
+
 /**
  * Evaluate a Shuriken `MinMaxCurve`.
  *
@@ -264,10 +286,10 @@ export const evaluateMinMax = (
   if (!c) return 0
   switch (c.mode) {
     case 1:
-      return c.scalar * evaluateCurve({ keys: (c.maxCurve ?? []) as CurveKeyLike[] }, t)
+      return c.scalar * curveAt(c.maxCurve, t)
     case 2: {
-      const lo = evaluateCurve({ keys: (c.minCurve ?? []) as CurveKeyLike[] }, t)
-      const hi = evaluateCurve({ keys: (c.maxCurve ?? []) as CurveKeyLike[] }, t)
+      const lo = curveAt(c.minCurve, t)
+      const hi = curveAt(c.maxCurve, t)
       return c.scalar * (lo + (hi - lo) * r)
     }
     case 3:
@@ -278,19 +300,34 @@ export const evaluateMinMax = (
   }
 }
 
+/**
+ * The key before `t` in `keys` (the last one at most). Called per particle per
+ * frame, so it returns an index rather than a tuple: DEV-920 took the closure
+ * and the two arrays it allocated on every call out of the hot path, and kept
+ * the arithmetic identical to the value.
+ */
+const keyBefore = (keys: readonly { time: number }[], t: number): number => {
+  if (keys.length === 0) throw new Error('gradient with no keys')
+  let i = 0
+  while (i < keys.length - 1 && (keys[i + 1] as { time: number }).time < t) i++
+  return i
+}
+/** How far `t` is from key `a` to key `b`, clamped to [0, 1]; 0 across a zero span. */
+const keyFraction = (a: { time: number }, b: { time: number }, t: number): number => {
+  const span = b.time - a.time
+  return span > 1e-6 ? Math.min(1, Math.max(0, (t - a.time) / span)) : 0
+}
+
 const sampleGradient = (g: GradientLike | null, t: number, out: THREE.Vector4): THREE.Vector4 => {
   if (!g) return out.set(1, 1, 1, 1)
-  const at = <T extends { time: number }>(keys: readonly T[]): [T, T, number] => {
-    if (keys.length === 0) throw new Error('gradient with no keys')
-    let i = 0
-    while (i < keys.length - 1 && (keys[i + 1] as T).time < t) i++
-    const a = keys[i] as T
-    const b = (keys[i + 1] ?? a) as T
-    const span = b.time - a.time
-    return [a, b, span > 1e-6 ? Math.min(1, Math.max(0, (t - a.time) / span)) : 0]
-  }
-  const [ca, cb, cf] = at(g.colours)
-  const [aa, ab, af] = at(g.alphas)
+  const ci = keyBefore(g.colours, t)
+  const ca = g.colours[ci] as GradientLike['colours'][number]
+  const cb = g.colours[ci + 1] ?? ca
+  const cf = keyFraction(ca, cb, t)
+  const ai = keyBefore(g.alphas, t)
+  const aa = g.alphas[ai] as GradientLike['alphas'][number]
+  const ab = g.alphas[ai + 1] ?? aa
+  const af = keyFraction(aa, ab, t)
   return out.set(
     (ca.color[0] as number) + ((cb.color[0] as number) - (ca.color[0] as number)) * cf,
     (ca.color[1] as number) + ((cb.color[1] as number) - (ca.color[1] as number)) * cf,
@@ -309,11 +346,17 @@ export const evaluateGradient = (
   if (!g) return out.set(1, 1, 1, 1)
   sampleGradient(g.max, t, out)
   if ((g.mode === 2 || g.mode === 3) && g.min) {
-    const lo = sampleGradient(g.min, t, _gradScratch)
+    const lo = sampleGradient(g.min, t, _gradLo)
     out.lerp(lo, 1 - r)
   }
   return out
 }
+/**
+ * The min half of a two-gradient mode. Its own vector, not the caller's scratch:
+ * `update` passes `_gradScratch` as `out`, and sharing one would lerp a value
+ * with itself (DEV-920; latent, every shipped colour-over-lifetime is mode 1).
+ */
+const _gradLo = new THREE.Vector4()
 const _gradScratch = new THREE.Vector4()
 
 /**
@@ -387,6 +430,22 @@ export interface ParticleSpec {
     readonly velocityScale: number
   } | null
   readonly emits: boolean
+  /**
+   * DEV-928, the GPU engine only (the CPU reference engine ignores it): each
+   * particle spirals round a line through its own path, along its emitter's
+   * forward (+Z) at spawn, at `spinTurnsPerSecond`, from `radius` growing by
+   * `radiusGrow` times itself over its life. Its starting phase advances
+   * `twistTurnsPerSecond` turns per second of spawn time, so a stream of them
+   * from a moving emitter lays a corkscrew. Odd-numbered emitters spin the
+   * other way. Not a 2016 module: no generated spec carries it.
+   */
+  readonly orbit?: {
+    readonly enabled: boolean
+    readonly radius: number
+    readonly radiusGrow: number
+    readonly spinTurnsPerSecond: number
+    readonly twistTurnsPerSecond: number
+  } | null
 }
 
 /**
@@ -767,6 +826,15 @@ interface Particle {
   spin: number
   /** The per-particle random, held for its whole life. */
   r: number
+  /**
+   * DEV-920: the start colour, `evaluateGradient(spec.initial.colour, 0, r)`.
+   * It reads only the spec and `r`, both fixed for the particle's life, so it
+   * is evaluated once at spawn rather than every frame.
+   */
+  c0r: number
+  c0g: number
+  c0b: number
+  c0a: number
   emitter: number
   /**
    * DEV-428: this particle's palette colour, multiplied in after the gradient.
@@ -785,6 +853,89 @@ interface Particle {
  * They share, because the spec is what decides the geometry and the material,
  * and the emitter only decides where a particle starts.
  */
+/** DEV-924: the mirror's view of each GPU field, for tests. */
+const GPU_FIELDS = new WeakMap<ParticleField, () => GpuParticleState[]>()
+
+/**
+ * DEV-924, for tests: what the vertex shader draws for each live particle of
+ * a `gpu` field right now, in slot order, through `evaluateGpuSlot`. Null for
+ * a `cpu` field.
+ */
+export const readGpuParticles = (field: ParticleField): GpuParticleState[] | null =>
+  GPU_FIELDS.get(field)?.() ?? null
+
+/** Every live particle's drawn values, flat, in one layout for either engine. */
+export interface ParticleSnapshot {
+  readonly count: number
+  /** xyz per particle. */
+  readonly position: Float32Array
+  /** xyz per particle. */
+  readonly velocity: Float32Array
+  /** rgba per particle. */
+  readonly colour: Float32Array
+  /** size, rotation (radians), stretch length per particle: `iParams`. */
+  readonly params: Float32Array
+}
+
+/**
+ * DEV-925, for tests: what each live particle of `field` is drawn with right
+ * now, whichever engine it runs on. The CPU engine's instance buffers, or the
+ * GPU engine's slots through `evaluateGpuSlot` (spawn order while nothing has
+ * died, as the CPU pool is).
+ */
+export const particleSnapshot = (field: ParticleField): ParticleSnapshot => {
+  const gpuStates = readGpuParticles(field)
+  if (gpuStates) {
+    const n = gpuStates.length
+    const out = {
+      count: n,
+      position: new Float32Array(n * 3),
+      velocity: new Float32Array(n * 3),
+      colour: new Float32Array(n * 4),
+      params: new Float32Array(n * 3),
+    }
+    gpuStates.forEach((s, i) => {
+      s.position.toArray(out.position, i * 3)
+      s.velocity.toArray(out.velocity, i * 3)
+      s.colour.toArray(out.colour, i * 4)
+      s.params.toArray(out.params, i * 3)
+    })
+    return out
+  }
+  const g = (field.object as THREE.Mesh).geometry
+  const n = field.alive
+  const take = (name: string, k: number): Float32Array =>
+    ((g.getAttribute(name) as THREE.BufferAttribute).array as Float32Array).slice(0, n * k)
+  return {
+    count: n,
+    position: take('iPosition', 3),
+    velocity: take('iVelocity', 3),
+    colour: take('iColor', 4),
+    params: take('iParams', 3),
+  }
+}
+
+/**
+ * DEV-925, for tests: one of the CPU engine's per-particle attributes, as a
+ * `BufferAttribute` over the live particles, for either engine. Tests written
+ * against the CPU engine's buffers read through this unchanged.
+ */
+export const particleAttribute = (
+  field: ParticleField,
+  name: 'iPosition' | 'iVelocity' | 'iColor' | 'iParams',
+): THREE.BufferAttribute => {
+  const snap = particleSnapshot(field)
+  const [array, size] =
+    name === 'iPosition'
+      ? [snap.position, 3]
+      : name === 'iVelocity'
+        ? [snap.velocity, 3]
+        : name === 'iColor'
+          ? [snap.colour, 4]
+          : [snap.params, 3]
+  return new THREE.BufferAttribute(array, size)
+}
+
 export const createParticleField = (
   spec: ParticleSpec,
   map: THREE.Texture,
@@ -793,6 +944,7 @@ export const createParticleField = (
     override = null,
     randomDirection = 1,
     look = 'additive',
+    engine = 'gpu',
   }: {
     capacity?: number
     override?: Partial<ParticleOverride> | null
@@ -800,6 +952,14 @@ export const createParticleField = (
     randomDirection?: number
     /** DEV-428 / DEV-429. `additive`, the default, is every 2016 system. */
     look?: ParticleLook
+    /**
+     * DEV-924: where the per-particle work runs. `gpu`, the default since
+     * DEV-925 (Matt, 2026-10-12: "make gpu the default"), stores each particle
+     * once at spawn and evaluates it in the vertex shader
+     * (`render/gpu-particles.ts`); `cpu` is the 2016 port's engine, kept as the
+     * reference the GPU one is tested against and as `?particles=cpu`.
+     */
+    engine?: ParticleEngine
   } = {},
 ): ParticleField => {
   const paper = look === 'paper'
@@ -836,6 +996,7 @@ export const createParticleField = (
   const iColor = new THREE.InstancedBufferAttribute(new Float32Array(max * 4), 4)
   const iParams = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3)
   const iVelocity = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3)
+  const instanceAttrs = [iPosition, iColor, iParams, iVelocity] as const
   for (const [name, attr] of [
     ['iPosition', iPosition],
     ['iColor', iColor],
@@ -843,9 +1004,44 @@ export const createParticleField = (
     ['iVelocity', iVelocity],
   ] as const) {
     attr.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute(name, attr)
+    // DEV-924: the GPU engine stores its own attributes and never reads these.
+    if (engine === 'cpu') geometry.setAttribute(name, attr)
   }
   geometry.instanceCount = 0
+
+  // ── DEV-924: the GPU engine's storage ──────────────────────────────────
+  const gpuMotion: GpuMotion = {
+    drag: spec.clampVelocity?.enabled ? spec.clampVelocity.dampen : 0,
+    gravity: new THREE.Vector3(0, -32 * (spec.initial?.gravityModifier ?? 0), 0),
+    stretch:
+      spec.renderer?.mode === 'stretch'
+        ? {
+            lengthScale: spec.renderer.lengthScale ?? 1,
+            velocityScale: spec.renderer.velocityScale ?? 0,
+          }
+        : null,
+    orbit: spec.orbit?.enabled
+      ? {
+          angularSpeed: spec.orbit.spinTurnsPerSecond * Math.PI * 2,
+          radiusGrow: spec.orbit.radiusGrow,
+        }
+      : null,
+  }
+  const gpuLut =
+    engine === 'gpu'
+      ? bakeParticleLut({
+          colourOverLifetime: spec.colourOverLifetime,
+          sizeOverLifetime: spec.sizeOverLifetime,
+          rotationOverLifetime: spec.rotationOverLifetime,
+          gradient: (g, t, r, out) => evaluateGradient(g as MinMaxGradientLike, t, r, out),
+          minMax: (c, t, r) => evaluateMinMax(c as MinMaxCurveLike, t, r),
+        })
+      : null
+  const gpu: GpuStore | null = gpuLut
+    ? createGpuStore(geometry, max, rides, gpuMotion, gpuLut)
+    : null
+  /** The field's own clock, in simulation seconds: the GPU engine's time base. */
+  let clock = 0
 
   const uniforms = {
     uMap: { value: map },
@@ -867,9 +1063,10 @@ export const createParticleField = (
   }
 
   const material = new THREE.ShaderMaterial({
-    vertexShader: VERTEX,
+    vertexShader: gpu ? gpuVertexShader(VERTEX) : VERTEX,
     fragmentShader: FRAGMENT,
-    uniforms,
+    uniforms: gpu ? { ...uniforms, ...gpu.uniforms } : uniforms,
+    defines: gpu ? { ...gpu.defines } : {},
     transparent: true,
     // Additive, and NOT writing depth — every 2016 particle material is
     // `Particles/Additive`, which is exactly this.
@@ -883,7 +1080,7 @@ export const createParticleField = (
     // facet writes depth and needs no sorting against its neighbours, and three
     // draws it with blending off. No `_TintColor` and no x2 — those are the
     // additive shader's, and a paper particle's colour is its own.
-    material.defines = { PAPER: '' }
+    material.defines = { ...material.defines, PAPER: '' }
     material.transparent = false
     material.blending = THREE.NormalBlending
     material.depthWrite = true
@@ -930,11 +1127,12 @@ export const createParticleField = (
   mesh.renderOrder = 10
 
   const colour = new THREE.Vector4()
+  const startColour = new THREE.Vector4()
   const pos = new THREE.Vector3()
   const dir = new THREE.Vector3()
 
   const spawn = (emitterIndex: number): void => {
-    if (pool.length >= max) return
+    if ((gpu ? gpu.live : pool.length) >= max) return
     const e = emitters[emitterIndex]
     if (!e || e.count >= perEmitter) return
     e.count++
@@ -985,6 +1183,9 @@ export const createParticleField = (
     dir.z = -dir.z
     pos.applyMatrix4(e.matrix)
     dir.transformDirection(e.matrix)
+    // DEV-920: after every rand() above, and it draws none, so the stream is
+    // untouched. A scratch of its own: `colour` is update()'s.
+    evaluateGradient(spec.initial?.colour, 0, r, startColour)
     const particle: Particle = {
       age: 0,
       life,
@@ -998,6 +1199,10 @@ export const createParticleField = (
       rot: (evaluateMinMax(spec.initial?.rotationDeg, 0, rand()) * Math.PI) / 180,
       spin: 0,
       r,
+      c0r: startColour.x,
+      c0g: startColour.y,
+      c0b: startColour.z,
+      c0a: startColour.w,
       emitter: emitterIndex,
       tinted: false,
       tr: 1,
@@ -1019,7 +1224,56 @@ export const createParticleField = (
       particle.tg = e.palette[k + 1] as number
       particle.tb = e.palette[k + 2] as number
     }
-    pool.push(particle)
+    if (gpu) commitToGpu(particle, e)
+    else pool.push(particle)
+  }
+
+  // ── DEV-924: a spawned particle, stored once ─────────────────────────────
+  //
+  // Born at the clock BEFORE this update's step, as the CPU engine's particle
+  // is (it is spawned at age 0 and then aged by the step in the same update).
+  // Its tint is folded into its start colour: the CPU multiplies by the
+  // over-life gradient and then the tint, the same product in another order.
+  const _worldToLocal = new THREE.Matrix4()
+  const _slotP = new THREE.Vector3()
+  const _slotV = new THREE.Vector3()
+  const _slotC = new THREE.Vector4()
+  // DEV-928: a particle's orbit, from its emitter's forward at spawn.
+  const _orbitAxis = new THREE.Vector3()
+  const _orbit = { axis: _orbitAxis, phase: 0, radius: 0 }
+  const orbitOf = (p: Particle, e: EmitterState): typeof _orbit | null => {
+    const o = spec.orbit
+    if (!o?.enabled || !(o.radius > 0)) return null
+    const m = e.matrix.elements
+    _orbitAxis.set(m[8] as number, m[9] as number, m[10] as number).normalize()
+    // The axis's sign is the spin's: odd-numbered emitters turn the other way,
+    // so a ship's two tips counter-rotate as a real pair of vortices does.
+    if (p.emitter % 2 === 1) _orbitAxis.negate()
+    _orbit.phase = clock * o.twistTurnsPerSecond * Math.PI * 2 + p.r * 0.5
+    _orbit.radius = o.radius * e.scale
+    return _orbit
+  }
+  const commitToGpu = (p: Particle, e: EmitterState): void => {
+    const store = gpu as GpuStore
+    _slotC.set(p.c0r * p.tr, p.c0g * p.tg, p.c0b * p.tb, p.c0a)
+    const stored = store.commit(
+      {
+        p0: _slotP.set(p.px, p.py, p.pz),
+        v0: _slotV.set(p.vx, p.vy, p.vz),
+        birth: clock,
+        life: p.life,
+        r: p.r,
+        emitter: p.emitter,
+        size0: p.size,
+        rot0: p.rot,
+        colour: _slotC,
+        orbit: orbitOf(p, e),
+      },
+      rides ? _worldToLocal.copy(e.matrix).invert() : null,
+    )
+    // Full: the CPU engine's `pool.length >= max` refused it before it was
+    // drawn; here it was drawn (the stream is the same) and is not stored.
+    if (!stored) e.count--
   }
 
   // ── DEV-308: `simulationSpace: local` — the particles RIDE the emitter ─────
@@ -1101,7 +1355,7 @@ export const createParticleField = (
     object: mesh,
     spec,
     get alive() {
-      return pool.length
+      return gpu ? gpu.live : pool.length
     },
     get override() {
       return live
@@ -1196,7 +1450,12 @@ export const createParticleField = (
       // ── carry (DEV-308) ─────────────────────────────────────────────
       // BEFORE emission, so a particle spawned this frame — which already uses
       // the emitter's CURRENT matrix — is not moved a second time.
-      if (rides) carryParticles()
+      // DEV-924: the GPU engine needs no carry; it multiplies by the emitter's
+      // current matrix in the shader, so the matrices are all it is told.
+      if (rides && !gpu) carryParticles()
+      if (gpu && rides)
+        for (let i = 0; i < emitters.length; i++)
+          gpu.setEmitterMatrix(i, (emitters[i] as EmitterState).matrix)
 
       // ── emission ────────────────────────────────────────────────────
       if (spec.emission?.enabled) {
@@ -1242,6 +1501,19 @@ export const createParticleField = (
           // A non-looping system stops emitting at the end of its duration.
           if (!spec.looping && e.time >= spec.lengthSeconds) e.playing = false
         }
+      }
+
+      // ── DEV-924: on the GPU, the clock is the whole simulation ───────────
+      if (gpu) {
+        clock += step
+        gpu.retire(clock, (index) => {
+          const owner = emitters[index]
+          if (owner) owner.count--
+        })
+        gpu.flush(clock)
+        void camera
+        void gravity
+        return
       }
 
       // ── simulate ────────────────────────────────────────────────────
@@ -1295,7 +1567,7 @@ export const createParticleField = (
         velArr[i * 3 + 1] = p.vy
         velArr[i * 3 + 2] = p.vz
 
-        evaluateGradient(spec.initial?.colour, 0, p.r, colour)
+        colour.set(p.c0r, p.c0g, p.c0b, p.c0a)
         if (spec.colourOverLifetime?.enabled) {
           const over = evaluateGradient(spec.colourOverLifetime.gradient, t, p.r, _gradScratch)
           colour.multiply(over)
@@ -1321,10 +1593,22 @@ export const createParticleField = (
           : 0
       }
       geometry.instanceCount = n
-      iPosition.needsUpdate = true
-      iColor.needsUpdate = true
-      iParams.needsUpdate = true
-      iVelocity.needsUpdate = true
+      // DEV-919: upload the LIVE prefix, and nothing when the pool is empty.
+      // `needsUpdate` alone re-sends the whole buffer at capacity (up to 4096
+      // particles), and every system did it every frame whether or not it had
+      // a particle: 2.4 MB a frame of `bufferSubData` on `int_02_hoverJet`,
+      // almost all of it an idle gate's burst pool. The GPU reads only the
+      // first `instanceCount` instances, and the loop above rewrites every one
+      // of those each frame, so a range of `[0, n)` draws the same pixels.
+      // Clearing first matters: three clears the ranges only when it uploads,
+      // and a culled frame would otherwise let them pile up.
+      if (n > 0) {
+        for (const attr of instanceAttrs) {
+          attr.clearUpdateRanges()
+          attr.addUpdateRange(0, n * attr.itemSize)
+          attr.needsUpdate = true
+        }
+      }
       void camera
     },
 
@@ -1332,7 +1616,21 @@ export const createParticleField = (
       geometry.dispose()
       material.dispose()
       pool.length = 0
+      gpu?.dispose()
     },
+  }
+  if (gpu && gpuLut) {
+    GPU_FIELDS.set(field, () => {
+      const out: GpuParticleState[] = []
+      for (let i = 0; i < gpu.highWater; i++) {
+        const slot = gpu.read(i)
+        if (!slot) continue
+        const e = rides ? emitters[slot.emitter] : null
+        const state = evaluateGpuSlot(slot, clock, gpuMotion, gpuLut, e ? e.matrix : null)
+        if (state) out.push(state)
+      }
+      return out
+    })
   }
   return field
 }

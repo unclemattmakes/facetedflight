@@ -55,7 +55,9 @@ const build = (p: FacetedTerrainParams = params) => {
   const height = ridgeMap()
   const color = bandedMap()
   const grid = buildVertexGrid(height, p)
-  return { grid, height, color, chunk: generateChunk(grid, color, height, p, 0, 0) }
+  // 2016's skirt, to the sea: these tests characterise the 2016 generator.
+  // DEV-929's adaptive skirt is `terrain-skirts.test.ts`'s.
+  return { grid, height, color, chunk: generateChunk(grid, color, height, p, 0, 0, 0, 'sea') }
 }
 
 describe('faceted terrain — the three things that make the look', () => {

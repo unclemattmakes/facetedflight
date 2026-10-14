@@ -66,7 +66,7 @@ import {
 } from '@/game/terrain/load-terrain'
 import { loadTurnIndicators } from '@/game/turn-indicators'
 import type { BakedLight, BakedLightReport } from '@/render/baked-light'
-import type { Bloom } from '@/render/bloom'
+import { type Bloom, UI_LAYER } from '@/render/bloom'
 import type { CloudShadow } from '@/render/cloud-shadow'
 import { attachEditionCoast, coastHeightTexture, coastMapFrom } from '@/render/coast'
 import type { CockpitSelfShadow } from '@/render/cockpit-self-shadow'
@@ -152,6 +152,7 @@ import {
   OCEAN_PIN,
   OCEAN_RINGS_PIN,
   OPPONENTS,
+  PARTICLE_ENGINE,
   PROP_CELLS,
   PROP_LOD,
   PROPS_ON,
@@ -8251,6 +8252,9 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
           bakeGeometry: (g) => {
             bakedLight.offer(g)
           },
+          // DEV-904, and LAND only: the sea is never batched (DEV-193 3d).
+          chunkBatch: CHUNK_BATCH,
+          onBakeChange: (listener) => bakedLight.onChange(listener),
           lodFade: lodFadeSpec,
         }),
         // The ocean is a SECOND faceted terrain: 32 km of water scaled 8x to 262
@@ -8306,6 +8310,8 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
           speedLineLift: speedLineLiftNow(),
           speedRamp: speedRampNow(),
           ringBurstRandomDirection: ringBurstRandomNow(),
+          // DEV-925: the GPU engine unless `?particles=cpu`.
+          engine: PARTICLE_ENGINE,
           // DEV-867: no gates built where the mode has none (Free Flight).
           rings: isLive(ctx.RUNNING_MODE, 'ring'),
           // DEV-428 / DEV-429: built only when on at load, like the colliders
@@ -8319,6 +8325,16 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
             : null,
           // DEV-613: built only when on at load, like the spray beside it.
           splash: editionState.current.fx.splash.enabled ? editionState.current.fx.splash : null,
+          // DEV-926 / DEV-927: built only when on at load, like the splash.
+          vapourCone: editionState.current.fx.vapourCone.enabled
+            ? editionState.current.fx.vapourCone
+            : null,
+          boostShockwave: editionState.current.fx.boostShockwave.enabled
+            ? editionState.current.fx.boostShockwave
+            : null,
+          wingVortices: editionState.current.fx.wingVortices.enabled
+            ? editionState.current.fx.wingVortices
+            : null,
         }),
         // DEV-256. The raster mode goes in at CONSTRUCTION, because
         // `getContext` options are honoured only on a canvas's first context —
@@ -8395,6 +8411,15 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
     // came through `bakeGeometry` as they were built — and this is the other
     // half. A no-op in both shipped presets.
     refreshBakedLight()
+    // DEV-904: the land's chunk grid goes into its batches HERE, and not
+    // earlier, because a batch holds a COPY of the vertices and the bake has
+    // just finished writing them: the colours, and under the split rung the
+    // `ff2Direct` attribute every slot of a batch has to carry (three throws on
+    // a geometry missing one, and a program reading an absent attribute draws
+    // the ground with no sun). Later changes of the bake rebuild the batches
+    // through `onBakeChange`. Before the warm, so the batched programs compile
+    // under the curtain. `?chunkBatch=0` leaves the chunks as separate meshes.
+    if (CHUNK_BATCH) terrain.batching.sync()
     // ── Anniversary systems: the shoreline ─────────────────────────────────
     //
     // V6 / DEV-087, and it has to be here because it needs BOTH terrains: the
@@ -8563,6 +8588,10 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
           meshLod: {
             rungs: editionState.current.props.meshLod.rungs,
             enabled: () => editionState.current.props.meshLod.enabled,
+            // DEV-935: where each rung STARTS, live, so a headset's nearer
+            // edges (`vr.override`) land on the next scan of a world built
+            // at the monitor, and leave again when the headset comes off.
+            liveRungs: () => editionState.current.props.meshLod.rungs,
           },
           ...(PROP_CELLS !== undefined ? { cellsPerAxis: PROP_CELLS } : {}),
           ...(PROP_LOD !== undefined ? { lodDistance: PROP_LOD } : {}),
@@ -9195,6 +9224,11 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
           return dx * dx + dz * dz <= margin * margin
         })
         handles.boreChunkNames = new Set(handles.boreChunks.map((c) => c.name))
+        // DEV-904: `frame.ts` writes `visible` on each of these every frame, so
+        // they have to be drawn as their own meshes. A chunk in a batch that was
+        // also hidden here would be drawn by the batch regardless, and a hole in
+        // the shaft's wall would be a hillside.
+        terrain.batching.exclude(handles.boreChunkNames)
         console.info(
           `ride: ?rideHide=bore \u2014 hiding ${handles.boreChunks.length} of ` +
             `${grp.children.filter((c) => c.name.startsWith('chunk_')).length} chunks ` +
@@ -10094,6 +10128,12 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
               ...(handles.livePlayerGhost ? [handles.livePlayerGhost.object] : []),
             ],
             shaftLit,
+            // DEV-938: and the HUD as bloom's UI pass draws it, on the canvas
+            // with the camera on the UI layer alone. The race map is dark
+            // until the release (DEV-840), so without this its one program
+            // compiled on the first frame of flight. On both arms of
+            // `HUD_WARM_PIN`: a compile, not a draw, so it moves no raster.
+            uiPass: { roots: [loadedFlight.hud.object], layer: UI_LAYER },
             // ── the sea's four variants (DEV-167 / W6, corrected) ────────
             //
             // INSIDE the warm, not after it. `outputColorSpace` comes from the
@@ -10198,12 +10238,6 @@ export const createWorldBuild = (ctx: WorldBuildCtx) => {
       particleFx.setSea(handles.liveSea)
     }
     handles.liveRings = rings
-    // DEV-193's spike, if it was asked for. HERE and not beside
-    // `liveTerrain = {...}`, because the batch key carries `castShadow` and the
-    // chunks do not have their flags until `sunShadows.attach` has run — folding
-    // earlier would split every band in two and report a plan that is about the
-    // order of two statements rather than about the terrain.
-    if (CHUNK_BATCH) ctx.setChunkBatch(true)
     // Read by the e2e screenshot test, which cannot know when generation of
     // 1.8 M vertices has finished from the outside.
     document.body.dataset.terrainReady = 'true'

@@ -859,13 +859,16 @@ describe('DEV-240 §6 — the preset and the pin both reach it', () => {
     expect(() => validateEdition(withRung(4))).toThrow(/rung/)
   })
 
-  it('ships OFF at rung 3 in both editions — nothing in the shipped build moves', () => {
-    for (const id of ['anniversary', 'classic']) {
+  it('ships split in both editions, ON in Anniversary only (Matt, 2026-10-11)', () => {
+    for (const [id, enabled] of [
+      ['anniversary', true],
+      ['classic', false],
+    ] as const) {
       const edition = JSON.parse(
         fs.readFileSync(path.join(process.cwd(), 'content', 'editions', `${id}.json`), 'utf8'),
       ) as Edition
-      expect(edition.terrain.bakedLight.enabled, id).toBe(false)
-      expect(edition.terrain.bakedLight.rung, id).toBe(3)
+      expect(edition.terrain.bakedLight.enabled, id).toBe(enabled)
+      expect(edition.terrain.bakedLight.rung, id).toBe('split')
     }
   })
 

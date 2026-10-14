@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/render/perf-plate.ts — the perf readout, in the cockpit, where a headset
 // can actually read it.
 //

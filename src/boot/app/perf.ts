@@ -16,7 +16,7 @@
 // controller needs it, so it is built before the renderer, and handed in.
 
 import type { QualityPins } from '@/boot/quality-pin'
-import { type ComfortSettings, qualityInForce } from '@/boot/settings'
+import type { ComfortSettings } from '@/boot/settings'
 import { xrHoldLine } from '@/boot/xr-visibility'
 import type { Level } from '@/content/level-schema'
 import type { EditionState } from '@/game/edition'
@@ -27,6 +27,7 @@ import type { RemoteShips } from '@/game/remote-ships'
 import type { RoomClient } from '@/game/room-client'
 import type { LoadedTerrain } from '@/game/terrain/load-terrain'
 import { ADVANCED_FEATURES, advancedFeatureMask } from '@/render/advanced-menu'
+import type { LensMaskReport } from '@/render/lens-mask'
 import { createPerfPlate, type PerfPlate } from '@/render/perf-plate'
 import type { PropFracture } from '@/render/prop-fracture'
 import type { TargetSource } from '@/render/quality'
@@ -37,7 +38,7 @@ import type { LaunchState } from '@/sim/launch'
 import { launchHoldsShip } from '@/sim/launch'
 import { createGpuTimer, type GpuTimer } from '../gpu-timer'
 import { type CapturePayload, captureFileName, createPerfCapture } from '../perf-capture'
-import { perfPlateLines } from '../perf-format'
+import { contaminationLine, perfPlateLines } from '../perf-format'
 import { createPerfHud, type PerfHud } from '../perf-hud'
 import type { FrameRecorder } from '../perf-recorder'
 import {
@@ -78,6 +79,8 @@ export interface PerfCtx {
   readonly liveTerrain: { terrain: LoadedTerrain; ocean: LoadedTerrain | null } | null
   readonly liveFracture: PropFracture | null
   readonly xrProbe: XrProbe
+  /** DEV-930: the app's lens mask, for the trace header (`render/lens-mask.ts`). */
+  readonly lensMask: LensMaskReport
   readonly xrVisibility: XRVisibilityState | null
   readonly contextLost: boolean
   readonly clock: FixedStepClock
@@ -172,6 +175,7 @@ export const createPerf = (ctx: PerfCtx) => {
     platePaints: 0,
     phase: PHASE_PRE_FLIGHT,
     features: 0,
+    tainted: 0,
   }
   /** `gpu.harvested` as of the previous frame — the freshness edge. See gpu-timer.ts. */
   let gpuHarvestedSeen = 0
@@ -466,6 +470,10 @@ export const createPerf = (ctx: PerfCtx) => {
       projection: eyeProjections(ctx.xrProbe),
       // DEV-331: the lens mask, into the stored summary (see `visibility-mask.ts`).
       ...(ctx.xrProbe.visibilityMask ? { visibilityMask: ctx.xrProbe.visibilityMask } : {}),
+      // DEV-930: the app's own mask, as it stood when the trace started, so a
+      // capture names its arm even after a live `__ff2.lensMask()` change.
+      // Only in a session: on a monitor the mask is in no scene.
+      ...(ctx.lensMask.attached ? { lensMask: ctx.lensMask } : {}),
     }
   }
 
@@ -663,6 +671,8 @@ export const createPerf = (ctx: PerfCtx) => {
       traceSample.platePaints = perfPlate?.paints ?? 0
       // DEV-335: which Advanced rows were on for this frame.
       traceSample.features = liveFeatureMask()
+      // DEV-914: the flag the quality controller held this frame under.
+      traceSample.tainted = quality.contamination
       trace.frame(traceSample)
     }
 
@@ -913,6 +923,8 @@ export const createPerf = (ctx: PerfCtx) => {
               // than being painted past the bottom edge — which is how the XR
               // row above went unread through an entire Frame session.
               xrHoldLine(ctx.xrVisibility),
+              // DEV-914. Nothing on a session that was never flagged.
+              contaminationLine(quality.contamination, quality.contaminatedFrames),
               ctx.contextLost ? 'WEBGL CONTEXT LOST \u2014 reload' : null,
               frameErrors > 0 ? `ERR ${frameErrors}x ${lastFrameError}` : null,
             ].filter((l): l is string => l !== null),
@@ -1007,7 +1019,9 @@ export const createPerf = (ctx: PerfCtx) => {
               // must never report `high` here.
               // DEV-334: the tier IN FORCE, which on AUTO is the headset's own
               // default while presenting, not the monitor's stored `quality`.
-              quality: qualityInForce(pinned(ctx.comfort), render.renderer.xr.isPresenting),
+              // DEV-931: the quality controller's report, which also knows the
+              // headset's look (AUTO's headset tier follows it).
+              quality: render.quality.report.quality,
               foveation: ctx.comfort.foveation,
               adaptiveResolution: pinned(ctx.comfort).adaptiveResolution,
             }),

@@ -23,6 +23,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  contaminationLine,
   eyeEstimate,
   type PerfPlateModel,
   perfPlateLines,
@@ -500,6 +501,26 @@ describe('the signature', () => {
       withModel({ trace: { status: 'done', recordedSeconds: 90, totalSeconds: 90, frames: 8100 } }),
     )
     expect(done).not.toBe(rec)
+  })
+})
+
+describe('DEV-914: the contamination row', () => {
+  it('is absent on a session that was never flagged, so a clean plate is unchanged', () => {
+    expect(contaminationLine(0, 0)).toBeNull()
+  })
+
+  it('says TAINTED and why, in a word, while the last frame is flagged', () => {
+    expect(contaminationLine(1 | 4, 1234)).toBe('TAINTED hmr+cpu · 1,234 fr flagged')
+  })
+
+  it('says some frames were, once it has cleared', () => {
+    expect(contaminationLine(0, 12)).toBe('taint · 12 fr were flagged')
+  })
+
+  it("is no wider than the plate's widest row in the ordinary cases", () => {
+    // The plate fits its type to the widest row (58 characters worn), so a row
+    // wider than that shrinks all ten. One reason and a five-figure count fits.
+    expect((contaminationLine(8, 99999) as string).length).toBeLessThanOrEqual(58)
   })
 })
 

@@ -274,7 +274,8 @@ export const qualityRow = (
       qualityPin !== null
         ? 'from the URL, this load only: press to choose'
         : s.qualityAuto === true
-          ? 'high on a monitor, medium in a headset'
+          ? // DEV-931: on AUTO the headset's tier follows the look it wears.
+            'high on a monitor; a headset: medium, or low on Anniversary'
           : s.quality === 'ultra'
             ? presenting
               ? 'ultra is for a monitor; a headset renders high'

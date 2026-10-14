@@ -82,44 +82,56 @@ const screenName = async (page: Page): Promise<string> =>
 test.describe('@gpu the transition fade', () => {
   test.setTimeout(300_000)
 
-  test('lifts as soon as the world settles, WITHOUT waiting for a press', async ({ page }) => {
-    // ── What this pins, and what DEV-279 changed ──────────────────────────
-    //
-    // It used to be called "boots solid black, and lifts only when the card is
-    // dismissed", and it asserted `amount === 1` while the Start button was
-    // already enabled. That was a true description of the old build and it is
-    // the exact behaviour Matt asked to change: the canvas stayed black until a
-    // human pressed something, so the landing card had to be an opaque curtain
-    // to have anything to be.
-    //
-    // **L4's guarantee is NOT what changed and is still pinned below.** The
-    // fade releases on `revealRequested && firstWorldSettled`; DEV-279 moved
-    // only the first half to boot. A half-built world still assembles behind
-    // black. What went is the extra wait for a human, which L4 never argued for.
-    await page.goto('/?xr=off')
+  // DEV-872 made the suite's own `test` press Enter to skip the developer
+  // splash (`fixtures/test.ts`), and headless Chrome already reports the page
+  // as user-activated, so `main.ts` takes that synthetic Enter as the first
+  // input. Every other spec presses anyway; this one is the player who never
+  // does, so it meets the splash as that player does and lets it leave on its
+  // own (load, then the typed name's hold).
+  test.describe('with nobody pressing', () => {
+    test.use({ skipsSplash: false })
 
-    // The world is ready at `data-load="ready"`, the `phase: 'ready'` the
-    // landing card's button used to light up on. By then the curtain must be
-    // GONE, with nobody having touched anything.
-    await expect(page.locator('body')).toHaveAttribute('data-load', 'ready', { timeout: 180_000 })
-    await expect(page.locator('body')).toHaveAttribute('data-fade', 'idle', { timeout: 30_000 })
-    expect((await fadeOf(page))?.amount, 'the valley is on screen before the press').toBe(0)
+    test('lifts as soon as the world settles, WITHOUT waiting for a press', async ({ page }) => {
+      // ── What this pins, and what DEV-279 changed ──────────────────────────
+      //
+      // It used to be called "boots solid black, and lifts only when the card is
+      // dismissed", and it asserted `amount === 1` while the Start button was
+      // already enabled. That was a true description of the old build and it is
+      // the exact behaviour Matt asked to change: the canvas stayed black until a
+      // human pressed something, so the landing card had to be an opaque curtain
+      // to have anything to be.
+      //
+      // **L4's guarantee is NOT what changed and is still pinned below.** The
+      // fade releases on `revealRequested && firstWorldSettled`; DEV-279 moved
+      // only the first half to boot. A half-built world still assembles behind
+      // black. What went is the extra wait for a human, which L4 never argued for.
+      await page.goto('/?xr=off')
 
-    // DEV-557: and the title's rows are up over it with no press at all. The
-    // landing card that used to stand here with the controls on it is gone
-    // (Matt, 2026-10-01: "let's get rid of the html curtain"); the controls
-    // ARE the title now.
-    await titleRowsUp(page)
-    expect(
-      await page.evaluate(() => document.body.hasAttribute('data-first-input')),
-      'nobody has pressed anything yet',
-    ).toBe(false)
+      // The world is ready at `data-load="ready"`, the `phase: 'ready'` the
+      // landing card's button used to light up on. By then the curtain must be
+      // GONE, with nobody having touched anything.
+      await expect(page.locator('body')).toHaveAttribute('data-load', 'ready', { timeout: 180_000 })
+      await expect(page.locator('body')).toHaveAttribute('data-fade', 'idle', { timeout: 30_000 })
+      expect((await fadeOf(page))?.amount, 'the valley is on screen before the press').toBe(0)
 
-    // The first press then changes nothing on screen: the curtain was already
-    // lifted and must stay lifted. A press that re-blacked the screen would be
-    // the old bug wearing the new flow.
-    await firstPress(page)
-    expect((await fadeOf(page))?.amount).toBe(0)
+      // DEV-557: and the title's rows are up over it with no press at all. The
+      // landing card that used to stand here with the controls on it is gone
+      // (Matt, 2026-10-01: "let's get rid of the html curtain"); the controls
+      // ARE the title now. The splash goes first, by itself: it is a loading
+      // screen with a fixed life, not a curtain waiting on a human (DEV-611).
+      await expect(page.locator('body')).toHaveAttribute('data-splash', 'gone', { timeout: 30_000 })
+      await titleRowsUp(page)
+      expect(
+        await page.evaluate(() => document.body.hasAttribute('data-first-input')),
+        'nobody has pressed anything yet',
+      ).toBe(false)
+
+      // The first press then changes nothing on screen: the curtain was already
+      // lifted and must stay lifted. A press that re-blacked the screen would be
+      // the old bug wearing the new flow.
+      await firstPress(page)
+      expect((await fadeOf(page))?.amount).toBe(0)
+    })
   })
 
   test('draws the curtain on whichever stage is live — the room included', async ({ page }) => {

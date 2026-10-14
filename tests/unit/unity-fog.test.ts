@@ -301,13 +301,16 @@ describe('the fog takes its colour from the sky', () => {
   it('carries all nine coefficients through to the shader, unchanged', () => {
     const fog = createUnityFog({ ...base, skySh: nine })
     const u = fog.uniforms as unknown as {
-      uFogSh: { value: { x: number; y: number; z: number }[] }
+      uFogSh: { value: Float32Array }
       uFogSkyMode: { value: number }
     }
     expect(u.uFogSkyMode.value).toBe(1)
+    // Flat, so three binds it with no per-draw flatten (DEV-940).
+    expect(u.uFogSh.value).toBeInstanceOf(Float32Array)
+    expect(u.uFogSh.value.length).toBe(27)
     for (let i = 0; i < 9; i++) {
-      const v = u.uFogSh.value[i] as { x: number; y: number; z: number }
-      expect([v.x, v.y, v.z]).toEqual(nine[i])
+      const v = Array.from(u.uFogSh.value.slice(i * 3, i * 3 + 3))
+      expect(v).toEqual(Array.from(new Float32Array(nine[i] as number[])))
     }
   })
 

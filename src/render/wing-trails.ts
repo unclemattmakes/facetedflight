@@ -309,6 +309,17 @@ export interface WingTrails {
   dispose(): void
 }
 
+/**
+ * Mark `[0, count)` of `attribute` for upload and nothing past it (DEV-919).
+ * Cleared first: three clears ranges only when it uploads, so a frame the
+ * mesh was culled would otherwise leave them to pile up.
+ */
+const sendPrefix = (attribute: THREE.BufferAttribute, count: number): void => {
+  attribute.clearUpdateRanges()
+  attribute.addUpdateRange(0, count)
+  attribute.needsUpdate = true
+}
+
 /** A batch of `craft` ships' wing trails, two ribbons each, one draw. */
 export const createWingTrails = (craft: number, name = 'wing-trails'): WingTrails => {
   const count = Math.max(1, Math.floor(craft))
@@ -579,9 +590,11 @@ export const createWingTrails = (craft: number, name = 'wing-trails'): WingTrail
       object.visible = n > 0
       geometry.setDrawRange(0, n)
       if (n > 0) {
-        positionAttribute.needsUpdate = true
-        colourAttribute.needsUpdate = true
-        indexAttribute.needsUpdate = true
+        // DEV-919: the written prefix only, as `particles.ts` does. Without a
+        // range three re-sends every buffer at MAX_POINTS for every ribbon.
+        sendPrefix(positionAttribute, v * 3)
+        sendPrefix(colourAttribute, v * 4)
+        sendPrefix(indexAttribute, n)
       }
       stats = { ribbons: drawn, triangles: n / 3, peakAlpha }
     },

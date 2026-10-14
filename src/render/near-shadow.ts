@@ -78,10 +78,10 @@ import { mainMapSkip, type NearShadowRenderer } from './cockpit-self-shadow'
 import { createPcfDepthTarget, measuredRender, withOffscreenTarget } from './offscreen-pass'
 import {
   fitSunShadow,
+  missionShadowsEnabled,
   type ShadowFit,
   shadowBiasFor,
   shadowEdgeFadeUv,
-  shadowsEnabled,
 } from './shadows'
 
 /** `scene.userData` key: a function returning `NearShadowReport`. */
@@ -113,7 +113,8 @@ export interface NearShadowSpec {
  * map is (quality `low`, Classic).
  */
 export const nearShadowEnabled = (edition: Edition, settings: ComfortSettings): boolean =>
-  shadowsEnabled(edition, settings) && edition.render.nearShadow.enabled
+  // DEV-932: the MISSION's sun map, which a headset can drop while the menus keep theirs.
+  missionShadowsEnabled(edition, settings) && edition.render.nearShadow.enabled
 
 /**
  * METRES up-sun past the box that casters are gathered from, and therefore the

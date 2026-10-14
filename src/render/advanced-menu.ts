@@ -93,7 +93,7 @@ import { type Edition, editionFeatures } from '@/content/edition-schema'
 import { detailRingFor } from '@/game/terrain/detail-ring'
 import type { PauseOption } from '@/render/pause'
 import { createSettingsPage, type SettingsPage } from '@/render/settings-page'
-import { shadowsEnabled } from '@/render/shadows'
+import { missionShadowsEnabled } from '@/render/shadows'
 
 /** What the caller still has to do. Only one thing, and it is leaving. */
 export type AdvancedAction = 'none' | 'back'
@@ -192,14 +192,19 @@ export interface AdvancedFeature {
 export const ADVANCED_FEATURES: readonly AdvancedFeature[] = [
   {
     id: 'shadows',
-    path: 'render.shadows',
+    // DEV-932: the MISSION's map, which is what a player on this page is
+    // looking at, and the key a headset's `vr.disable` turns off; so in a
+    // headset the row reads OFF and one press puts the map back for the
+    // session, as every other VR-disabled row does. `render.shadows` is still
+    // the machinery under it and the hangar's key light; no row moves that.
+    path: 'render.missionShadows',
     label: 'Shadows',
     // DEV-323: the cockpit's near map rides on this row rather than an eighth
-    // one — `cockpitSelfShadowEnabled` composes `shadowsEnabled`, so pressing
-    // this takes both passes out, and the note says so because a bisect that
-    // did not know would price the near map as part of the sun's.
+    // one: `cockpitSelfShadowEnabled` composes `missionShadowsEnabled`, so
+    // pressing this takes both passes out, and the note says so because a
+    // bisect that did not know would price the near map as part of the sun's.
     note: "the sun's depth pass and the cockpit's; Classic has none",
-    effective: (live, ctx) => shadowsEnabled(live, ctx.settings),
+    effective: (live, ctx) => missionShadowsEnabled(live, ctx.settings),
     forcedNote: () => 'quality LOW has no shadow map — the preset says on',
   },
   {

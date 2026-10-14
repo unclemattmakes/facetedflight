@@ -34,6 +34,7 @@ import {
   RULES_EDITION,
   SKIP_MENU,
   VIEWPOINT,
+  VR_LOOK_TIER,
 } from './pins'
 
 /** What `createAppSettings` reads from the closure: getters, each read live (APP-SPLIT §3's `ctx`). */
@@ -144,6 +145,13 @@ export const createAppSettings = (ctx: AppSettingsCtx) => {
   const missionEdition = (): EditionId =>
     // DEV-896: a `?edition=` pin, else the look IN FORCE: on AUTO a headset wears Classic.
     EDITION_PARAM ?? editionInForce(comfort, ctx.presenting())
+  /**
+   * DEV-931: the look a HEADSET wears, presenting or not yet: what AUTO's
+   * headset tier follows (`render/quality.ts`'s `headsetLook`). `null` under
+   * `?vrLookTier=0`, which leaves the headset at `VR_AUTO_QUALITY`.
+   */
+  const headsetLook = (): EditionId | null =>
+    VR_LOOK_TIER ? (EDITION_PARAM ?? editionInForce(comfort, true)) : null
   /** The latest flip, resolved once it has landed. `switchMission` waits on it. */
   let editionWorn: Promise<void> = Promise.resolve()
   /** Which ask is the latest, so a slower load can never land over a newer one. */
@@ -192,6 +200,7 @@ export const createAppSettings = (ctx: AppSettingsCtx) => {
     wearEditionFor,
     wearEdition,
     missionEdition,
+    headsetLook,
     get comfort() {
       return comfort
     },

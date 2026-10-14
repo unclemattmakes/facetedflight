@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/perf-trace.ts — every frame of a run, kept, so "where does it dip?"
 // has an answer.
 //
@@ -53,6 +54,8 @@
 
 import { percentile } from '@/boot/perf-recorder'
 import type { VisibilityMaskReport } from '@/boot/visibility-mask'
+import { CONTAMINATION_BITS } from '@/render/contamination'
+import type { LensMaskReport } from '@/render/lens-mask'
 import { DEG_PER_RAD } from '@/sim/math/scalar'
 
 /**
@@ -198,6 +201,14 @@ export const COLUMNS = [
   // could not say: every press left only a program-count step behind it.
   // Appended, like every column since DEV-177(b).
   'features',
+  // ── DEV-914: which CONTAMINATION reasons explained this frame ─────────────
+  //
+  // A bitmask (`render/contamination.ts`: 1 hmr, 2 lease, 4 cpu, 8 hidden), 0 on
+  // a clean frame. The adaptive controller does not decide on a flagged frame,
+  // and this is what lets a READING be voided after the fact: filter the CSV on
+  // `tainted==0` before believing a millisecond. The bit names travel in the
+  // header's `taintBits`. Appended, like every column since DEV-177(b).
+  'tainted',
 ] as const
 
 export const STRIDE = COLUMNS.length
@@ -232,6 +243,7 @@ const C_HUD_PAINTS = 23
 const C_PLATE_PAINTS = 24
 const C_PHASE = 25
 const C_FEATURES = 26
+const C_TAINTED = 27
 
 /** `TraceSample.phase`, and the `phase` column's three values. */
 export const PHASE_PRE_FLIGHT = 0
@@ -472,6 +484,11 @@ export interface TraceSample {
    * `TraceMeta.featureBits` order. DEV-335.
    */
   features: number
+  /**
+   * `QualityReport.contamination` for this frame: the `CONTAMINATION` bits, 0
+   * when clean. DEV-914.
+   */
+  tainted?: number
 }
 
 /**
@@ -588,6 +605,11 @@ export interface TraceMeta {
    * console to read `__ff2perf` from.
    */
   readonly visibilityMask?: VisibilityMaskReport
+  /**
+   * The APP's lens mask (DEV-930, `render/lens-mask.ts`), as it stood when the
+   * trace started. Optional: absent on a monitor, where the mask draws nothing.
+   */
+  readonly lensMask?: LensMaskReport
 }
 
 export interface TraceStat {
@@ -746,6 +768,8 @@ export interface TraceSummary {
   readonly projection: readonly TraceEyeProjection[] | null
   /** `TraceMeta.visibilityMask`, carried through (DEV-331). */
   readonly visibilityMask?: VisibilityMaskReport
+  /** `TraceMeta.lensMask`, carried through (DEV-930). */
+  readonly lensMask?: LensMaskReport
   /** The trace filled its buffer and stopped early. The run is longer than this. */
   readonly overflowed: boolean
   readonly dt: TraceStat
@@ -775,6 +799,13 @@ export interface TraceSummary {
    */
   readonly tierFrames: number
   readonly tierFraction: number
+  /**
+   * Frames the game FLAGGED as contaminated (the `tainted` column non-zero) and
+   * their share. DEV-914. A reading with a non-zero count is one to void or to
+   * filter: those frames were explained by the box or the page, not the build.
+   */
+  readonly taintedFrames: number
+  readonly taintedFraction: number
   readonly ticks: TraceTicks
   /**
    * How the recorded frames split across the session (DEV-261).
@@ -987,6 +1018,7 @@ export const createTraceRecorder = (): TraceRecorder => {
       rows[at + C_PLATE_PAINTS] = sample.platePaints
       rows[at + C_PHASE] = sample.phase
       rows[at + C_FEATURES] = sample.features
+      rows[at + C_TAINTED] = sample.tainted ?? 0
       count += 1
       if (Number.isFinite(sample.dtMs)) recorded += sample.dtMs / 1000
       // ── Two ways to end, and they mean different things ─────────────────
@@ -1192,6 +1224,7 @@ const summarise = (
     budgetSource: meta.budgetSource,
     projection: meta.projection,
     ...(meta.visibilityMask ? { visibilityMask: meta.visibilityMask } : {}),
+    ...(meta.lensMask ? { lensMask: meta.lensMask } : {}),
     overflowed,
   }
   if (count === 0) {
@@ -1209,6 +1242,8 @@ const summarise = (
       hitchFraction: 0,
       tierFrames: 0,
       tierFraction: 0,
+      taintedFrames: 0,
+      taintedFraction: 0,
       ticks: { zero: 0, one: 0, two: 0, threePlus: 0 },
       phases: { preFlight: 0, flying: 0, runOver: 0 },
       worst: [],
@@ -1224,6 +1259,7 @@ const summarise = (
   let seconds = 0
   let hitches = 0
   let tierFrames = 0
+  let taintedFrames = 0
   let zero = 0
   let one = 0
   let two = 0
@@ -1259,6 +1295,8 @@ const summarise = (
       if (dt > (rowTierMs > 0 ? rowTierMs : meta.budgetMs) * HITCH_BUDGETS) hitches += 1
       if (dt >= tierFloorMs) tierFrames += 1
     }
+
+    if ((rows[at + C_TAINTED] as number) > 0) taintedFrames += 1
 
     const phase = rows[at + C_PHASE] as number
     if (phase >= PHASE_RUN_OVER) runOverFrames += 1
@@ -1332,6 +1370,8 @@ const summarise = (
     hitchFraction: hitches / count,
     tierFrames,
     tierFraction: tierFrames / count,
+    taintedFrames,
+    taintedFraction: taintedFrames / count,
     ticks: { zero, one, two, threePlus },
     phases: { preFlight: preFlightFrames, flying: flyingFrames, runOver: runOverFrames },
     worst,
@@ -1367,6 +1407,7 @@ const PLACES: readonly number[] = [
   0, // plate_paints — a count
   0, // phase — an enum: 0 pre-flight, 1 flying, 2 past the run-over
   0, // features — a bitmask, see the header's featureBits
+  0, // tainted: a bitmask, see the header's taintBits
 ]
 
 /**
@@ -1402,6 +1443,8 @@ const dumpTrace = (
     projection: meta.projection,
     // DEV-335: what each bit of the `features` column is, in bit order.
     featureBits: meta.featureBits ?? null,
+    // DEV-914: what each bit of the `tainted` column is, in bit order.
+    taintBits: CONTAMINATION_BITS,
     frames: count,
     columns: COLUMNS,
   })
@@ -1515,6 +1558,15 @@ export const formatTraceSummary = (s: TraceSummary): string => {
       s.hitchFraction,
     )} (${s.hitches}, vs the tier) · tier ${pct(s.tierFraction)} (${s.tierFrames})`,
   )
+  // DEV-914. Printed ONLY when the game flagged a frame, so a clean trace reads
+  // as it always did and a contaminated one cannot be filed without the warning.
+  if (s.taintedFrames > 0) {
+    lines.push(
+      `  TAINTED      ${s.taintedFrames} frames (${pct(s.taintedFraction)}) were flagged ` +
+        'contaminated (the box or the page, not the build). Void this reading or ' +
+        'filter the CSV on tainted==0.',
+    )
+  }
   lines.push(`  sim    p50 ${ms(s.sim.p50)}  p95 ${ms(s.sim.p95)}  max ${ms(s.sim.max)} ms`)
   lines.push(
     `  render p50 ${ms(s.render.p50)}  p95 ${ms(s.render.p95)}  max ${ms(s.render.max)} ms`,
@@ -1560,6 +1612,15 @@ export const formatTraceSummary = (s: TraceSummary): string => {
     lines.push(
       `  lens mask: event ${m.supported ? 'exposed' : 'NOT exposed'} · ${m.watched} session(s) watched · ` +
         (eyes.length > 0 ? eyes.join(' · ') : 'no mask received'),
+    )
+  }
+  // DEV-930. Which arm of the app's lens mask this run flew.
+  if (s.lensMask) {
+    const m = s.lensMask
+    lines.push(
+      m.radius === null
+        ? '  app lens mask: OFF'
+        : `  app lens mask: radius ${m.radius} NDC, ${(m.hiddenFraction * 100).toFixed(1)} % of a symmetric eye`,
     )
   }
   lines.push('  worst frames by dt:')

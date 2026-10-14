@@ -89,6 +89,8 @@ const stubShader = (): { uniforms: object; vertexShader: string; fragmentShader:
 interface StubMaterial {
   side: number
   needsUpdate: boolean
+  /** DEV-936: the sea frees its coast map on its material's dispose event. */
+  addEventListener: () => void
   defines?: Record<string, string>
   name?: string
   customProgramCacheKey?: () => string
@@ -98,7 +100,7 @@ interface StubMaterial {
 
 /** The sea `int_01_hoverJet` draws: Simonet's ocean, with its glint and its sky. */
 const patchedWaterFragment = (): string => {
-  const material: StubMaterial = { side: 0, needsUpdate: false }
+  const material: StubMaterial = { side: 0, needsUpdate: false, addEventListener: () => {} }
   const ocean = TERRAIN.simonet.terrains.ocean
   applyWaterWaves(material as unknown as Parameters<typeof applyWaterWaves>[0], ocean.displace, {
     specColor: ocean.material.specular.color,
@@ -187,7 +189,7 @@ describe('the ocean’s arms — the default does not move', () => {
     // the preprocessor removes when their name is absent, so the compiled
     // default is the one this build has always drawn — but only while nothing
     // SETS one at construction.
-    const material: StubMaterial = { side: 0, needsUpdate: false }
+    const material: StubMaterial = { side: 0, needsUpdate: false, addEventListener: () => {} }
     const ocean = TERRAIN.simonet.terrains.ocean
     applyWaterWaves(material as unknown as Parameters<typeof applyWaterWaves>[0], ocean.displace, {
       specColor: ocean.material.specular.color,

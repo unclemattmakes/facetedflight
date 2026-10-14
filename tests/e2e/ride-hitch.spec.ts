@@ -62,6 +62,21 @@ const programs = (page: Page): Promise<number> =>
       ).__ff2.render.renderer.info.programs.length,
   )
 
+/**
+ * Every live program's name and the head of its cache key, so a red run names
+ * the material that compiled late instead of only counting it (DEV-938).
+ */
+const programNames = (page: Page): Promise<string[]> =>
+  page.evaluate(() =>
+    (
+      globalThis as unknown as {
+        __ff2: {
+          render: { renderer: { info: { programs: { name: string; cacheKey: string }[] } } }
+        }
+      }
+    ).__ff2.render.renderer.info.programs.map((p) => `${p.name} ${p.cacheKey.slice(0, 160)}`),
+  )
+
 const launch = (page: Page): Promise<{ phase: string; rise: number }> =>
   page.evaluate(() => {
     const l = (
@@ -260,6 +275,7 @@ test.describe('@measure @gpu the lift ride compiles nothing: DEV-117', () => {
       .poll(async () => (await launch(page)).rise, { timeout: 60_000, intervals: [100] })
       .toBeGreaterThanOrEqual(LATE_RISE)
     const before = await programs(page)
+    const namesBefore = new Set(await programNames(page))
     expect(await phase(page), 'still on the lift, land still hidden').toBe('rising')
 
     // ── RIDE_PROFILE=1 — who spends the release's 25.7 ms? ───────────────
@@ -614,6 +630,55 @@ test.describe('@measure @gpu the lift ride compiles nothing: DEV-117', () => {
         `  ${pageLines.join('\n  ')}\n`,
     )
     expect(pageLines.length, 'the warm-up ran at world build').toBeGreaterThan(0)
-    expect(after, 'no program was compiled at the reveal or the release').toBe(before)
+    const lateKeys = (await programNames(page)).filter((n) => !namesBefore.has(n))
+    // Which object draws each late program: the material's live program, read
+    // off three's own property map, named by the object's path in the scene.
+    const late = await page.evaluate((keys) => {
+      type Obj = {
+        name: string
+        type: string
+        parent: Obj | null
+        material?: unknown
+        traverse: (f: (o: Obj) => void) => void
+      }
+      const ff = (
+        globalThis as unknown as {
+          __ff2: {
+            render: {
+              scene: Obj
+              renderer: {
+                properties: { get: (m: unknown) => { currentProgram?: { cacheKey: string } } }
+              }
+            }
+          }
+        }
+      ).__ff2.render
+      const path = (o: Obj): string => {
+        const parts: string[] = []
+        for (let p: Obj | null = o; p; p = p.parent) parts.unshift(p.name || p.type)
+        return parts.join('/')
+      }
+      const out: string[] = []
+      for (const key of keys) {
+        const users: string[] = []
+        ff.scene.traverse((o) => {
+          const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []
+          for (const m of mats) {
+            const ck = ff.renderer.properties.get(m).currentProgram?.cacheKey
+            if (ck && key.endsWith(ck.slice(0, 160))) {
+              users.push(
+                `${path(o)} (${(m as { type: string; name: string }).type} '${(m as { name: string }).name}')`,
+              )
+            }
+          }
+        })
+        out.push(`${key}\n    drawn by: ${users.join('; ') || '(nothing in the scene)'}`)
+      }
+      return out
+    }, lateKeys)
+    expect(
+      after,
+      `no program was compiled at the reveal or the release; late:\n  ${late.join('\n  ')}`,
+    ).toBe(before)
   })
 })

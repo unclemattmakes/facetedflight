@@ -728,3 +728,24 @@ describe('craft: the preset and the slider switch the whole batch', () => {
     expect(run(ANNIVERSARY, 1, 200, false).visible).toBe(false)
   })
 })
+
+describe('the batch uploads only what it wrote (DEV-919)', () => {
+  it('marks the drawn prefix of each buffer, and less than the whole of any', () => {
+    const trails = createWingTrails(5)
+    fly(trails, [1, 1, 1, 1, 1], 60)
+    const g = trails.object.geometry
+    const index = g.getIndex() as THREE.BufferAttribute
+    const position = g.getAttribute('position') as THREE.BufferAttribute
+    const colour = g.getAttribute('color') as THREE.BufferAttribute
+    // The vertices written are 0 .. the highest one the drawn indices reach.
+    const written = Math.max(...drawnVertices(trails)) + 1
+    expect(index.updateRanges).toEqual([{ start: 0, count: g.drawRange.count }])
+    expect(position.updateRanges).toEqual([{ start: 0, count: written * 3 }])
+    expect(colour.updateRanges).toEqual([{ start: 0, count: written * 4 }])
+    // Sixty frames does not fill five craft's ribbons, so a whole-buffer upload
+    // would not hide behind a range that happens to be the full length.
+    expect(written * 3).toBeLessThan(position.array.length)
+    expect(g.drawRange.count).toBeLessThan(index.array.length)
+    trails.dispose()
+  })
+})

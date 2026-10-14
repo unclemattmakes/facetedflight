@@ -12,7 +12,7 @@ import type { Level } from '@/content/level-schema'
 import { emitterLocalMatrix, padBurstSpecs } from '@/game/particle-fx'
 import { livePads } from '@/game/targets'
 import { PROPS } from '@/generated/constants.generated'
-import { createParticleField, type ParticleSpec } from '@/render/particles'
+import { createParticleField, type ParticleSpec, particleAttribute } from '@/render/particles'
 import rookie01 from '../../content/levels/rookie_01_jumpSeat.json'
 
 const SHEET = PROPS.jumpPad as unknown as {
@@ -31,7 +31,7 @@ const spawned = (spec: ParticleSpec, local: THREE.Matrix4, seconds: number): THR
   // within centimetres of where it was born.
   if (seconds > 0) field.update(seconds, camera)
   field.update(1e-4, camera)
-  const attr = (field.object as THREE.Mesh).geometry.getAttribute('iPosition')
+  const attr = particleAttribute(field, 'iPosition')
   const out: THREE.Vector3[] = []
   for (let i = 0; i < field.alive; i++)
     out.push(new THREE.Vector3(attr.getX(i), attr.getY(i), attr.getZ(i)))

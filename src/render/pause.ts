@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/render/pause.ts — the way out of a run that is going badly.
 //
 // 2016 has one and we did not, which for a VR game is a real gap: a player

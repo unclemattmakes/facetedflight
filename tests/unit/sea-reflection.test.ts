@@ -231,6 +231,8 @@ const material = (): {
   new (class {
     side = -1
     needsUpdate = false
+    // DEV-936: the sea frees its coast map on its material's dispose event.
+    addEventListener(): void {}
   })()
 
 const seaWith = (realtime: boolean) => {

@@ -423,6 +423,8 @@ describe('the shader spells what the oracles pin', () => {
     const material = new (class {
       side = 0
       needsUpdate = false
+      // DEV-936: the sea frees its coast map on its material's dispose event.
+      addEventListener(): void {}
       customProgramCacheKey?: () => string
       onBeforeCompile?: (shader: {
         uniforms: object
@@ -509,6 +511,8 @@ const variantMaterial = () => {
     // -1 so a test that reads FrontSide (0) cannot be reading "never written".
     side = -1
     needsUpdate = false
+    // DEV-936: the sea frees its coast map on its material's dispose event.
+    addEventListener(): void {}
     defines?: Record<string, string>
     customProgramCacheKey?: () => string
     onBeforeCompile?: (shader: {

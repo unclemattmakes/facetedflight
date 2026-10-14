@@ -346,6 +346,12 @@ export const hoverJetOf = (flight: Flight): HoverJet | null =>
 export interface Flight {
   readonly jet: FlightShip
   /**
+   * DEV-928: the wing tips the trails leave from (`measureWingTips`), in WORLD
+   * space this frame, written into `port` and `starboard`. Absent on the
+   * JumpSeat, which has no wings and so no vortices.
+   */
+  wingTipsWorld?(port: THREE.Vector3, starboard: THREE.Vector3): void
+  /**
    * The aircraft variant this flight was built from (DEV-380): `standard`
    * unless `?variant=` (and, from DEV-382, the hangar) chose another.
    */
@@ -1281,6 +1287,11 @@ export const loadAirframeFlight = async (
 
   return {
     jet,
+    wingTipsWorld(port: THREE.Vector3, starboard: THREE.Vector3): void {
+      artPivot.updateWorldMatrix(true, false)
+      port.copy(wingTips.port).applyMatrix4(artPivot.matrixWorld)
+      starboard.copy(wingTips.starboard).applyMatrix4(artPivot.matrixWorld)
+    },
     variant: variantId,
     lean,
     wingTrails,

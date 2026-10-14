@@ -13,6 +13,14 @@ import { FIXED_DT } from './constants'
  */
 const MAX_CATCHUP_SECONDS = 0.25
 
+/**
+ * DEV-943: the catch-up cap, in ticks, for a presenting headset. 20 ticks is
+ * about 8.6 ms of sim in one frame, which turns one missed headset frame into
+ * two; three is enough to ride out a normal hitch. The caller chooses it (not
+ * a room race, DEV-389); the sim never knows.
+ */
+export const XR_MAX_CATCHUP_TICKS = 3
+
 export interface FixedStepClock {
   /** Unconsumed wall time, seconds. Also the source of the render alpha. */
   accumulator: number
@@ -27,22 +35,27 @@ export const createClock = (): FixedStepClock => ({ accumulator: 0, tick: 0 })
  * whole fixed step. Returns the interpolation alpha in [0, 1) for the render
  * layer: `renderPose = lerp(previousSimPose, currentSimPose, alpha)`.
  *
- * `onTick` receives FIXED_DT and nothing else. If a sim function ever needs
+ * `onTick` receives the step (FIXED_DT by default) and nothing else. If a sim function ever needs
  * the frame delta, it is not a sim function.
+ *
+ * `maxCatchupSeconds` bounds one call's wall time; the default is the old cap.
  */
 export const stepFixed = (
   clock: FixedStepClock,
   frameSeconds: number,
   onTick: (dt: number, tick: number) => void,
+  /** The step, seconds. Defaults to the generated FIXED_DT: every caller today. */
+  stepSeconds: number = FIXED_DT,
+  maxCatchupSeconds: number = MAX_CATCHUP_SECONDS,
 ): number => {
-  const clamped = frameSeconds > MAX_CATCHUP_SECONDS ? MAX_CATCHUP_SECONDS : frameSeconds
+  const clamped = frameSeconds > maxCatchupSeconds ? maxCatchupSeconds : frameSeconds
   clock.accumulator += clamped > 0 ? clamped : 0
 
-  while (clock.accumulator >= FIXED_DT) {
-    clock.accumulator -= FIXED_DT
+  while (clock.accumulator >= stepSeconds) {
+    clock.accumulator -= stepSeconds
     clock.tick += 1
-    onTick(FIXED_DT, clock.tick)
+    onTick(stepSeconds, clock.tick)
   }
 
-  return clock.accumulator / FIXED_DT
+  return clock.accumulator / stepSeconds
 }

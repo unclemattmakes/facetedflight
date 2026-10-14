@@ -1091,6 +1091,18 @@ export interface BakedLight {
   refresh(scene: THREE.Object3D | null): BakedLightReport
   /** What is true now, without moving anything. */
   report(): BakedLightReport
+  /**
+   * Called after a `refresh` that CHANGED what the geometries hold: the bake
+   * went on or off, the rung moved, or the sun or the sky probe changed.
+   * DEV-904. A `BatchedMesh` holds its own copy of the chunk vertices, so the
+   * terrain's batches have to be rebuilt when the colours (and `ff2Direct`,
+   * which comes and goes with the split rung) are rewritten in place.
+   *
+   * Not called for a refresh that rewrote identical values, which is most of
+   * them: the edition's subscribers fire on any setting.
+   * Returns the unsubscribe.
+   */
+  onChange(listener: () => void): () => void
   /** Drop the roots and materials of a world being torn down. */
   reset(): void
 }
@@ -1106,6 +1118,9 @@ export const createBakedLight = (): BakedLight => {
   let refusals = 0
   const roots = new Set<THREE.Object3D>()
   const materials = new Set<THREE.Material>()
+  /** DEV-904: who wants to know the bake's state moved. */
+  const listeners = new Set<() => void>()
+  let lastChangeKey = ''
   /** Scope. Only what the chunk-build hook handed us — note 1 above. */
   const offered = new WeakSet<THREE.BufferGeometry>()
 
@@ -1303,10 +1318,26 @@ export const createBakedLight = (): BakedLight => {
       }
       baked = liveBaked
       vertices = liveVertices
+      // DEV-904: tell the batches, but only when the bake's STATE moved. The key
+      // is everything `applyToGeometry` reads: whether it is live, the rung and
+      // the model. A refresh that wrote the same numbers over the same numbers
+      // leaves every batch's copy exactly right.
+      const key = live ? `${rung}|${JSON.stringify(model)}` : 'off'
+      if (key !== lastChangeKey) {
+        lastChangeKey = key
+        for (const listener of [...listeners]) listener()
+      }
       return report()
     },
 
     report,
+
+    onChange(listener) {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
 
     reset() {
       roots.clear()
@@ -1314,6 +1345,7 @@ export const createBakedLight = (): BakedLight => {
       baked = 0
       vertices = 0
       refusals = 0
+      lastChangeKey = ''
     },
   }
 }

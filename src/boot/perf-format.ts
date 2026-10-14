@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/perf-format.ts — the ten rows the in-headset perf plate prints.
 //
 // DEV-160, `docs/plan/VR-PERF.md` §5.5 D. Gap 4: *"No in-headset readout."*
@@ -39,6 +40,7 @@
 // plate print the same numbers and two panels that round differently is a bug
 // report waiting to happen.
 
+import { contaminationLabel } from '@/render/contamination'
 import { formatCount, formatPercent } from './perf-hud'
 
 /** Decimals a millisecond gets. One — `boot/perf-hud.ts`'s `MS`, deliberately. */
@@ -291,6 +293,28 @@ const grouped = (value: number): string => {
  */
 export const eyeEstimate = (calls: number): number =>
   Number.isFinite(calls) ? Math.round(calls / 2) : 0
+
+/**
+ * The plate's contamination row (DEV-914), or null on a session that has never
+ * had a flagged frame, so a clean plate is exactly what it was.
+ *
+ * Appended by `app/perf.ts` AFTER the ten rows, the way `xrHoldLine` is, and
+ * not folded into `perfPlateLines`: that function is the fixed shape of the
+ * instrument. `plateRows(lines.length)` lays the grid out for however many
+ * rows arrive, so the row appears when there is something to say and costs
+ * nothing when there is not.
+ *
+ * `TAINTED <why>` while the LAST frame is flagged: the frames being read are
+ * not the build's, and the adaptive step is being held. `taint <n> fr` once it
+ * has cleared but the session had some: some of the numbers above are void.
+ * The reasons are one word each (`contaminationLabel`).
+ */
+export const contaminationLine = (mask: number, flaggedFrames: number): string | null => {
+  if (mask !== 0) {
+    return `TAINTED ${contaminationLabel(mask)} · ${grouped(flaggedFrames)} fr flagged`
+  }
+  return flaggedFrames > 0 ? `taint · ${grouped(flaggedFrames)} fr were flagged` : null
+}
 
 /**
  * The ten rows, top to bottom. Always exactly ten, whatever the model says —

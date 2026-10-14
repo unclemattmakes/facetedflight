@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/perf-surface.ts — `globalThis.__ff2perf`: the read-only handle that
 // SHIPS.
 //

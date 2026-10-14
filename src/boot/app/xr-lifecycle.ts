@@ -10,6 +10,10 @@
 
 import type { EditionState } from '@/game/edition'
 import type { Renderer } from '@/render/renderer'
+import { createQuietConsole } from '../quiet-console'
+import { PERF_HUD } from './pins'
+
+const quietConsole = createQuietConsole(console)
 
 /** What `createXrLifecycle` reads from the closure: getters, each read live (APP-SPLIT §3's `ctx`). */
 export interface XrLifecycleCtx {
@@ -106,6 +110,8 @@ export const createXrLifecycle = (ctx: XrLifecycleCtx) => {
       // re-reads on notify (`attachEditionHaze` and its siblings), and a frame
       // rendered between these two lines would be the flat look.
       ctx.editionState.setImmersive(true)
+      // A worn `?perf=1` capture prints nothing but errors (`boot/quiet-console.ts`).
+      if (PERF_HUD) quietConsole.set(true)
       const session = ctx.render.renderer.xr.getSession()
       // The EVENT as well as the read: a transition that reverts between two
       // polls is invisible to polling, and this one is driven by a human
@@ -119,6 +125,7 @@ export const createXrLifecycle = (ctx: XrLifecycleCtx) => {
       // for it, and a build that stayed on the VR look after the headset came
       // off would be a quality regression nobody asked for and nothing reports.
       ctx.editionState.setImmersive(false)
+      quietConsole.set(false)
     })
 
     // ── A lost GL context, which nothing in `src/` could see (DEV-206) ────

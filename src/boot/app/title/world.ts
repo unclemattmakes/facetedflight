@@ -824,6 +824,9 @@ export const createTitleWorld = (ctx: TitleWorldCtx) => {
       landmarks: titleProps?.landmarkMeshes ?? [],
       // A racer's row: casts, does not receive, and only while solid.
       racers: titleJetLooks.flatMap((look) => look.shadowMeshes),
+      // DEV-932: a menu world, so its map answers `render.shadows` alone and a
+      // headset keeps it, as the hangar keeps its key light.
+      world: 'title',
     })
     {
       const titleSlicer = createSlicer()

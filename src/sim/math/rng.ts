@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/sim/math/rng.ts: the two seeded generators the project uses (code-reuse
 // audit WP-2, crosscut.md XC-2, sim-game.md SG-6). Each is a PURE constructor:
 // every caller gets its own stream from its own seed, so sharing the function

@@ -39,6 +39,7 @@ import {
   NO_DRIVE,
   type ParticleField,
   type ParticleSpec,
+  particleAttribute,
 } from '@/render/particles'
 import anniversary from '../../content/editions/anniversary.json'
 import classic from '../../content/editions/classic.json'
@@ -154,8 +155,10 @@ describe('Classic keeps the three cuts, to the bit', () => {
         f.update(1 / 90, camera)
       }
       const g = (f.object as THREE.Mesh).geometry as THREE.InstancedBufferGeometry
-      const bits = (name: string) =>
-        Array.from(new Uint32Array((g.getAttribute(name).array as Float32Array).slice().buffer))
+      const bits = (name: 'iPosition' | 'iColor' | 'iParams' | 'iVelocity') =>
+        Array.from(
+          new Uint32Array((particleAttribute(f, name).array as Float32Array).slice().buffer),
+        )
       const u = ((f.object as THREE.Mesh).material as THREE.ShaderMaterial).uniforms
       return {
         count: g.instanceCount,
@@ -352,12 +355,8 @@ describe('the engine applies a drive', () => {
     // half the velocity — and `iParams.z`, the stretch, is computed from it.
     const a = fly(null, 0.1)
     const b = fly({ speed: 0.5 }, 0.1)
-    const vel = (f: ParticleField) =>
-      ((f.object as THREE.Mesh).geometry as THREE.InstancedBufferGeometry).getAttribute('iVelocity')
-        .array as Float32Array
-    const par = (f: ParticleField) =>
-      ((f.object as THREE.Mesh).geometry as THREE.InstancedBufferGeometry).getAttribute('iParams')
-        .array as Float32Array
+    const vel = (f: ParticleField) => particleAttribute(f, 'iVelocity').array as Float32Array
+    const par = (f: ParticleField) => particleAttribute(f, 'iParams').array as Float32Array
     expect(a.alive).toBeGreaterThan(0)
     for (let k = 0; k < 3; k++) {
       expect(vel(b)[k]).toBeCloseTo((vel(a)[k] as number) * 0.5, 4)

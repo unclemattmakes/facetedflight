@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/sim/math/flat-tri.ts: the flat-shaded triangle emitter, written once.
 //
 // Seven generators in the sim (clouds, prop shapes, the bird, the terrain chunk,

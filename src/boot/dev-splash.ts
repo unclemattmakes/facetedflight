@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/boot/dev-splash.ts: the developer splash, the page's "loading into the
 // app" screen. DEV-611.
 //
@@ -112,15 +113,25 @@ export interface SplashBeat {
   readonly until: number
 }
 
-/** Every word's turn, in order. The last one's `until` is the end of the hold. */
-export const SPLASH_BEATS: readonly SplashBeat[] = (() => {
+/**
+ * What a splash says: a value a sequel passes its own. The default is this
+ * game's words, the last one the game's name.
+ */
+export interface SplashConfig {
+  readonly words: readonly string[]
+}
+
+export const DEFAULT_SPLASH_CONFIG: SplashConfig = { words: SPLASH_WORDS }
+
+/** Every word's turn for `words`, in order. The last one's `until` is the end of the hold. */
+export const splashBeats = (words: readonly string[]): readonly SplashBeat[] => {
   const beats: SplashBeat[] = []
-  const ramp = SPLASH_WORDS.length - 1
+  const ramp = words.length - 1
   const step = (slow: number, fast: number, i: number): number =>
     slow * (fast / slow) ** (i / Math.max(1, ramp - 1))
   let t = 0
   for (let i = 0; i < ramp; i++) {
-    const letters = (SPLASH_WORDS[i] as string).length
+    const letters = (words[i] as string).length
     const type = step(SPLASH_TYPE_SLOW_MS, SPLASH_TYPE_FAST_MS, i)
     // The first letter goes in at once; each next one a letter-time later.
     const typedAt = t + (letters - 1) * type
@@ -129,7 +140,7 @@ export const SPLASH_BEATS: readonly SplashBeat[] = (() => {
     beats.push({ from: t, typedAt, deleteFrom, until })
     t = until
   }
-  const typedAt = t + ((SPLASH_WORDS[ramp] as string).length - 1) * SPLASH_FINAL_TYPE_MS
+  const typedAt = t + ((words[ramp] as string).length - 1) * SPLASH_FINAL_TYPE_MS
   beats.push({
     from: t,
     typedAt,
@@ -137,7 +148,10 @@ export const SPLASH_BEATS: readonly SplashBeat[] = (() => {
     until: typedAt + SPLASH_HOLD_MS,
   })
   return beats
-})()
+}
+
+/** Every word's turn for this game's words. */
+export const SPLASH_BEATS: readonly SplashBeat[] = splashBeats(SPLASH_WORDS)
 
 /** When Faceted Flight is typed in full, ms after the typing starts: the hold begins. */
 export const SPLASH_LANDED_MS = (SPLASH_BEATS.at(-1) as SplashBeat).typedAt
@@ -149,12 +163,16 @@ export interface SplashFrame {
 }
 
 /** The blank at `ms` after the typing starts. */
-export const splashFrameAt = (ms: number): SplashFrame => {
-  const last = SPLASH_BEATS.length - 1
+export const splashFrameAt = (
+  ms: number,
+  words: readonly string[] = SPLASH_WORDS,
+  beats: readonly SplashBeat[] = words === SPLASH_WORDS ? SPLASH_BEATS : splashBeats(words),
+): SplashFrame => {
+  const last = beats.length - 1
   let i = 0
-  while (i < last && ms >= (SPLASH_BEATS[i] as SplashBeat).until) i++
-  const b = SPLASH_BEATS[i] as SplashBeat
-  const word = SPLASH_WORDS[i] as string
+  while (i < last && ms >= (beats[i] as SplashBeat).until) i++
+  const b = beats[i] as SplashBeat
+  const word = words[i] as string
   const n = word.length
   const t = Math.max(0, ms - b.from)
   if (ms < b.typedAt)
@@ -193,10 +211,14 @@ export const barTarget = (state: LoadState): number => {
  * only ever recorded once loaded. Without one: loaded AND the last word landed
  * and held. With one: then.
  */
-export const fadeAt = (loadedAt: number | null, skippedAt: number | null): number | null => {
+export const fadeAt = (
+  loadedAt: number | null,
+  skippedAt: number | null,
+  landedMs: number = SPLASH_LANDED_MS,
+): number | null => {
   if (loadedAt === null) return null
   if (skippedAt !== null) return Math.max(loadedAt, skippedAt)
-  return Math.max(loadedAt, SPLASH_LANDED_MS + SPLASH_HOLD_MS)
+  return Math.max(loadedAt, landedMs + SPLASH_HOLD_MS)
 }
 
 /** The splash's life, as `data-splash` on the body says it. */
@@ -239,7 +261,11 @@ export const startDevSplash = (
   root: HTMLElement | null,
   now: () => number,
   portraitUrl: string,
+  config: SplashConfig = DEFAULT_SPLASH_CONFIG,
 ): DevSplash => {
+  const words = config.words
+  const beats = splashBeats(words)
+  const landedMs = (beats.at(-1) as SplashBeat).typedAt
   const body = document.body
   const typed = root?.querySelector<HTMLElement>('.dev-splash__typed') ?? null
   const fill = root?.querySelector<HTMLElement>('.dev-splash__fill') ?? null
@@ -273,18 +299,18 @@ export const startDevSplash = (
     const key = `${f.index}:${f.letters}`
     if (key === drawnKey) return
     drawnKey = key
-    const word = SPLASH_WORDS[f.index] as string
+    const word = words[f.index] as string
     typed.textContent = word.slice(0, f.letters)
     typed.dataset.word = String(f.index)
     typed.dataset.letters = String(f.letters)
     typed.dataset.filled =
-      f.index === SPLASH_WORDS.length - 1 && f.letters === word.length ? 'true' : 'false'
+      f.index === words.length - 1 && f.letters === word.length ? 'true' : 'false'
   }
   const LANDED: SplashFrame = {
-    index: SPLASH_WORDS.length - 1,
-    letters: (SPLASH_WORDS.at(-1) as string).length,
+    index: words.length - 1,
+    letters: (words.at(-1) as string).length,
   }
-  render(reduced ? LANDED : splashFrameAt(0))
+  render(reduced ? LANDED : splashFrameAt(0, words, beats))
 
   const skip = (): void => {
     // Only once the scene is in (Matt). Before that a press does nothing.
@@ -364,12 +390,12 @@ export const startDevSplash = (
     const t = now()
     const ms = t - t0
     if (phase === 'up' && faced) {
-      if (!reduced && skippedAt === null) render(splashFrameAt(ms))
+      if (!reduced && skippedAt === null) render(splashFrameAt(ms, words, beats))
       // A pad gives a page no event: read A here, on its press edge.
       const pad = padA()
       if (pad && !padWasDown) skip()
       padWasDown = pad
-      const at = fadeAt(loadedAt, skippedAt)
+      const at = fadeAt(loadedAt, skippedAt, landedMs)
       if (at !== null && ms >= at) startFade()
     }
     // The bar eases toward the load rather than jumping chunk to chunk.
@@ -398,7 +424,7 @@ export const startDevSplash = (
         // that reported it, not on the next frame: whoever reads the game's
         // own ready attribute set in this same task (a player's press, a
         // spec's) never finds the splash still up and eating it.
-        if (loadedAt >= (fadeAt(loadedAt, null) ?? Number.POSITIVE_INFINITY)) startFade()
+        if (loadedAt >= (fadeAt(loadedAt, null, landedMs) ?? Number.POSITIVE_INFINITY)) startFade()
       }
     },
     covering: () => phase !== 'gone',

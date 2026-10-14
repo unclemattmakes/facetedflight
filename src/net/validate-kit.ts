@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/net/validate-kit.ts: what every hand-written validator in the port
 // needs and was writing for itself (code-reuse audit BE-13 / XC-25).
 //

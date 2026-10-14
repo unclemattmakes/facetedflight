@@ -97,11 +97,14 @@ import * as THREE from 'three'
 import { assetUrl } from '@/content/asset-url'
 import type {
   Edition,
+  EditionBoostShockwave,
   EditionPropBurst,
   EditionSpeedLines,
   EditionSplash,
   EditionSplashPart,
+  EditionVapourCone,
   EditionWaterSpray,
+  EditionWingVortices,
 } from '@/content/edition-schema'
 import { type Level, liveRings } from '@/content/level-schema'
 import { GATE_FEEL } from '@/game/gate-feel'
@@ -116,6 +119,7 @@ import {
 } from '@/game/speed-line-ramp'
 import { livePads } from '@/game/targets'
 import { HOVERJET, JUMPSEAT, PROPS } from '@/generated/constants.generated'
+import type { ParticleEngine } from '@/render/gpu-particles'
 import {
   createParticleField,
   MAX_PALETTE,
@@ -468,6 +472,230 @@ export const splashCrownSpec = (s: EditionSplash): ParticleSpec =>
 /** The splash's droplets. DEV-613. */
 export const splashDropsSpec = (s: EditionSplash): ParticleSpec =>
   splashPartSpec('splashDrops', 6132, s.drops, s, false)
+
+// -- DEV-926 / DEV-927: the first swings (`docs/plan/GPU-PARTICLES.md` section 5) --
+
+/** White that arrives over the first `rise` of its life and leaves over the rest. */
+const fadeGradient = (rise: number): MinMaxGradientLike => ({
+  mode: 1,
+  max: {
+    colours: [{ time: 0, color: [1, 1, 1] }],
+    alphas: [
+      { time: 0, alpha: 0 },
+      { time: rise, alpha: 1 },
+      { time: 1, alpha: 0 },
+    ],
+  },
+  min: null,
+})
+
+/** A size multiplier from `from` to `to` over life, eased at both ends. */
+const rampCurve = (from: number, to: number): MinMaxCurveLike => ({
+  mode: 1,
+  scalar: 1,
+  min: 0,
+  max: 1,
+  minCurve: null,
+  maxCurve: [
+    { time: 0, value: from, inSlope: 0, outSlope: 0 },
+    { time: 1, value: to, inSlope: 0, outSlope: 0 },
+  ],
+})
+
+/**
+ * The soft, blended draw both swings use: the streaks' Anniversary matte
+ * (DEV-079's `softEdge`), so a puff is a soft blob laid OVER the sky rather
+ * than a hard triangle added to it, at the preset's `alpha`.
+ */
+const softOverride = (alpha: number): ParticleOverride => ({
+  widthScale: 1,
+  alphaScale: alpha,
+  softEdge: true,
+  coreDarkness: 0,
+})
+
+/**
+ * DEV-926: the vapour cone's spec. A `coneShell` ring of `radius` thrown back
+ * at `drift` on a cone of `angleDeg`, RIDING the ship (`local`); the emitter is
+ * posed by `vapourConePose` so the cone opens backward from `aftMetres` behind
+ * the ship's origin. Rate and alpha are driven per frame by `vapourStrength`.
+ */
+export const vapourConeSpec = (v: EditionVapourCone): ParticleSpec => {
+  const [r, g, b] = v.colour.map((c) => srgbToLinear(c)) as [number, number, number]
+  return {
+    name: 'vapourCone',
+    lengthSeconds: 1,
+    looping: true,
+    simulationSpace: 'local',
+    simulationSpeed: 1,
+    randomSeed: 9261,
+    initial: {
+      lifetime: betweenCurve(v.lifetime, DRAW_LO, 1),
+      speed: betweenCurve(v.drift, 0.7, 1),
+      size: betweenCurve(v.size, DRAW_LO, 1),
+      rotationDeg: betweenCurve(1, 0, 360),
+      colour: solidGradient(r, g, b),
+      gravityModifier: 0,
+      maxParticles: Math.ceil(v.rate * v.lifetime * 1.5) + 8,
+    },
+    emission: { enabled: true, type: 0, rate: constantCurve(v.rate), bursts: [] },
+    shape: {
+      enabled: true,
+      type: 'coneShell',
+      radius: v.radius,
+      angleDeg: v.angleDeg,
+      length: 0,
+      box: [0, 0, 0],
+      randomDirection: false,
+    },
+    sizeOverLifetime: { enabled: true, curve: rampCurve(0.6, 1.4) },
+    rotationOverLifetime: null,
+    colourOverLifetime: { enabled: true, gradient: fadeGradient(0.2) },
+    clampVelocity: null,
+    renderer: { mode: 'billboard', lengthScale: 0, velocityScale: 0 },
+    emits: true,
+  }
+}
+
+/**
+ * Where the vapour cone's emitter sits on the ship, in the ship's frame:
+ * `aftMetres` back (+Z is aft in three; a ship flies -Z) and turned half round,
+ * so `sampleShape`'s cone, which leaves along the emitter's forward, opens aft.
+ */
+export const vapourConePose = (v: EditionVapourCone, out: THREE.Matrix4): THREE.Matrix4 =>
+  out.makeRotationY(Math.PI).setPosition(0, 0, v.aftMetres)
+
+/**
+ * How much of the vapour cone runs, 0-1: a smoothstep from `minSpeed` to
+ * `fullSpeed` (forward m/s) times the speed-FX slider, which is how vection
+ * answers to comfort (ART_DIRECTION). 0 when the flag is off.
+ */
+export const vapourStrength = (
+  v: EditionVapourCone,
+  forwardSpeed: number,
+  speedFx: number,
+): number => {
+  if (!v.enabled || speedFx <= 0) return 0
+  const t = Math.min(1, Math.max(0, (forwardSpeed - v.minSpeed) / (v.fullSpeed - v.minSpeed)))
+  return t * t * (3 - 2 * t) * Math.min(1, speedFx)
+}
+
+/**
+ * DEV-928: the wing-tip vortices' spec. A point at each tip (no shape), no
+ * drift, so a puff HANGS where the tip passed and spirals round the line it
+ * flew (the engine's orbit about the emitter's forward); world space, so the
+ * stream stays in the air behind the ship as a corkscrew.
+ */
+export const wingVortexSpec = (v: EditionWingVortices): ParticleSpec => {
+  const [r, g, b] = v.colour.map((c) => srgbToLinear(c)) as [number, number, number]
+  return {
+    name: 'wingVortices',
+    lengthSeconds: 1,
+    looping: true,
+    simulationSpace: 'world',
+    simulationSpeed: 1,
+    randomSeed: 9281,
+    initial: {
+      lifetime: betweenCurve(v.lifetime, 0.8, 1),
+      speed: constantCurve(0),
+      size: betweenCurve(v.size, DRAW_LO, 1),
+      rotationDeg: betweenCurve(1, 0, 360),
+      colour: solidGradient(r, g, b),
+      gravityModifier: 0,
+      maxParticles: Math.ceil(v.rate * v.lifetime * 1.5) + 8,
+    },
+    emission: { enabled: true, type: 0, rate: constantCurve(v.rate), bursts: [] },
+    shape: null,
+    sizeOverLifetime: { enabled: true, curve: rampCurve(0.6, 1.6) },
+    rotationOverLifetime: null,
+    colourOverLifetime: { enabled: true, gradient: fadeGradient(0.15) },
+    clampVelocity: null,
+    renderer: { mode: 'billboard', lengthScale: 0, velocityScale: 0 },
+    emits: true,
+    orbit: {
+      enabled: true,
+      radius: v.radius,
+      radiusGrow: v.radiusGrow,
+      spinTurnsPerSecond: v.spinTurnsPerSecond,
+      twistTurnsPerSecond: v.twistTurnsPerSecond,
+    },
+  }
+}
+
+/** A smoothstep of `x` from `lo` to `hi`. */
+const smooth01 = (x: number, lo: number, hi: number): number => {
+  const t = Math.min(1, Math.max(0, (x - lo) / (hi - lo)))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * How much of the vortices run, 0-1: speed's smoothstep times turn rate's
+ * (degrees a second) times the speed-FX slider. 0 when the flag is off.
+ */
+export const vortexStrength = (
+  v: EditionWingVortices,
+  forwardSpeed: number,
+  turnDegPerSecond: number,
+  speedFx: number,
+): number => {
+  if (!v.enabled || speedFx <= 0) return 0
+  return (
+    smooth01(forwardSpeed, v.minSpeed, v.fullSpeed) *
+    smooth01(turnDegPerSecond, v.minTurnDeg, v.fullTurnDeg) *
+    Math.min(1, speedFx)
+  )
+}
+
+/**
+ * DEV-927: the boost shockwave's spec. One burst of `count` from the rim of a
+ * circle of `radius` across the line of flight (`circleEdge`: positions and
+ * directions in the emitter's XY plane, and the ship's XY is the plane across
+ * its -Z), out at `speed` and held back by `drag`, RIDING the ship. A ring left
+ * in world space was the first build and was invisible to its own pilot: at
+ * boost speed the ship is 40 m past it in a tenth of a second and the chase
+ * camera is 10 m back, so the ring was behind the eye before it had grown.
+ */
+export const boostShockwaveSpec = (b: EditionBoostShockwave): ParticleSpec => {
+  const [r, g, bl] = b.colour.map((c) => srgbToLinear(c)) as [number, number, number]
+  return {
+    name: 'boostShockwave',
+    lengthSeconds: 0.05,
+    looping: false,
+    simulationSpace: 'local',
+    simulationSpeed: 1,
+    randomSeed: 9271,
+    initial: {
+      lifetime: betweenCurve(b.lifetime, 0.85, 1),
+      speed: betweenCurve(b.speed, 0.9, 1),
+      size: betweenCurve(b.size, 0.8, 1),
+      rotationDeg: betweenCurve(1, 0, 360),
+      colour: solidGradient(r, g, bl),
+      gravityModifier: 0,
+      maxParticles: b.count,
+    },
+    emission: {
+      enabled: true,
+      type: 0,
+      rate: constantCurve(0),
+      bursts: [{ time: 0, min: b.count, max: b.count }],
+    },
+    shape: {
+      enabled: true,
+      type: 'circleEdge',
+      radius: b.radius,
+      angleDeg: 0,
+      length: 0,
+      box: [0, 0, 0],
+      randomDirection: false,
+    },
+    sizeOverLifetime: { enabled: true, curve: rampCurve(0.5, 2) },
+    rotationOverLifetime: null,
+    colourOverLifetime: { enabled: true, gradient: fadeGradient(0.05) },
+    clampVelocity: { enabled: b.drag > 0, magnitude: constantCurve(0), dampen: b.drag },
+    renderer: { mode: 'billboard', lengthScale: 0, velocityScale: 0 },
+    emits: true,
+  }
+}
 
 /**
  * How big a splash is: `body` times the square root of `speed` over the
@@ -866,6 +1094,31 @@ export interface ParticleFx {
   /** Called once a frame with the ship's world matrix and forward speed (m/s). */
   updateShip(matrix: THREE.Matrix4, forwardSpeed: number): void
   /**
+   * DEV-926 / DEV-927, once a frame: the vapour cone rides `matrix` at
+   * `vapourStrength`, and boost's rising edge throws a shockwave where the ship
+   * is. `seconds` is any monotonic clock (the cooldown's). Inert for a swing
+   * that was off at load.
+   */
+  updateSwings(
+    matrix: THREE.Matrix4,
+    forwardSpeed: number,
+    boosting: boolean,
+    speedFx: number,
+    seconds: number,
+    tips?: { readonly port: THREE.Vector3; readonly starboard: THREE.Vector3 } | null,
+  ): void
+  /** For tests: what the swings are doing. Null for one off at load. */
+  readonly swings: {
+    readonly vapour: { readonly strength: number; readonly alive: number } | null
+    readonly shockwave: { readonly thrown: number; readonly alive: number } | null
+    /** DEV-928: strength, the turn rate it read (deg/s) and puffs in the air. */
+    readonly vortices: {
+      readonly strength: number
+      readonly turnDeg: number
+      readonly alive: number
+    } | null
+  }
+  /**
    * Fire the landing burst at live pad `padIndex` (`TargetZone.pad`), unless it
    * is already playing. DEV-415.
    */
@@ -1061,6 +1314,8 @@ export interface ParticleFxOptions {
    * long-standing behaviour to the bit.
    */
   readonly ringBurstRandomDirection?: number
+  /** DEV-924: the engine every field is built on. Default `gpu` since DEV-925. */
+  readonly engine?: ParticleEngine
   /**
    * DEV-867: false builds no gate particles at all. Free Flight has no rings,
    * and the four continuous `ringBurst` systems spray from every gate for the
@@ -1084,6 +1339,12 @@ export interface ParticleFxOptions {
    * Classic among them, so a world without it carries no field.
    */
   readonly splash?: EditionSplash | null
+  /** DEV-926: build the vapour cone from this. Null (the default) builds nothing. */
+  readonly vapourCone?: EditionVapourCone | null
+  /** DEV-927: build the boost shockwave from this. Null (the default) builds nothing. */
+  readonly boostShockwave?: EditionBoostShockwave | null
+  /** DEV-928: build the wing-tip vortices from this. Null (the default) builds nothing. */
+  readonly wingVortices?: EditionWingVortices | null
 }
 
 /**
@@ -1127,6 +1388,7 @@ export const loadParticleFx = async (
       // the other answer. Every field takes it, and it is inert on the twenty
       // systems whose shape has `randomDirection: false`.
       randomDirection: ringBurstRandomDirection,
+      engine: options.engine ?? 'gpu',
     })
     group.add(field.object)
     const local = emitterLocalMatrix(spec)
@@ -1278,6 +1540,7 @@ export const loadParticleFx = async (
         (spec.initial?.maxParticles ?? 100) * emitterCount,
       ),
       look: 'paper',
+      engine: options.engine ?? 'gpu',
     })
     group.add(field.object)
     const emitters: ParticleEmitter[] = []
@@ -1312,6 +1575,45 @@ export const loadParticleFx = async (
     ? addAuthored(splashDropsSpec(splashSpec), splashSpec.emitters)
     : null
   let splashesThrown = 0
+
+  // -- DEV-926 / DEV-927: the first swings, built only when on at load --
+  const addSoft = (spec: ParticleSpec, alpha: number): FieldSlot => {
+    const field = createParticleField(spec, texture, {
+      capacity: Math.min(FIELD_CAPACITY_CEILING, spec.initial?.maxParticles ?? 100),
+      override: softOverride(alpha),
+      engine: options.engine ?? 'gpu',
+    })
+    group.add(field.object)
+    const slot: FieldSlot = {
+      spec,
+      field,
+      emitters: [field.addEmitter()],
+      local: new THREE.Matrix4(),
+    }
+    slots.push(slot)
+    return slot
+  }
+  const vapourSpec = options.vapourCone ?? null
+  const vapourSlot = vapourSpec ? addSoft(vapourConeSpec(vapourSpec), vapourSpec.alpha) : null
+  if (vapourSlot && vapourSpec) vapourConePose(vapourSpec, vapourSlot.local)
+  const vapourDrive = { rate: 0, alpha: 0, speed: 1 }
+  let vapourNow = 0
+  const shockSpec = options.boostShockwave ?? null
+  const shockSlot = shockSpec ? addSoft(boostShockwaveSpec(shockSpec), shockSpec.alpha) : null
+  let wasBoosting = false
+  // DEV-928: two emitters, port (0) and starboard (1); the engine spins odd
+  // ones the other way, so the pair counter-rotates.
+  const vortexSpec = options.wingVortices ?? null
+  const vortexSlot = vortexSpec ? addSoft(wingVortexSpec(vortexSpec), vortexSpec.alpha) : null
+  if (vortexSlot) vortexSlot.emitters.push(vortexSlot.field.addEmitter())
+  const vortexDrive = { rate: 0, alpha: 0, speed: 1 }
+  let vortexNow = 0
+  let turnNow = 0
+  const prevQuat = new THREE.Quaternion()
+  const nowQuat = new THREE.Quaternion()
+  let prevSeconds = Number.NaN
+  let lastShock = Number.NEGATIVE_INFINITY
+  let shocksThrown = 0
   let lastSplash: { x: number; y: number; z: number; scale: number } | null = null
 
   // ── the JumpSeat's own (DEV-416) ───────────────────────────────────────
@@ -1462,6 +1764,85 @@ export const loadParticleFx = async (
       }
       driveGroup(extThruster, external && thrusting)
       driveGroup(extBoost, external && boosting)
+    },
+
+    updateSwings(matrix, forwardSpeed, boosting, speedFx, seconds, tips): void {
+      if (vortexSlot && vortexSpec) {
+        // The turn rate: the angle between this frame's attitude and the last,
+        // over the time between them.
+        nowQuat.setFromRotationMatrix(matrix)
+        const dt = seconds - prevSeconds
+        turnNow =
+          dt > 0 && Number.isFinite(dt)
+            ? (2 * Math.acos(Math.min(1, Math.abs(nowQuat.dot(prevQuat)))) * (180 / Math.PI)) / dt
+            : 0
+        prevQuat.copy(nowQuat)
+        prevSeconds = seconds
+        vortexNow = tips ? vortexStrength(vortexSpec, forwardSpeed, turnNow, speedFx) : 0
+        vortexDrive.rate = vortexNow
+        vortexDrive.alpha = vortexNow
+        vortexSlot.field.setDrive(vortexDrive)
+        vortexSlot.emitters.forEach((e, i) => {
+          if (tips) {
+            // The ship's attitude, at the tip: the orbit's axis is the emitter's
+            // forward, which is the line the tip is flying along.
+            e.matrix.copy(matrix).setPosition(i === 0 ? tips.port : tips.starboard)
+          }
+          if (vortexNow > 0) {
+            if (!e.playing) e.play()
+          } else if (e.playing) {
+            e.stop()
+          }
+        })
+      }
+      if (vapourSlot && vapourSpec) {
+        const e = vapourSlot.emitters[0]
+        e?.matrix.multiplyMatrices(matrix, vapourSlot.local)
+        vapourNow = vapourStrength(vapourSpec, forwardSpeed, speedFx)
+        vapourDrive.rate = vapourNow
+        vapourDrive.alpha = vapourNow
+        vapourSlot.field.setDrive(vapourDrive)
+        if (vapourNow > 0) {
+          if (!e?.playing) e?.play()
+        } else if (e?.playing) {
+          e.stop()
+        }
+      }
+      if (shockSlot && shockSpec) {
+        // It rides: the emitter follows the ship every frame, and the ring with it.
+        shockSlot.emitters[0]?.matrix.copy(matrix)
+        const rising = boosting && !wasBoosting
+        if (
+          rising &&
+          shockSpec.enabled &&
+          speedFx > 0 &&
+          forwardSpeed >= shockSpec.minSpeed &&
+          seconds - lastShock >= shockSpec.cooldownSeconds
+        ) {
+          const e = shockSlot.emitters[0]
+          if (e) {
+            e.matrix.copy(matrix)
+            // The slider fades the ring rather than thinning it: a ring with
+            // gaps reads as broken, a fainter one as further away.
+            shockSlot.field.setDrive({ rate: 1, alpha: Math.min(1, speedFx), speed: 1 })
+            e.stop()
+            e.play()
+            lastShock = seconds
+            shocksThrown++
+          }
+        }
+      }
+      wasBoosting = boosting
+    },
+
+    get swings() {
+      return {
+        vapour: vapourSlot ? { strength: vapourNow, alive: vapourSlot.field.alive } : null,
+        shockwave: shockSlot ? { thrown: shocksThrown, alive: shockSlot.field.alive } : null,
+        vortices: vortexSlot
+          ? { strength: vortexNow, turnDeg: turnNow, alive: vortexSlot.field.alive }
+          : null,
+      }
     },
 
     updateShip(matrix: THREE.Matrix4, forwardSpeed: number): void {

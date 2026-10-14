@@ -1,54 +1,551 @@
 {
-  "int_01_hoverJet/anniversary@20": {
-    "mission": "int_01_hoverJet",
+  "adv_01_hoverJet/anniversary@20": {
+    "mission": "adv_01_hoverJet",
     "edition": "anniversary",
     "snapAt": 20,
     "missionTick": 1640,
-    "bootTick": 3644,
+    "bootTick": 3727,
     "elapsed": 20.007999671999958,
-    "gatedCalls": 249,
-    "totalCalls": 267,
-    "triangles": 849012,
+    "gatedCalls": 83,
+    "totalCalls": 111,
+    "triangles": 1497531,
     "groups": {
-      "world-ocean": {
+      "world-terrain/props:desert": {
+        "calls": 48,
+        "triangles": 904587
+      },
+      "world-terrain/dressing:desert": {
         "calls": 4,
-        "triangles": 454272
+        "triangles": 293148
       },
       "world-terrain/chunks": {
-        "calls": 186,
-        "triangles": 187856
-      },
-      "world-terrain/dressing:simonet": {
-        "calls": 3,
-        "triangles": 87448
-      },
-      "world-terrain/props:simonet": {
-        "calls": 25,
-        "triangles": 46152
+        "calls": 4,
+        "triangles": 238744
       },
       "rings": {
-        "calls": 7,
-        "triangles": 26540
+        "calls": 6,
+        "triangles": 26404
       },
       "sky-dome": {
         "calls": 1,
         "triangles": 21088
       },
+      "hoverjet": {
+        "calls": 9,
+        "triangles": 4861
+      },
       "racers": {
-        "calls": 12,
-        "triangles": 10990
+        "calls": 6,
+        "triangles": 3344
       },
       "clouds": {
-        "calls": 6,
-        "triangles": 7680
+        "calls": 2,
+        "triangles": 2560
       },
-      "hoverjet": {
-        "calls": 7,
-        "triangles": 4839
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 1368
       },
       "wing-trails:player": {
         "calls": 1,
-        "triangles": 864
+        "triangles": 800
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 25,
+        "triangles": 50
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 1.2535069444444444,
+      "shadedOpaque": 1.201076388888889
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "adv_01_jumpSeat/anniversary@20": {
+    "mission": "adv_01_jumpSeat",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 2620,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 76,
+    "totalCalls": 98,
+    "triangles": 1209540,
+    "groups": {
+      "world-terrain/props:desert": {
+        "calls": 48,
+        "triangles": 696079
+      },
+      "world-terrain/dressing:desert": {
+        "calls": 3,
+        "triangles": 292260
+      },
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 197904
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 920
+      },
+      "jumpseat": {
+        "calls": 15,
+        "triangles": 630
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 21,
+        "triangles": 42
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      }
+    },
+    "overdraw": {
+      "shaded": 1.388125,
+      "shadedOpaque": 1.2973263888888888
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "adv_02_hoverJet/anniversary@20": {
+    "mission": "adv_02_hoverJet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3675,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 60,
+    "totalCalls": 89,
+    "triangles": 405173,
+    "groups": {
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 178312
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 3,
+        "triangles": 85368
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "rings": {
+        "calls": 6,
+        "triangles": 33148
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "life": {
+        "calls": 3,
+        "triangles": 15501
+      },
+      "world-terrain/props:simonet": {
+        "calls": 18,
+        "triangles": 12892
+      },
+      "clouds": {
+        "calls": 3,
+        "triangles": 7680
+      },
+      "hoverjet": {
+        "calls": 9,
+        "triangles": 4869
+      },
+      "racers": {
+        "calls": 6,
+        "triangles": 2592
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 1368
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 768
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 25,
+        "triangles": 50
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 1.1836111111111112,
+      "shadedOpaque": 1.1338368055555557
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "adv_02_jumpSeat/anniversary@20": {
+    "mission": "adv_02_jumpSeat",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 2662,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 58,
+    "totalCalls": 83,
+    "triangles": 299179,
+    "groups": {
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 123192
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 2,
+        "triangles": 91520
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "world-terrain/props:simonet": {
+        "calls": 22,
+        "triangles": 13102
+      },
+      "clouds": {
+        "calls": 3,
+        "triangles": 6400
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 920
+      },
+      "jumpseat": {
+        "calls": 15,
+        "triangles": 630
+      },
+      "pads": {
+        "calls": 3,
+        "triangles": 624
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "life": {
+        "calls": 1,
+        "triangles": 84
+      },
+      "particle-fx": {
+        "calls": 21,
+        "triangles": 42
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      }
+    },
+    "overdraw": {
+      "shaded": 1.0975868055555555,
+      "shadedOpaque": 1.0067881944444443
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "anniv_01_glider/anniversary@20": {
+    "mission": "anniv_01_glider",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 1985,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 49,
+    "totalCalls": 75,
+    "triangles": 343636,
+    "groups": {
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 139976
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 2,
+        "triangles": 91760
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "world-terrain/props:simonet": {
+        "calls": 19,
+        "triangles": 19240
+      },
+      "life": {
+        "calls": 3,
+        "triangles": 13584
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 11240
+      },
+      "glider": {
+        "calls": 8,
+        "triangles": 4689
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 432
+      },
+      "particle-fx": {
+        "calls": 25,
+        "triangles": 50
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 0.7833333333333333,
+      "shadedOpaque": 0.7245138888888889
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "freeFlight_alpine/anniversary@20": {
+    "mission": "freeFlight_alpine",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3675,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 82,
+    "totalCalls": 102,
+    "triangles": 1175015,
+    "groups": {
+      "world-terrain/props:alpine": {
+        "calls": 60,
+        "triangles": 615650
+      },
+      "world-terrain/dressing:alpine": {
+        "calls": 4,
+        "triangles": 297828
+      },
+      "world-terrain/chunks": {
+        "calls": 5,
+        "triangles": 198632
+      },
+      "launch-anchor": {
+        "calls": 2,
+        "triangles": 29698
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "hoverjet": {
+        "calls": 6,
+        "triangles": 4669
+      },
+      "clouds": {
+        "calls": 3,
+        "triangles": 3840
+      },
+      "orbs": {
+        "calls": 1,
+        "triangles": 2088
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 912
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 17,
+        "triangles": 34
+      }
+    },
+    "overdraw": {
+      "shaded": 1.5924826388888889,
+      "shadedOpaque": 1.5347395833333333
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "freeFlight_desert/anniversary@20": {
+    "mission": "freeFlight_desert",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3677,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 69,
+    "totalCalls": 88,
+    "triangles": 1662744,
+    "groups": {
+      "world-terrain/props:desert": {
+        "calls": 48,
+        "triangles": 1084527
+      },
+      "world-terrain/dressing:desert": {
+        "calls": 4,
+        "triangles": 289548
+      },
+      "world-terrain/chunks": {
+        "calls": 5,
+        "triangles": 225496
+      },
+      "launch-anchor": {
+        "calls": 1,
+        "triangles": 29634
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "hoverjet": {
+        "calls": 6,
+        "triangles": 4669
+      },
+      "orbs": {
+        "calls": 1,
+        "triangles": 3016
+      },
+      "clouds": {
+        "calls": 2,
+        "triangles": 2560
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 1596
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 17,
+        "triangles": 34
+      }
+    },
+    "overdraw": {
+      "shaded": 1.3730902777777778,
+      "shadedOpaque": 1.3153472222222222
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "freeFlight_simonet/anniversary@20": {
+    "mission": "freeFlight_simonet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3758,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 37,
+    "totalCalls": 65,
+    "triangles": 339736,
+    "groups": {
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 110576
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 3,
+        "triangles": 87448
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "launch-anchor": {
+        "calls": 2,
+        "triangles": 28258
+      },
+      "clouds": {
+        "calls": 11,
+        "triangles": 23040
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "life": {
+        "calls": 3,
+        "triangles": 16623
+      },
+      "hoverjet": {
+        "calls": 6,
+        "triangles": 4669
+      },
+      "start-grid": {
+        "calls": 3,
+        "triangles": 3028
+      },
+      "world-terrain/props:simonet": {
+        "calls": 6,
+        "triangles": 1476
+      },
+      "orbs": {
+        "calls": 1,
+        "triangles": 1276
       },
       "turn-indicators": {
         "calls": 2,
@@ -59,55 +556,434 @@
         "triangles": 576
       },
       "particle-fx": {
-        "calls": 11,
-        "triangles": 22
+        "calls": 17,
+        "triangles": 34
+      }
+    },
+    "overdraw": {
+      "shaded": 1.2983159722222222,
+      "shadedOpaque": 1.2405729166666666
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "hoverJet_kauai_beg/anniversary@20": {
+    "mission": "hoverJet_kauai_beg",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3913,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 54,
+    "totalCalls": 71,
+    "triangles": 950283,
+    "groups": {
+      "world-terrain/dressing:kauai": {
+        "calls": 4,
+        "triangles": 614728
+      },
+      "world-terrain/chunks": {
+        "calls": 5,
+        "triangles": 202896
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "launch-anchor": {
+        "calls": 1,
+        "triangles": 29634
+      },
+      "world-terrain/props:kauai": {
+        "calls": 24,
+        "triangles": 28598
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "hoverjet": {
+        "calls": 6,
+        "triangles": 4669
+      },
+      "start-grid": {
+        "calls": 3,
+        "triangles": 3016
+      },
+      "life": {
+        "calls": 1,
+        "triangles": 2124
+      },
+      "orbs": {
+        "calls": 1,
+        "triangles": 1276
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 684
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 17,
+        "triangles": 34
+      }
+    },
+    "overdraw": {
+      "shaded": 1.2109548611111112,
+      "shadedOpaque": 1.1532118055555556
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "int_01_hoverJet/anniversary@20": {
+    "mission": "int_01_hoverJet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3606,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 65,
+    "totalCalls": 97,
+    "triangles": 426848,
+    "groups": {
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 188536
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 3,
+        "triangles": 87448
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "rings": {
+        "calls": 6,
+        "triangles": 25280
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "world-terrain/props:simonet": {
+        "calls": 19,
+        "triangles": 18920
+      },
+      "life": {
+        "calls": 3,
+        "triangles": 17723
+      },
+      "clouds": {
+        "calls": 6,
+        "triangles": 12800
+      },
+      "racers": {
+        "calls": 9,
+        "triangles": 7143
+      },
+      "hoverjet": {
+        "calls": 9,
+        "triangles": 4853
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 784
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 684
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 25,
+        "triangles": 50
+      },
+      "comfort-vignette": {
+        "calls": 1,
+        "triangles": 2
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 1.1566145833333332,
+      "shadedOpaque": 1.0978472222222222
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "int_01_jumpSeat/anniversary@20": {
+    "mission": "int_01_jumpSeat",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 2621,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 65,
+    "totalCalls": 87,
+    "triangles": 382728,
+    "groups": {
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 203440
+      },
+      "world-terrain/dressing:simonet": {
+        "calls": 2,
+        "triangles": 91680
+      },
+      "world-ocean": {
+        "calls": 5,
+        "triangles": 40960
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "world-terrain/props:simonet": {
+        "calls": 21,
+        "triangles": 15856
+      },
+      "traffic": {
+        "calls": 6,
+        "triangles": 3479
+      },
+      "start-grid": {
+        "calls": 3,
+        "triangles": 3348
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 920
+      },
+      "jumpseat": {
+        "calls": 15,
+        "triangles": 630
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "pads": {
+        "calls": 2,
+        "triangles": 416
+      },
+      "life": {
+        "calls": 1,
+        "triangles": 252
+      },
+      "particle-fx": {
+        "calls": 21,
+        "triangles": 42
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
       },
       "motes": {
         "calls": 1,
         "triangles": 1
       }
     },
-    "build": "v0.10.0",
-    "date": "2026-09-26"
+    "overdraw": {
+      "shaded": 1.1601388888888888,
+      "shadedOpaque": 1.0693402777777778
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "int_02_hoverJet/anniversary@20": {
+    "mission": "int_02_hoverJet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3606,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 98,
+    "totalCalls": 128,
+    "triangles": 1162060,
+    "groups": {
+      "world-terrain/props:alpine": {
+        "calls": 60,
+        "triangles": 581061
+      },
+      "world-terrain/dressing:alpine": {
+        "calls": 4,
+        "triangles": 301988
+      },
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 211768
+      },
+      "rings": {
+        "calls": 6,
+        "triangles": 25280
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "racers": {
+        "calls": 9,
+        "triangles": 7351
+      },
+      "clouds": {
+        "calls": 4,
+        "triangles": 5120
+      },
+      "hoverjet": {
+        "calls": 9,
+        "triangles": 4861
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 2052
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 864
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 25,
+        "triangles": 50
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 0.9046527777777778,
+      "shadedOpaque": 0.854375
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "int_02_jumpSeat/anniversary@20": {
+    "mission": "int_02_jumpSeat",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 2547,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 95,
+    "totalCalls": 119,
+    "triangles": 1078758,
+    "groups": {
+      "world-terrain/props:alpine": {
+        "calls": 60,
+        "triangles": 542914
+      },
+      "world-terrain/dressing:alpine": {
+        "calls": 3,
+        "triangles": 302140
+      },
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 205112
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "clouds": {
+        "calls": 3,
+        "triangles": 3840
+      },
+      "pads": {
+        "calls": 7,
+        "triangles": 1456
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 920
+      },
+      "jumpseat": {
+        "calls": 15,
+        "triangles": 630
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 21,
+        "triangles": 42
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
+      }
+    },
+    "overdraw": {
+      "shaded": 1.3699479166666666,
+      "shadedOpaque": 1.2791493055555556
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
   },
   "rookie_01_hoverJet/anniversary@20": {
     "mission": "rookie_01_hoverJet",
     "edition": "anniversary",
     "snapAt": 20,
     "missionTick": 1640,
-    "bootTick": 3557,
+    "bootTick": 3574,
     "elapsed": 20.007999671999958,
-    "gatedCalls": 136,
-    "totalCalls": 148,
-    "triangles": 1057868,
+    "gatedCalls": 93,
+    "totalCalls": 122,
+    "triangles": 1020491,
     "groups": {
       "world-terrain/props:alpine": {
         "calls": 60,
-        "triangles": 487954
+        "triangles": 468017
       },
       "world-terrain/dressing:alpine": {
         "calls": 4,
         "triangles": 297588
       },
       "world-terrain/chunks": {
-        "calls": 43,
-        "triangles": 214104
+        "calls": 4,
+        "triangles": 199080
       },
       "sky-dome": {
         "calls": 1,
         "triangles": 21088
       },
       "rings": {
-        "calls": 7,
-        "triangles": 20620
-      },
-      "racers": {
-        "calls": 10,
-        "triangles": 9294
+        "calls": 6,
+        "triangles": 19660
       },
       "hoverjet": {
         "calls": 7,
-        "triangles": 4829
+        "triangles": 4831
+      },
+      "racers": {
+        "calls": 6,
+        "triangles": 3984
+      },
+      "clouds": {
+        "calls": 3,
+        "triangles": 3840
       },
       "turn-indicators": {
         "calls": 2,
@@ -115,22 +991,231 @@
       },
       "wing-trails:player": {
         "calls": 1,
-        "triangles": 880
+        "triangles": 864
       },
       "horizon-geo": {
         "calls": 1,
         "triangles": 576
       },
       "particle-fx": {
-        "calls": 11,
-        "triangles": 22
+        "calls": 25,
+        "triangles": 50
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 1.4210243055555556,
+      "shadedOpaque": 1.370486111111111
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "rookie_01_jumpSeat/anniversary@20": {
+    "mission": "rookie_01_jumpSeat",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 2548,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 92,
+    "totalCalls": 115,
+    "triangles": 1215610,
+    "groups": {
+      "world-terrain/props:alpine": {
+        "calls": 60,
+        "triangles": 687750
+      },
+      "world-terrain/dressing:alpine": {
+        "calls": 3,
+        "triangles": 302340
+      },
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 198832
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "clouds": {
+        "calls": 2,
+        "triangles": 2560
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 920
+      },
+      "pads": {
+        "calls": 4,
+        "triangles": 832
+      },
+      "jumpseat": {
+        "calls": 15,
+        "triangles": 630
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 21,
+        "triangles": 42
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
+      }
+    },
+    "overdraw": {
+      "shaded": 1.0127777777777778,
+      "shadedOpaque": 0.9219791666666667
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "rookie_02_hoverJet/anniversary@20": {
+    "mission": "rookie_02_hoverJet",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 3583,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 81,
+    "totalCalls": 110,
+    "triangles": 1384020,
+    "groups": {
+      "world-terrain/props:desert": {
+        "calls": 48,
+        "triangles": 849622
+      },
+      "world-terrain/dressing:desert": {
+        "calls": 4,
+        "triangles": 289548
+      },
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 182984
+      },
+      "rings": {
+        "calls": 6,
+        "triangles": 25280
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "hoverjet": {
+        "calls": 7,
+        "triangles": 4843
+      },
+      "clouds": {
+        "calls": 3,
+        "triangles": 3840
+      },
+      "racers": {
+        "calls": 6,
+        "triangles": 3776
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 1596
+      },
+      "wing-trails:player": {
+        "calls": 1,
+        "triangles": 816
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 25,
+        "triangles": 50
+      },
+      "motes": {
+        "calls": 1,
+        "triangles": 1
+      },
+      "player-ghost": {
+        "calls": 1,
+        "triangles": 0
+      }
+    },
+    "overdraw": {
+      "shaded": 1.1436979166666668,
+      "shadedOpaque": 1.0913194444444445
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
+  },
+  "rookie_02_jumpSeat/anniversary@20": {
+    "mission": "rookie_02_jumpSeat",
+    "edition": "anniversary",
+    "snapAt": 20,
+    "missionTick": 1640,
+    "bootTick": 2560,
+    "elapsed": 20.007999671999958,
+    "gatedCalls": 81,
+    "totalCalls": 111,
+    "triangles": 1771578,
+    "groups": {
+      "world-terrain/props:desert": {
+        "calls": 49,
+        "triangles": 1208757
+      },
+      "world-terrain/dressing:desert": {
+        "calls": 4,
+        "triangles": 292368
+      },
+      "world-terrain/chunks": {
+        "calls": 4,
+        "triangles": 214840
+      },
+      "rings": {
+        "calls": 2,
+        "triangles": 32596
+      },
+      "sky-dome": {
+        "calls": 1,
+        "triangles": 21088
+      },
+      "jumpseat": {
+        "calls": 15,
+        "triangles": 630
+      },
+      "pads": {
+        "calls": 3,
+        "triangles": 624
+      },
+      "horizon-geo": {
+        "calls": 1,
+        "triangles": 576
+      },
+      "particle-fx": {
+        "calls": 29,
+        "triangles": 58
+      },
+      "turn-indicators": {
+        "calls": 2,
+        "triangles": 40
       },
       "motes": {
         "calls": 1,
         "triangles": 1
       }
     },
-    "build": "v0.10.0",
-    "date": "2026-09-26"
+    "overdraw": {
+      "shaded": 1.246388888888889,
+      "shadedOpaque": 1.1555902777777778
+    },
+    "build": "v1.1.0",
+    "date": "2026-10-13"
   }
 }

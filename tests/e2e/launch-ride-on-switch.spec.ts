@@ -166,11 +166,11 @@ const launchProbe = (page: Page): Promise<LaunchProbe> =>
  * instant it is drawn. So a bore selection that ever picked the wrong chunk, or
  * none, lands here as a number rather than as nothing.
  */
-const worldInsideShaft = (
+const worldInsideShaft = async (
   page: Page,
   shaft: { roomRadius: number; boreRadius: number; floorY: number; ceilingY: number },
-) =>
-  page.evaluate((vol) => {
+) => {
+  const result = await page.evaluate((vol) => {
     // biome-ignore lint/suspicious/noExplicitAny: reaching into the live scene graph
     const ff = (globalThis as any).__ff2
     if (!ff)
@@ -213,6 +213,7 @@ const worldInsideShaft = (
 
     let inside = 0
     const offenders: string[] = []
+    const ignored: string[] = []
     // biome-ignore lint/suspicious/noExplicitAny: reaching into the live scene graph
     scene.traverse((o: any) => {
       if (!o.isMesh || !o.geometry?.attributes?.position) return
@@ -242,31 +243,73 @@ const worldInsideShaft = (
       if (Math.hypot(wx - ax, wy - volY, wz - az) > r + volR) return
 
       const p = g.attributes.position
-      let hits = 0
-      for (let i = 0; i < p.count; i++) {
-        const x = p.getX(i)
-        const y = p.getY(i)
-        const z = p.getZ(i)
-        const vx =
-          (m[0] as number) * x + (m[4] as number) * y + (m[8] as number) * z + (m[12] as number)
-        const vy =
-          (m[1] as number) * x + (m[5] as number) * y + (m[9] as number) * z + (m[13] as number)
-        const vz =
-          (m[2] as number) * x + (m[6] as number) * y + (m[10] as number) * z + (m[14] as number)
-        const rel = vy - ay
-        if (rel < vol.floorY || rel > rimY) continue
-        // The room's full radius below its ceiling; the bore's above it.
-        const rad = Math.hypot(vx - ax, vz - az)
-        if (rad > (rel <= vol.ceilingY ? vol.roomRadius : vol.boreRadius)) continue
-        hits++
+      // DEV-904. What a mesh DRAWS is its whole buffer, except for a
+      // `BatchedMesh` (the land's chunk grid): its buffer also holds every FREE
+      // slot (zeros) and every released one (a chunk that has left the band),
+      // and only the ranges of its VISIBLE instances are drawn. So a batch is
+      // scanned instance by instance, each named by the chunk that occupies it
+      // (`terrain.batching.occupants()`), and a vertex only counts when its
+      // instance is visible. The ones skipped are RETURNED (`ignored`), so a
+      // reader can see exactly what the narrowing set aside.
+      const segments: { from: number; to: number; label: string; live: boolean }[] = []
+      if (o.isBatchedMesh) {
+        const who = new Map<string, string>()
+        for (const occ of ff.terrain()?.terrain.batching.occupants() ?? []) {
+          who.set(`${occ.band}#${occ.slot}`, occ.id)
+        }
+        for (let k = 0; k < o.instanceCount; k++) {
+          const range = o.getGeometryRangeAt(o.getGeometryIdAt(k))
+          const key = `${o.name}#${k}`
+          segments.push({
+            from: range.vertexStart,
+            to: range.vertexStart + range.vertexCount,
+            label: `${key}=${who.get(key) ?? 'EMPTY'}`,
+            live: o.getVisibleAt(k),
+          })
+        }
+      } else {
+        segments.push({
+          from: 0,
+          to: p.count,
+          label: o.name || o.parent?.name || o.type,
+          live: true,
+        })
       }
-      if (hits > 0) {
-        inside += hits
-        offenders.push(`${o.name || o.parent?.name || o.type}:${hits}`)
+      for (const seg of segments) {
+        let hits = 0
+        for (let i = seg.from; i < seg.to; i++) {
+          const x = p.getX(i)
+          const y = p.getY(i)
+          const z = p.getZ(i)
+          const vx =
+            (m[0] as number) * x + (m[4] as number) * y + (m[8] as number) * z + (m[12] as number)
+          const vy =
+            (m[1] as number) * x + (m[5] as number) * y + (m[9] as number) * z + (m[13] as number)
+          const vz =
+            (m[2] as number) * x + (m[6] as number) * y + (m[10] as number) * z + (m[14] as number)
+          const rel = vy - ay
+          if (rel < vol.floorY || rel > rimY) continue
+          // The room's full radius below its ceiling; the bore's above it.
+          const rad = Math.hypot(vx - ax, vz - az)
+          if (rad > (rel <= vol.ceilingY ? vol.roomRadius : vol.boreRadius)) continue
+          hits++
+        }
+        if (hits === 0) continue
+        if (seg.live) {
+          inside += hits
+          offenders.push(`${seg.label}:${hits}`)
+        } else {
+          ignored.push(`${seg.label}:${hits} (instance hidden)`)
+        }
       }
     })
-    return { anchor: [ax, ay, az], rimY, inside, offenders: offenders.slice(0, 8) }
+
+    return { anchor: [ax, ay, az], rimY, inside, offenders: offenders.slice(0, 8), ignored }
   }, shaft)
+  const ignored = (result as { ignored?: string[] }).ignored ?? []
+  if (ignored.length > 0) console.info(`worldInsideShaft ignored: ${ignored.join(', ')}`)
+  return result
+}
 
 /**
  * Which step the level select is on: 'vehicles', 'modes', 'ranks' or 'courses'.
@@ -505,6 +548,13 @@ test.describe('@gpu the launch elevator', () => {
         // biome-ignore lint/suspicious/noExplicitAny: reaching into the live scene graph
         const scene = (globalThis as any).__ff2.render.scene
         let total = 0
+        const batched = new Set<string>(
+          // biome-ignore lint/suspicious/noExplicitAny: reaching into the live scene graph
+          (globalThis as any).__ff2
+            .terrain()
+            ?.terrain.batching.occupants()
+            .map((c: { id: string }) => c.id) ?? [],
+        )
         let hidden = 0
         // biome-ignore lint/suspicious/noExplicitAny: reaching into the live scene graph
         scene.traverse((o: any) => {
@@ -516,7 +566,9 @@ test.describe('@gpu the launch elevator', () => {
           for (let n: any = o; n; n = n.parent) if (n.name === 'world-terrain') land = true
           if (!land) return
           total++
-          if (o.visible === false) hidden++
+          // DEV-904: "hidden" means NOT DRAWN. A chunk the batcher placed has its
+          // own mesh hidden because its band draws it, so that is not a hide.
+          if (o.visible === false && !batched.has(o.name)) hidden++
         })
         return { total, hidden }
       })

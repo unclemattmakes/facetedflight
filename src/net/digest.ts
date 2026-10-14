@@ -1,3 +1,4 @@
+// @engine-layer: imports nothing from game, content, generated or boot/app (tests/unit/engine-layering-guard.test.ts)
 // src/net/digest.ts: SHA-256 through `crypto.subtle`, as the net layer, the
 // content layer and the editor each wrote it (code-reuse audit BE-3).
 //

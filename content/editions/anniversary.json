@@ -51,6 +51,10 @@
       "note": "one directional map from the mission sun, casters at LOD 0 and finer — 2016's LOD-0 rule plus DEV-085's ring, which is finer (V3, DEV-086; DEV-115). 2048 over a 700 m box is 0.68 m a texel against an 8 m facet; 3,500 m up-sun is most of Simonet, against the 22 km a 4-degree ray would truly need. bias 0.5 m and normalBias 0.4 m were first guesses and are now PHOTOGRAPHED (DEV-115, 2026-09-15): on int_01's island-lit stand at 4 degrees the map darkens 44 % of the frame with no acne on any lit facet; on rookie_02's canyon at 52.6 degrees, 24-29 % with every cactus's and 0.3 m shrub's shadow still attached at its base (a 0.4 m normal lift shortens a 52-degree shadow by 0.31 m, and the smallest prop survives it); alpine at 56.8, 17 %. At 4 degrees every metre of depth bias still shifts a shadow ~14 m down-sun, which is why neither number moved. THE TWO TO ARGUE WITH ARE boxHalfSize (where shadows stop, laterally) and castDistance (how far up-sun a ridge can be and still cast) — no frame here shows either edge, because fog and haze carry the far field; a second cascade would double the depth pass and wants a Quest number first. radius 2 is 1.37 m of penumbra whose interleaved-gradient dither is visible at 2x zoom and invisible at 1x — whether it shimmers on a Quest panel is the headset question. Cost on this monitor, island-lit, one frame: the pass is +49 draw calls and +1.08 M triangles over the same frame with the map off (2.86 M vs 1.78 M); the ring's ten chunks are +10 calls and +87 k of that. DEV-453 CORRECTS 'no frame here shows either edge': on alpine's forest the box's edge read as a line (Matt, 2026-09-27), because the scatter's shadows stopped there and DEV-304's canopy handover left the forest floor beyond it with no direct darkening at all. edgeFade is the band, in metres inside the edge, over which the map hands both back to the far-field terms; render/far-shadow.ts's ff2ShadowCover",
       "edgeFade": 150
     },
+    "missionShadows": {
+      "enabled": true,
+      "note": "DEV-932. The mission sun's map in a MISSION, with the cockpit's own map, the near cascade and the hull's shadow draw that ride on it. render.shadows stays the switch for every scene's machinery (the hangar's 2016 key light, DEV-440, and the title's sun), so vr.disable lists THIS key and the menus keep their shadows in a headset. On a monitor it is on and changes nothing."
+    },
     "shipShadow": {
       "enabled": true,
       "note": "DEV-305, wishlist #29. Matt: \"player ship casts shadows -- use the 3rd-person model as the caster.\" TRUE HERE, and the row it lands on top of is a bug rather than a behaviour: `boot/app.ts` handed the shadow map `getObjectByName('ship_third_person')`, which is the glTF SCENE ROOT, and three reads `castShadow` on the object it is about to DRAW -- a Group is never drawn. `hoverjet-exterior.glb` is ONE node, `ship_ext_orange`, under that root, and it kept three's default of false. So the hull had cast no shadow anywhere since the map landed, not merely in first person, and `shadowFlagsFor('ship-exterior') = {cast: true}` was right about the TABLE the whole time (DEV-069's lesson: a value nothing downstream consults is documentation, not a guard). `shadowMeshesOf` fixes that half for both presets and is not this flag.\n\nWHAT THIS FLAG BUYS is the COCKPIT half, and it costs a draw. 2016 deactivates Art/ThirdPerson when you are inside, and three refuses every cheap way to keep a hidden object in the depth pass: object.visible, material.visible and the layer mask are each read by the shadow pass as well as by the frame, three refusals of the same kind (render/shadows.ts's header names the lines). What is left is a hull DRAWN with colorWrite and depthWrite off -- one more draw call and the vertex work, no fill, nothing in the colour or depth buffer. depthWrite matters as much as colorWrite: with colour masked and depth written the hull punches a silhouette-shaped hole a metre in front of the eye and the world behind it fails the depth test.\n\nWHY IT IS WORTH A DRAW: a shadow's LENGTH is a ruler laid on the ground (ANNIVERSARY.md section 1.5 ranks it second of eight scale cues) and this is the one shadow whose length the player can read against their own altitude, because they are flying the thing casting it. At int_01's 4-degree sun it is a long streak far downsun rather than a patch underneath; at rookie_02's 52.6 degrees it is under you. A DEVIATION from 2016 with a row in docs/DEVIATIONS.md.\n\nIT INTERACTS WITH render.cockpitShadow, and the interaction is the thing to look at before turning both on: the hull SURROUNDS the cockpit, so a hull that casts and a cockpit that receives put the airframe's own shadow across the dashboard -- which is the artifact render/shadows.ts argues against for the cockpit CASTING, arriving through the receiving door instead. Photograph the pair, not each alone."
@@ -461,6 +465,52 @@
         "size": 0.4,
         "colour": [0.8, 0.91, 0.94]
       }
+    },
+    "vapourCone": {
+      "enabled": true,
+      "note": "DEV-926. Matt, 2026-10-12, picking every swing in docs/plan/GPU-PARTICLES.md section 5: 'all plz!'. A ring of soft white mist round the hull near top speed, riding the ship: radius metres round it at aftMetres behind its origin, thrown back on a cone of angleDeg at drift m/s, fading in from minSpeed to fullSpeed (forward m/s; the boost stages begin at 120, 240 and 350, top speed is about 437), on the speed-FX slider (vection). Every number is a first guess in DEV-080's sense; minSpeed and alpha are THE NUMBERS TO ARGUE WITH.",
+      "minSpeed": 280,
+      "fullSpeed": 380,
+      "rate": 220,
+      "radius": 3.2,
+      "angleDeg": 35,
+      "aftMetres": 2.5,
+      "drift": 8,
+      "lifetime": 0.35,
+      "size": 0.9,
+      "alpha": 1,
+      "colour": [0.95, 0.97, 1.0]
+    },
+    "boostShockwave": {
+      "enabled": true,
+      "note": "DEV-927. From the same pick. The instant boost is pressed at minSpeed or more, a ring of count soft particles leaves the hull across the line of flight at speed m/s, held back by drag, riding the ship (a ring left in the air was behind the chase camera before it had grown). At most one every cooldownSeconds; on the speed-FX slider. speed, drag and alpha are THE NUMBERS TO ARGUE WITH.",
+      "minSpeed": 60,
+      "count": 96,
+      "radius": 2.5,
+      "speed": 70,
+      "drag": 5,
+      "lifetime": 0.6,
+      "size": 1.6,
+      "alpha": 1,
+      "cooldownSeconds": 1.5,
+      "colour": [0.92, 0.96, 1.0]
+    },
+    "wingVortices": {
+      "enabled": true,
+      "note": "DEV-928. From Matt's pick of every swing, 2026-10-12: 'all plz!'. Puffs of soft mist shed from each wing tip that hang in the air and spiral round the line the tip flew, laying a corkscrew; the tips counter-rotate. Strength: a smoothstep on forward speed (minSpeed..fullSpeed m/s) times one on the ship's turn rate (minTurnDeg..fullTurnDeg degrees a second), on the speed-FX slider. minTurnDeg, rate and alpha are THE NUMBERS TO ARGUE WITH; every number is a first guess in DEV-080's sense.",
+      "minSpeed": 80,
+      "fullSpeed": 160,
+      "minTurnDeg": 25,
+      "fullTurnDeg": 90,
+      "rate": 120,
+      "lifetime": 0.9,
+      "size": 0.35,
+      "radius": 0.35,
+      "radiusGrow": 2,
+      "spinTurnsPerSecond": 2.5,
+      "twistTurnsPerSecond": 6,
+      "alpha": 0.9,
+      "colour": [0.95, 0.97, 1.0]
     }
   },
   "cockpit": {
@@ -853,9 +903,9 @@
       "note": "DEV-130, Matt 2026-09-16: 'the terrain lod-popping is very noticeable.' 2016 AUTHORED a cross-fade — FacetedTerrain.LODTransitionTime is 1 s on Simonet's islands, 0.6 s on its ocean, 1 s alpine, 0.6 desert, 1/0.6 Kauai, all on the sheet — and never got one: the TerrainAlphaMaterial it faded through is the opaque Marmoset shader (on the Simonet prefab it is literally the same material as TerrainMaterial), so for a second both LODs drew opaque and then the old one popped off. Classic keeps the pop, which is what shipped (video 0:55, 13:20). Anniversary draws the transition 2016 wrote down, as a screen-door: both meshes for `lodTransitionTime * durationScale` seconds, each fragment owned by exactly one of them, no blending and no depth fight. The one number is this ratio; 1 is the authored duration per environment. Cost during a transition: one extra draw call and one extra chunk of triangles per fading chunk, complementary fragments so shading does not double; about ten chunks a second cross the 1,024 m band at 180 m/s."
     },
     "bakedLight": {
-      "enabled": false,
-      "rung": 3,
-      "note": "DEV-232, and it ships OFF. Bake the LAND's diffuse lighting into its vertex colours once and gate three's physical chain out behind it. It is EXACT rather than approximate on this geometry: sim/terrain/faceted.ts writes one normal and one colour to all three vertices of every triangle and never indexes the soup, render/skyshop-ibl.ts forces iblIrradiance to zero so the whole indirect diffuse is a LightProbe's spherical harmonics, and DEV-192 already replaced the point-light loop with #if 0 -- so every diffuse term on a terrain fragment is a function of the face normal, and storing it per vertex stores a value that was already uniform over the polygon. What it LOSES is the view-dependent half plus the shadows: the environment reflection and the GGX lobe (Marmoset _SpecInt is 0.05 on Simonet, so the terrain is very nearly matte and DEV-182 photographed the whole IBL cut at 0.9-2.2 levels of 255 there, 4.3-5.1 on the desert), terrain.surfaceGloss with them because its only consumer is that specular, and both the shadow-map and ff2SunHeightTerm multiplies -- so the ship, the racers and the landmarks stop casting onto the ground, which ANNIVERSARY.md ranks second of the eight scale cues. It has no numbers because the sun and the probe are read off the scene; the one knob is which RUNG, and DEV-237 made that a field rather than a sentence. rung 3 is what is written here and what DEV-232 measured at -0.80 ms p50 / -1.15 p95 on adv_02_jumpSeat (bracket 0.01 ms): it drops everything, shadows included. rung 1 keeps the shadow multiply per fragment -- outgoingLight = diffuseColor.rgb * ff2ShadowOnly(), so getShadow and ff2SunHeightTerm both still run and the ship, the racers and the landmarks go on casting onto the ground -- and buys less; its millisecond is unmeasured and its PICTURE is not: photographed on adv_02_jumpSeat, rung 3 sits 2.07 mean levels of 255 from the shipped build (the bake really is lossless for the diffuse) while rung 1 sits 33.9 levels DARKER, because three multiplies a shadow into directLight.color only and a bake that has collapsed direct and indirect into one colour shadows the ambient with it. At a 4-degree sun that is most of the island, not a corner of it. The correction is a second baked attribute and is not built; DEV-237. There is no rung 2: baking ff2SunHeightTerm puts the shadow terminator back on the 8 m grid the signed field exists to get it off, so it is a separate argument and is not built. Which rung, and whether to flip the flag at all, is Matt's call and wants a headset: docs/DEVIATIONS.md DEV-237 has the triptych. Measure it before flipping it: docs/plan/DEV-232-BAKED-LIGHT.md, and note that FF2_UNLIT's number is a CEILING on this and not an estimate, because that gate also deletes the fog."
+      "enabled": true,
+      "rung": "split",
+      "note": "ON at rung split since 2026-10-11, Matt: 'land the split baked light.' DEV-240 measured split at -0.50 ms on adv_02_jumpSeat and 0.00 on int_01_hoverJet, and it keeps every cast shadow. What follows is the flag's history. DEV-232, and it shipped OFF. Bake the LAND's diffuse lighting into its vertex colours once and gate three's physical chain out behind it. It is EXACT rather than approximate on this geometry: sim/terrain/faceted.ts writes one normal and one colour to all three vertices of every triangle and never indexes the soup, render/skyshop-ibl.ts forces iblIrradiance to zero so the whole indirect diffuse is a LightProbe's spherical harmonics, and DEV-192 already replaced the point-light loop with #if 0 -- so every diffuse term on a terrain fragment is a function of the face normal, and storing it per vertex stores a value that was already uniform over the polygon. What it LOSES is the view-dependent half plus the shadows: the environment reflection and the GGX lobe (Marmoset _SpecInt is 0.05 on Simonet, so the terrain is very nearly matte and DEV-182 photographed the whole IBL cut at 0.9-2.2 levels of 255 there, 4.3-5.1 on the desert), terrain.surfaceGloss with them because its only consumer is that specular, and both the shadow-map and ff2SunHeightTerm multiplies -- so the ship, the racers and the landmarks stop casting onto the ground, which ANNIVERSARY.md ranks second of the eight scale cues. It has no numbers because the sun and the probe are read off the scene; the one knob is which RUNG, and DEV-237 made that a field rather than a sentence. rung 3 is what is written here and what DEV-232 measured at -0.80 ms p50 / -1.15 p95 on adv_02_jumpSeat (bracket 0.01 ms): it drops everything, shadows included. rung 1 keeps the shadow multiply per fragment -- outgoingLight = diffuseColor.rgb * ff2ShadowOnly(), so getShadow and ff2SunHeightTerm both still run and the ship, the racers and the landmarks go on casting onto the ground -- and buys less; its millisecond is unmeasured and its PICTURE is not: photographed on adv_02_jumpSeat, rung 3 sits 2.07 mean levels of 255 from the shipped build (the bake really is lossless for the diffuse) while rung 1 sits 33.9 levels DARKER, because three multiplies a shadow into directLight.color only and a bake that has collapsed direct and indirect into one colour shadows the ambient with it. At a 4-degree sun that is most of the island, not a corner of it. The correction is a second baked attribute and is not built; DEV-237. There is no rung 2: baking ff2SunHeightTerm puts the shadow terminator back on the 8 m grid the signed field exists to get it off, so it is a separate argument and is not built. Which rung, and whether to flip the flag at all, is Matt's call and wants a headset: docs/DEVIATIONS.md DEV-237 has the triptych. Measure it before flipping it: docs/plan/DEV-232-BAKED-LIGHT.md, and note that FF2_UNLIT's number is a CEILING on this and not an estimate, because that gate also deletes the fog."
     },
     "diagonalFix": {
       "enabled": true,
@@ -1522,6 +1572,23 @@
   },
   "vr": {
     "note": "What Anniversary turns OFF while a headset is presenting. DEV-263, Matt 2026-09-21: “off in VR, on in flat.” THE MEASUREMENT THAT PRODUCED IT, and it is the first worn A/B this project has taken: rookie_01_hoverJet at 1512 px an eye, same minute, same machine — Classic held 96.9% of its frames at 90 Hz, Anniversary 75.0%. Nine runs, seven of them Classic, every one 94-98%; int_01_hoverJet on Classic held 98.2% across 9,728 frames. Flat, the same build runs ~178 fps with GPU p50 1.02 ms, so there is NOTHING to buy on a monitor and this list would only cost look there. Each entry is a path from `editionFeatures()` and the loader refuses one that is not — a typo here cannot quietly disable nothing.",
+    "override": {
+      "fx.speedLines": {
+        "note": "DEV-934, lever 5 of docs/plan/ANNIVERSARY-VR-FRAMERATE.md, ON by default (Matt, 2026-10-12: 'default to on'); the look call is Matt's and still pending. A streak's fill is linear in its width and blended over every pixel it covers, paid once per eye, and the boost tubes are lifted to ring the canopy at 4.6 and 8 m (tubeLift), which is where they cover the most screen. Half the flat 5x: at the default speed-FX slider (light, which interpolates from 1) the streak is 1.75x the 2016 hairline in a headset against 3x on a monitor, at full 2.5x against 5x. Length, rate, speed and lifetime are 2016's and untouched; the alpha and the soft edge stay, because alpha moves no pixel's cost. What a player sees: thinner streaks past the canopy, and a little less vection. Off arm: ?vrFxTrim=0. Measurement: TO BE TAKEN worn, plan section 5.",
+        "widthScale": 2.5
+      },
+      "fx.motes": {
+        "note": "DEV-934, with the streaks above. Half the motes (700 to 350; 175 at the default light slider, against 350 on a monitor). The count is the term that moves fill; the alpha is left alone because it does not. What a player sees: a sparser near-field air. Off arm: ?vrFxTrim=0.",
+        "count": 350
+      },
+      "props.meshLod": {
+        "note": "DEV-935, lever 8 of docs/plan/ANNIVERSARY-VR-FRAMERATE.md, ON by default; the look call is Matt's and still pending. Each coarser rung starts at 0.7 of its flat distance (200 to 140 m, 550 to 385 m), on the SAME meshes: the loader refuses a VR keep that differs, because the rungs are made once at world build. The 0.7 is coverage, not a timing: a prop's on-screen size is pixels-per-radian over distance, and at the projection's centre a 1080p monitor at the game's 70 degree vertical field has 540 / tan 35 = 771 px/rad, a 1620 px eye at the Frame's nominal 110 degrees 810 / tan 55 = 567 (529 at 1512, the low tier), so 0.69 to 0.74. At 0.7 a tree changes rung in the headset at the size it does on a 1080p monitor, never smaller; against the 1620 px frame DEV-338 judged its table on the ratio is 0.49, so this is the conservative end. Each eye draws every triangle again (no multiview, PERF-JOURNEY.md), and the props are 88 to 93 % of a frame's triangles (plan section 3.3). Est. 17 % fewer scatter triangles on a uniform forest (keep times ring area, 200 / 550 / 1280 m against 140 / 385 / 1280). What a player sees: the far forest coarsens nearer the seat, a few trees at a time (DEV-338's staggered swap). Off arm: ?vrMeshLod=0. Measurement: TO BE TAKEN worn, plan section 5.",
+        "rungs": [
+          { "from": 140, "keep": 0.35 },
+          { "from": 385, "keep": 0.12 }
+        ]
+      }
+    },
     "disable": [
       "terrain.lodFade",
       "terrain.surfaceGloss",
@@ -1530,9 +1597,11 @@
       "props.scatterShadows",
       "render.skyVisibility",
       "terrain.detailRing",
-      "render.nearShadow"
+      "render.nearShadow",
+      "render.missionShadows"
     ],
     "perEntry": {
+      "render.missionShadows": "DEV-932, lever 2 of docs/plan/ANNIVERSARY-VR-FRAMERATE.md (Matt, 2026-10-12: default on). The sun's map in a mission is Anniversary's largest cost in a headset: all shadows off measured -2.70 ms p50 / -3.11 p95 on the VRto3D rig (VR-PERF-WAVE-3.md, 152-163), the pass alone 1.26 ms on int_01 (VR-PERF-WAVE-2-WORK.md, 1018-1028), and int_02's 0.08 degree sun is the worst case. The far-field term (render.sunHeight) still shadows the land at every distance with the map gone, at 8 m and soft rather than 0.68 m. What a player loses: the ship, the racers, the landmarks and the trees stop casting, and the canopy bars stop shading the console (render.cockpitSelfShadow rides this map). The hangar and the title keep theirs: they are on render.shadows, not here. The look call is Matt's and pending; ?feature=render.missionShadows:on is the A/B, and the Advanced page's SHADOWS row puts it back for one session. Measurement: TO BE TAKEN worn, section 5 of the plan.",
       "render.nearShadow": "DEV-582, until a worn ?perf=1 capture exists. The pass is drawn once for both eyes and is cheap (a 160 m box holds few casters), but the lookup is one more five-tap PCF per lit fragment, paid per eye, on a worn frame that is 75 % fill. docs/plan/ULTRA.md says why the default is decided by a capture rather than argued; taking this line out is the edit that ships it to the headset.",
       "render.clouds": "OFF THE LIST since DEV-585. Matt, 2026-10-03: \"We should have clouds and their shadows in vr.\" It was listed because he could not see them from the cockpit (2026-09-21, DEV-263: they were free to drop, not a cost cut), and the clouds group measured 0.02 to 0.16 ms on a monitor frame (VR-PERF-WAVE-3.md section 10.3). Now a headset flies the same lifted, drifting, rim-lit clouds as flat, and the clouds and render.cloudShadow agree because the shadow map is built from the placements actually drawn. A worn ?perf=1 capture is the open gate; if it says otherwise, the row says so and Matt decides, rather than the path quietly coming back.",
       "terrain.lodFade": "Matt: “this looks bad in general.” The only entry judged on LOOK rather than cost, and the one that wants a flat decision too — it is here rather than globally off because the flat call has not been made yet, not because VR is the reason.",

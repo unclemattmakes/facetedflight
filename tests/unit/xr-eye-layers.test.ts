@@ -32,6 +32,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { UI_LAYER } from '@/render/bloom'
+import { LENS_MASK_LAYERS } from '@/render/lens-mask'
 import { REPO as ROOT } from './helpers/repo-root'
 import { listTs } from './helpers/source-tree'
 
@@ -120,5 +121,28 @@ describe('§3 nothing in src/ parks an object on an eye', () => {
       }
     }
     expect(offenders, 'layers 1 and 2 are the WebXR eyes — see §1').toEqual([])
+  })
+})
+
+describe('§4 the one exception: the lens mask, on BOTH eyes (DEV-930)', () => {
+  // `docs/plan/XR-PERF-VS-THREE.md` §3.11 premise 4: per-eye content is what
+  // layers 1 and 2 are FOR, so the app's lens mask uses them, deliberately and
+  // in one place. On both of them it is in both eyes (never DEV-141's one-eyed
+  // shape) and in no camera that is not an eye. `render/lens-mask.ts` lock 2.
+  it('sets both eye bits, not one', () => {
+    expect(LENS_MASK_LAYERS & 0b110, 'both eyes').toBe(0b110)
+    const { left, right } = eyeMasks(1 << 0)
+    expect(left & LENS_MASK_LAYERS, 'left eye').not.toBe(0)
+    expect(right & LENS_MASK_LAYERS, 'right eye').not.toBe(0)
+  })
+
+  it('is the only module that names the eye-layer mask', () => {
+    const users: string[] = []
+    for (const file of listTs(path.join(ROOT, 'src'))) {
+      if (fs.readFileSync(file, 'utf8').includes('LENS_MASK_LAYERS')) {
+        users.push(path.relative(ROOT, file).replaceAll(path.sep, '/'))
+      }
+    }
+    expect(users).toEqual(['src/render/lens-mask.ts'])
   })
 })

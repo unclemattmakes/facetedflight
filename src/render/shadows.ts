@@ -694,6 +694,21 @@ export const shadowsEnabled = (edition: Edition, settings: ComfortSettings): boo
   edition.render.shadows.enabled && settings.quality !== 'low'
 
 /**
+ * Whether the sun's map runs in a MISSION. DEV-932.
+ *
+ * `shadowsEnabled` is the machinery, and it is every scene's: the hangar's key
+ * light (`hangar-light.ts`, DEV-440) and the title's sun cast under it alone.
+ * This composes it with `render.missionShadows`, the one key Anniversary's
+ * `vr.disable` names, so a headset drops the map from a mission and the menus
+ * keep theirs. Every pass that only exists in a mission and rides the sun's map
+ * reads THIS: the cockpit's own map, the near cascade, the hull's shadow draw,
+ * the cockpit receiving. With it off nothing samples a map that is not drawn,
+ * and `far-shadow.ts`'s no-map branch keeps the terrain shadowed.
+ */
+export const missionShadowsEnabled = (edition: Edition, settings: ComfortSettings): boolean =>
+  shadowsEnabled(edition, settings) && edition.render.missionShadows.enabled
+
+/**
  * The caster set the live preset and the live quality tier ask for.
  *
  * Composed from `shadowsEnabled` rather than beside it, so a tier that has no
@@ -720,7 +735,8 @@ export const shadowReceiversFor = (
   edition: Edition,
   settings: ComfortSettings,
 ): ShadowReceivers => ({
-  cockpit: shadowsEnabled(edition, settings) && edition.render.cockpitShadow.enabled,
+  // DEV-932: the cockpit is only ever in a mission.
+  cockpit: missionShadowsEnabled(edition, settings) && edition.render.cockpitShadow.enabled,
 })
 
 /**
@@ -813,6 +829,12 @@ export interface SunShadowScene {
    * `ShadowCasters.racers`; the list is handed in whatever the preset says.
    */
   readonly racers?: readonly ShadowFlags[]
+  /**
+   * Which world this is. DEV-932: `title` keeps the map under `render.shadows`
+   * alone, like the hangar; a `mission` (the default, and the editor's
+   * playtest) also asks `render.missionShadows`, which a headset turns off.
+   */
+  readonly world?: 'mission' | 'title'
 }
 
 export interface SunShadows {
@@ -929,9 +951,18 @@ export const createSunShadows = (
    * both is what makes the flip recompile itself.
    */
   const apply = (): void => {
-    const want = sun !== null && shadowsEnabled(editionState.current, editionState.settings)
+    // DEV-932: the MACHINERY is every scene's (the hangar's key light casts
+    // through this same `renderer.shadowMap`), the SUN's map is the world's.
+    // With the machinery on and the sun not casting, three draws no depth pass
+    // (`WebGLShadowMap.render` returns on no casting light) and compiles no
+    // `USE_SHADOWMAP` (`shadowMapEnabled` wants a casting light too).
+    const machinery = sun !== null && shadowsEnabled(editionState.current, editionState.settings)
+    const want =
+      machinery &&
+      (scene.world === 'title' ||
+        missionShadowsEnabled(editionState.current, editionState.settings))
     on = want
-    renderer.shadowMap.enabled = want
+    renderer.shadowMap.enabled = machinery
     for (const terrain of scene.terrains ?? []) terrain.setShadows(want)
     // The caster set, not just the switch: `props.scatterShadows` takes the
     // scatter out of the depth pass while the map itself stays on (DEV-224).

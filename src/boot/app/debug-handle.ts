@@ -65,6 +65,7 @@ import {
 } from '@/render/hud'
 import { hudFontState } from '@/render/hud-font'
 import { type HudGauges, parseHudGauges } from '@/render/hud-gauges'
+import type { LensMask } from '@/render/lens-mask'
 import type { LoadingScene } from '@/render/loading-scene'
 import type { PauseOption, PausePage } from '@/render/pause'
 import { panelHeight, rowBand, rowCentreLocalY, TOP_LOCAL_Y, WIDTH } from '@/render/pause'
@@ -75,6 +76,7 @@ import type { StandingStatus } from '@/render/results'
 import { codeKeyCentre } from '@/render/room-code-plate'
 import type { SceneTint } from '@/render/scene-tint'
 import type { SpringArm } from '@/render/spring-arm'
+import type { StaticScene } from '@/render/static-scene'
 import { ENTER_VR_ROW_ID, TITLE_MENU_BAND_M, TITLE_MENU_HEADING } from '@/render/title-menu'
 import { titleVrText } from '@/render/title-vr'
 import type { TvPanel } from '@/render/tv-panel'
@@ -244,6 +246,7 @@ export interface DebugHandleCtx {
   readonly perfSurface: PerfSurface | null
   readonly refreshBakedLight: () => BakedLightReport
   readonly render: Renderer
+  readonly staticScene: StaticScene
   readonly results: ReturnType<typeof createResults>
   readonly resultsBoardReport: () => ResultsBoardReport | null
   /** APP-SPLIT: bag, owner in phase 3 (written here). */
@@ -277,6 +280,7 @@ export interface DebugHandleCtx {
   readonly tvPanel: TvPanel
   readonly tvPanelInput: TvPanelInput
   readonly tvView: TvView
+  readonly lensMask: LensMask
   readonly vignette: Vignette
   readonly world: Promise<World> | null
   readonly worldProps: ReturnType<typeof createWorldProps>
@@ -329,6 +333,7 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     run,
     sceneTint,
     setChunkBatch,
+    lensMask,
     shareReport,
     springArm,
     thirdPersonNow,
@@ -627,6 +632,9 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     spray: () => handles.liveFx?.spray ?? null,
     // DEV-613: rebuilt per world, hence an accessor.
     splash: () => handles.liveFx?.splashes ?? null,
+    // DEV-926 / DEV-927: the vapour cone and the boost shockwave, rebuilt per world.
+    swings: () => handles.liveFx?.swings ?? null,
+    staticScene: () => ctx.staticScene.report(),
     /**
      * WHICH page the plate is turned to, and the rows on it as the player
      * meets them. See the interface for the argument; the short version is
@@ -1130,19 +1138,19 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
       }
     },
     /**
-     * DEV-193's spike: fold the chunk grids into one `BatchedMesh` per LOD band,
-     * or unfold them, and say what was folded.
-     *
-     * The instrument the draw-call question turns on, and it flips on a LIVE
-     * page for the reason `fragmentGates` above does: one load, two readings,
-     * no cross-run pin (perf-protocol §3d). `tests/e2e/chunk-batch.spec.ts` is
-     * the protocol; `?chunkBatch=1` is the same thing applied at load.
-     *
-     * **It stops the terrain's LODs moving** — see `CHUNK_BATCH` at the top of
-     * this file. Frozen frames only.
+     * The land's chunk batching, on or off, on a LIVE page (DEV-193, DEV-904).
+     * Batching is the shipped default, so `chunkBatch(false)` is the OFF arm of
+     * the A/B and `chunkBatch(true)` rebuilds the bands from the chunks as they
+     * are. One load, two readings, no cross-run pin (perf-protocol section 3d);
+     * `tests/e2e/chunk-batch.spec.ts` is the protocol. Returns the plan: bands,
+     * slots used and reserved, bytes.
      */
     chunkBatch(on = true) {
       return setChunkBatch(on)
+    },
+    /** DEV-930: read, size (NDC radius) or, with `0` or `null`, turn off the lens mask. */
+    lensMask(radius?: number | null) {
+      return radius === undefined ? lensMask.report() : lensMask.set(radius)
     },
     /**
      * DEV-238. What the GPU is actually handed, in order.

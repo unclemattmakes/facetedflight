@@ -307,6 +307,28 @@ export interface WarmUpOptions {
    * the draw pass never compiles it synchronously.
    */
   readonly rideLit?: readonly THREE.Object3D[]
+  /**
+   * Roots that a compositing frame draws in bloom's UI PASS, compiled against
+   * that pass's binding as well. DEV-938.
+   *
+   * With `offscreen` every program above is built against the composer's
+   * linear target, but `bloom.ts` draws a `toneMapped: false` surface in a
+   * second pass straight to the CANVAS with the camera on `layer` alone. Both
+   * are in three's cache key: `outputColorSpace` comes off the bound target
+   * (srgb on the canvas, the working space on a target), and the light counts
+   * come off the camera's mask (`projectObject` collects a light only on a
+   * layer the camera sees). So a HUD surface warmed only here was warmed in a
+   * variant nothing draws.
+   *
+   * The HUD panel got away with it by drawing on the ride's first frame, under
+   * the curtain. The race map did not: DEV-840 keeps it dark while the launch
+   * phase is `waiting` or `rising`, so its first draw was the RELEASE, in the
+   * clear, and `ride-hitch.spec.ts` counted the one program it compiled there.
+   *
+   * Ignored without `offscreen`: a frame that does not composite draws its UI
+   * in the one pass, which the main draw already warmed.
+   */
+  readonly uiPass?: { readonly roots: readonly THREE.Object3D[]; readonly layer: number }
 }
 
 /** The slice of a three program `programsLinked` reads. */
@@ -517,6 +539,21 @@ export const warmWorld = (
       options.duringWarm?.((root) => {
         renderer.compile(root, camera, scene)
       })
+    }
+    // ── bloom's UI pass: the canvas, the camera on the UI layer (DEV-938) ──
+    //
+    // Before `shaftLit` puts the room back, so the lights are the FLIGHT's as
+    // the camera's mask filters them. The mask is the camera's own, set and
+    // restored, which is exactly what `bloom.render` does for that pass.
+    if (options.offscreen && (options.uiPass?.roots.length ?? 0) > 0 && options.uiPass) {
+      const mask = camera.layers.mask
+      renderer.setRenderTarget(null)
+      camera.layers.set(options.uiPass.layer)
+      try {
+        for (const r of options.uiPass.roots) renderer.compile(r, camera, scene)
+      } finally {
+        camera.layers.mask = mask
+      }
     }
     // ── the SHAFT's own variants (DEV-152) ────────────────────────────────
     //

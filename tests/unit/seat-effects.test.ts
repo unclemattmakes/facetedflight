@@ -9,7 +9,7 @@ import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
 import { type ExtractedParticle, emitterLocalMatrix, jumpSeatEffectSpecs } from '@/game/particle-fx'
 import { HOVERJET, JUMPSEAT } from '@/generated/constants.generated'
-import { createParticleField } from '@/render/particles'
+import { createParticleField, particleAttribute } from '@/render/particles'
 
 const SEAT = JUMPSEAT as unknown as {
   readonly effects: { readonly minWindEffectSpeed: number; readonly componentEnabled: boolean }
@@ -30,7 +30,7 @@ const meanDirection = (spec: ExtractedParticle): { mean: THREE.Vector3; n: numbe
   e.play()
   const camera = new THREE.PerspectiveCamera()
   for (let k = 0; k < 60 && field.alive < 60; k++) field.update(0.02, camera)
-  const attr = (field.object as THREE.Mesh).geometry.getAttribute('iVelocity')
+  const attr = particleAttribute(field, 'iVelocity')
   const mean = new THREE.Vector3()
   const v = new THREE.Vector3()
   const n = field.alive

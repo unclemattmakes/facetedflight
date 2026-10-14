@@ -123,12 +123,14 @@ describe('composeShareCard', () => {
 })
 
 describe('shareCardFromStill', () => {
+  // A full 1200 x 630 PNG encode and decode in JS: 2.3 s alone on this box,
+  // past vitest's 5 s default under the whole suite's load (2026-10-12).
   it('reads a PNG still and writes a 1200 x 630 RGB PNG', () => {
     const s = still([10, 20, 30])
     const png = encodePng(s.data, s.width, s.height)
     const out = decodePngBuffer(shareCardFromStill(png, SVG, layout), 'card')
     expect([out.width, out.height, out.channels]).toEqual([1200, 630, 3])
-  })
+  }, 20_000)
 })
 
 describe('loadStill: where the build finds the picture', () => {

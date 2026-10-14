@@ -108,7 +108,7 @@ import {
 } from './offscreen-pass'
 import { chainShaderPatch } from './program-cache-key'
 import { uniqueMaterialsOf } from './scene-walk'
-import { type ShadowFit, shadowsEnabled, type Vec3 } from './shadows'
+import { missionShadowsEnabled, type ShadowFit, type Vec3 } from './shadows'
 
 /** The token this patch adds to three's program cache key. */
 export const COCKPIT_SELF_SHADOW_TAG = 'cockpit-self-shadow'
@@ -131,7 +131,10 @@ export const REPORT_KEY = 'cockpitSelfShadow'
  * without an eighth row of its own — press it and both passes go.
  */
 export const cockpitSelfShadowEnabled = (edition: Edition, settings: ComfortSettings): boolean =>
-  shadowsEnabled(edition, settings) && edition.render.cockpitSelfShadow.enabled
+  // DEV-932: the MISSION's map, so a headset that drops it drops this too, and
+  // the term (which lives inside the sun map's own `#if`) is never left pointing
+  // at a map nobody draws.
+  missionShadowsEnabled(edition, settings) && edition.render.cockpitSelfShadow.enabled
 
 // ── the fit ──────────────────────────────────────────────────────────────
 

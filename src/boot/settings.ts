@@ -332,9 +332,41 @@ export const ULTRA_IN_HEADSET: QualitySetting = 'high'
  * attribute, the shadow map and the detail ring all read the FLAT tier
  * (`quality`), and `low` is the one tier that turns all three off, so an auto
  * headset at `low` would get the monitor's answers to those three.
- * `comfort-settings.test.ts` holds that.
+ * `comfort-settings.test.ts` holds that. DEV-931 is the Anniversary half,
+ * which takes `low`'s EYE SIZE only and none of those three:
+ * {@link VR_AUTO_QUALITY_ANNIVERSARY}.
  */
 export const VR_AUTO_QUALITY: QualitySetting = 'medium'
+
+/**
+ * The tier a headset session gets on AUTO when the look IN THE HEADSET is
+ * Anniversary. DEV-931, lever 1 of `docs/plan/ANNIVERSARY-VR-FRAMERATE.md`
+ * (Matt, 2026-10-12: *"default to on"*): `low`'s 0.7 scale, a 1512 px eye on
+ * the Steam Frame, where Anniversary's worn rows held 87 to 94 % at 90 Hz and
+ * the 1620 px `medium` row on `int_02` held 9 %.
+ *
+ * ONLY the eye size follows it, and that is the point rather than a gap. AUTO
+ * keeps `quality` at the monitor's `high`, so every reader of the FLAT tier
+ * (the MSAA context attribute, the shadow map's `low` gate, the detail ring,
+ * the life pass's `minQuality`) still reads `high`: the side effects
+ * {@link VR_AUTO_QUALITY}'s comment warns about cannot arrive. The cost of that:
+ * the eye stays 4x multisampled, because MSAA is a context attribute chosen at
+ * load, before anyone knows a headset will be worn, and three 0.185.1 builds the
+ * XR target with `samples: attributes.antialias ? 4 : 0` from that same context
+ * (`WebXRManager.js:497`). So this is 1512 at 4x, not `?quality=low`'s 1512 at
+ * 0x; `&aa=0` is the arm that adds the second half, for one load.
+ * `?vrLookTier=0` turns this off (the headset gets {@link VR_AUTO_QUALITY}).
+ */
+export const VR_AUTO_QUALITY_ANNIVERSARY: QualitySetting = 'low'
+
+/**
+ * AUTO's headset tier for a look: {@link VR_AUTO_QUALITY_ANNIVERSARY} on
+ * Anniversary, {@link VR_AUTO_QUALITY} otherwise. `null` is "the look is not
+ * known here, or the `?vrLookTier=0` pin is set", and gets the Classic answer,
+ * which is what every caller got before DEV-931.
+ */
+export const vrAutoQualityFor = (look: EditionId | null): QualitySetting =>
+  look === 'anniversary' ? VR_AUTO_QUALITY_ANNIVERSARY : VR_AUTO_QUALITY
 
 /**
  * The LOOK a headset session gets while the player has picked none. DEV-896 (Matt,
@@ -379,13 +411,18 @@ export const nextEditionChoice = (
  * forgets the flag (`{ ...DEFAULT_SETTINGS, quality: 'low' }`, which is how
  * half the tests spell "the player picked Low") gets the tier it named in a
  * headset too, instead of AUTO quietly trading it for Medium.
+ *
+ * `headsetLook` is the look a headset wears (DEV-931): on AUTO it picks the
+ * headset's tier through {@link vrAutoQualityFor}. Omitted or `null` is the
+ * Classic answer, so a caller that cannot know the look reports what it did.
  */
 export const qualityInForce = (
   s: Pick<ComfortSettings, 'quality' | 'qualityAuto'>,
   presenting: boolean,
+  headsetLook: EditionId | null = null,
 ): QualitySetting =>
   s.qualityAuto === true && s.quality === DEFAULT_SETTINGS.quality && presenting
-    ? VR_AUTO_QUALITY
+    ? vrAutoQualityFor(headsetLook)
     : // DEV-581: the one place `ultra` resolves. Everything that asks for the
       // tier in force (the XR framebuffer scale, the report, the getter the
       // ultra features read) gets `high` while presenting.
