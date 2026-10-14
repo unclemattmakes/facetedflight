@@ -33,7 +33,10 @@ describe('slow unit tier list', () => {
 
   it('is what package.json, the batch gate and CI actually run', () => {
     expect(readFileSync(root('package.json'), 'utf8')).toContain('"test:slow"')
-    expect(readFileSync(root('tools/agent/batch-gate.sh'), 'utf8')).toContain('test:slow')
+    // The batch gate is agent tooling the public export leaves behind; where it
+    // exists (this repository) it must run the tier.
+    const gate = root('tools/agent/batch-gate.sh')
+    if (existsSync(gate)) expect(readFileSync(gate, 'utf8')).toContain('test:slow')
     expect(readFileSync(root('.github/workflows/asset-denylist.yml'), 'utf8')).toContain(
       'pnpm test:slow',
     )
