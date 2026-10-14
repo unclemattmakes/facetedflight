@@ -44,6 +44,8 @@ import type { CanvasPanelReport, HudReport } from '@/render/hud'
 import type { HudFontState } from '@/render/hud-font'
 import type { LensMaskReport } from '@/render/lens-mask'
 import type { LoadingPlace } from '@/render/loading-scene'
+import type { MultiviewReport } from '@/render/multiview'
+import type { ProbeOptions, ProbeResult, XrEyeCapture } from '@/render/multiview-probe'
 import type { RaceMapReport } from '@/render/race-map'
 import type { Renderer } from '@/render/renderer'
 import type { ReportBugHook } from '@/render/report-bug-menu'
@@ -660,6 +662,22 @@ export interface App {
    * head yaw, and the on/off arms of its A/B on one load. `render/lens-mask.ts`.
    */
   lensMask(radius?: number | null): LensMaskReport
+  /**
+   * DEV-986: multiview's report (`render/multiview.ts`), or null when the page
+   * was not loaded with `?multiview=1` and nothing is installed.
+   */
+  multiview(): MultiviewReport | null
+  /**
+   * DEV-988: draw the live stage both ways in one turn and compare the eyes
+   * (`render/multiview-probe.ts`). Null without `?multiview=1`. Debug only.
+   */
+  multiviewProbe(options?: ProbeOptions): ProbeResult | null
+  /**
+   * DEV-989: the next XR frame's real eye buffer, both eyes, read inside the
+   * frame. With or without `?multiview=1` (the A/B's two arms); without it the
+   * session must be single-sampled (`?aa=0`). Rejects when not presenting.
+   */
+  xrEyeCapture(step?: number): Promise<XrEyeCapture>
   /**
    * DEV-238. The REAL per-frame submission sequence, folded into runs.
    *

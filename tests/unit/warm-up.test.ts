@@ -11,7 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { type WarmUpRenderer, warmWorld } from '../../src/render/warm-up'
+import { setSessionWarmTarget, type WarmUpRenderer, warmWorld } from '../../src/render/warm-up'
 import { REPO as ROOT } from './helpers/repo-root'
 
 interface Call {
@@ -573,6 +573,33 @@ describe('§2 warmWorld compiles the session’s binding too', () => {
     // And the new one is the default binding, which is the session's key.
     expect(calls[2]?.target, 'the session pass binds the default target').toBeNull()
     expect(r.bindings).toBe(2)
+  })
+
+  // DEV-986: on the rig the multiview arm compiled its eye programs in the air
+  // (53 of them) because the warm-up warmed the canvas's key, which a
+  // multiview session never draws with.
+  it('warms the multiview key instead, when multiview set one, composited or not', () => {
+    const target = { name: 'multiview-session' } as unknown as THREE.WebGLRenderTarget
+    setSessionWarmTarget(target)
+    try {
+      for (const offscreen of [true, false]) {
+        const { scene, camera, root } = world()
+        const { renderer, calls } = fakeRenderer(root)
+        const r = warmWorld(
+          renderer,
+          scene,
+          camera,
+          root,
+          { offscreen, alsoDefaultTarget: true },
+          () => 0,
+        )
+        expect(calls.map((c) => c.kind)).toEqual(['render', 'compile', 'compile'])
+        expect(calls[2]?.target, `offscreen ${offscreen}`).toBe(target)
+        expect(r.bindings).toBe(2)
+      }
+    } finally {
+      setSessionWarmTarget(null)
+    }
   })
 
   it('is OFF by default — DEV-152’s function, unchanged', () => {

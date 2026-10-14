@@ -81,6 +81,8 @@ export interface PerfCtx {
   readonly xrProbe: XrProbe
   /** DEV-930: the app's lens mask, for the trace header (`render/lens-mask.ts`). */
   readonly lensMask: LensMaskReport
+  /** DEV-987: true while multiview draws the session; the GPU timer stands down. */
+  readonly multiviewActive: boolean
   readonly xrVisibility: XRVisibilityState | null
   readonly contextLost: boolean
   readonly clock: FixedStepClock
@@ -112,7 +114,9 @@ export const createPerf = (ctx: PerfCtx) => {
   }
   // The GPU's own time for the frame (DEV-118), off unless `?perf=1` or a spec
   // asks: the wall delta above is vsync on a monitor and cannot rank a cost.
-  const gpu: GpuTimer = createGpuTimer(render.renderer.getContext() as WebGL2RenderingContext)
+  const gpu: GpuTimer = createGpuTimer(render.renderer.getContext() as WebGL2RenderingContext, {
+    blocked: () => ctx.multiviewActive,
+  })
   if (PERF_HUD) gpu.enable()
   // ── The same numbers, in the cockpit, where a headset can read them ──────
   //

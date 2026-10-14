@@ -104,6 +104,7 @@ import {
 } from '@/render/illustrative'
 import { createLensMask, followSessions, type LensMask } from '@/render/lens-mask'
 import type { LodFadeSpec } from '@/render/lod-fade'
+import { installMultiview, type Multiview } from '@/render/multiview'
 import type { ParticleOverride } from '@/render/particles'
 import type { Pause } from '@/render/pause'
 import { PLATE_SIDE } from '@/render/perf-plate'
@@ -188,6 +189,7 @@ import {
   MENU_EDITION,
   MISSION,
   MODE_PARAM,
+  MULTIVIEW_PIN,
   PERF_HUD,
   QUALITY_PINS,
   RULES_EDITION,
@@ -385,6 +387,10 @@ export const bootApp = async (
   // Before the perf subsystem, whose trace header reads it.
   const lensMask: LensMask = createLensMask(LENS_MASK_AT_BOOT)
   followSessions(lensMask, render.renderer.xr, render.rig)
+  // DEV-986: both eyes in one pass, under `?multiview=1` only. Installed now,
+  // before any session or compile; absent, nothing is wrapped.
+  // `render/multiview.ts` has what it hooks and what falls back.
+  const multiview: Multiview | null = MULTIVIEW_PIN ? installMultiview(render.renderer) : null
   // ── The perf subsystem (APP-SPLIT 4.1, `boot/app/perf.ts`) ───────────────
   //
   // The DOM panel, the GPU timer, the cockpit plate, the trace and the capture,
@@ -427,6 +433,9 @@ export const bootApp = async (
     },
     get lensMask() {
       return lensMask.report()
+    },
+    get multiviewActive() {
+      return multiview?.active() ?? false
     },
     get xrProbe() {
       return xrProbe
@@ -4525,6 +4534,7 @@ export const bootApp = async (
     sceneTint,
     setChunkBatch,
     lensMask,
+    multiview,
     shareReport,
     get skyLastOn() {
       return skyLastOn

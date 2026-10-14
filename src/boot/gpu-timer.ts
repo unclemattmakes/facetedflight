@@ -97,7 +97,21 @@ export const GPU_RING = 240
 /** Queries in flight before the oldest is abandoned rather than waited on. */
 const MAX_PENDING = 8
 
-export const createGpuTimer = (gl: TimerGl): GpuTimer => {
+/**
+ * DEV-987: `blocked` answers "may a TIME_ELAPSED query be open around this
+ * frame's draw?" It may not while multiview draws: a draw into a multiview
+ * framebuffer with a timer query active is INVALID_OPERATION in Chrome (the rig,
+ * 2026-10-14: every draw of the frame refused, the eye buffer left at the clear
+ * colour, GL error 1282). So under `?multiview=1` in a session the frame is not
+ * timed: `harvested` stops advancing and `last` holds its old value, which the
+ * trace reads as "no new result" (its own rule). GPU time under multiview comes
+ * from the Chrome trace (`tools/perf/trace-frame.mjs`), not from here.
+ */
+export interface GpuTimerOptions {
+  readonly blocked?: () => boolean
+}
+
+export const createGpuTimer = (gl: TimerGl, options: GpuTimerOptions = {}): GpuTimer => {
   const ext = gl.getExtension('EXT_disjoint_timer_query_webgl2') as TimerExt | null
   const supported = ext !== null
   let enabled = false
@@ -147,7 +161,7 @@ export const createGpuTimer = (gl: TimerGl): GpuTimer => {
       dropPending()
     },
     begin() {
-      if (!enabled || !ext || open) return
+      if (!enabled || !ext || open || options.blocked?.() === true) return
       const q = gl.createQuery()
       if (!q) return
       gl.beginQuery(ext.TIME_ELAPSED_EXT, q)

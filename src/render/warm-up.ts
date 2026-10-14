@@ -389,6 +389,20 @@ export interface WarmUpResult {
   readonly bindings: number
 }
 
+/**
+ * The binding a SESSION draws with, for `alsoDefaultTarget`. `null`, the
+ * canvas, unless `?multiview=1` installed multiview (DEV-986): then a session
+ * draws through the multiview eye target, whose colour space is its own
+ * (`render/multiview.ts`), so the session's programs are the multiview ones and
+ * this is a 1 x 1 target carrying that key. Compiled against, never drawn.
+ */
+let sessionTarget: THREE.WebGLRenderTarget | null = null
+
+/** DEV-986: `render/multiview.ts` sets it when it is installed with the extension. */
+export const setSessionWarmTarget = (target: THREE.WebGLRenderTarget | null): void => {
+  sessionTarget = target
+}
+
 /** The scratch target. 1×1: the pixels are never read, only the binding matters. */
 let scratchTarget: THREE.WebGLRenderTarget | null = null
 
@@ -507,7 +521,11 @@ export const warmWorld = (
   // A build that does not composite is already on the default target, so there
   // is nothing to add and the list stays at one.
   const bindings: (THREE.WebGLRenderTarget | null)[] = options.offscreen ? [scratch()] : [null]
-  if (options.alsoDefaultTarget === true && options.offscreen) bindings.push(null)
+  // Under multiview the session's key is never the flat frame's, composited or
+  // not, so its binding is added either way (DEV-986).
+  if (options.alsoDefaultTarget === true && (options.offscreen || sessionTarget !== null)) {
+    bindings.push(sessionTarget)
+  }
 
   const previousTarget = renderer.getRenderTarget()
   try {

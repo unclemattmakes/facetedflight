@@ -134,7 +134,17 @@ const OUT_DIR = process.env.SHADER_LINK_DIR ?? ''
 const SNAP_AT = Number(process.env.SHADER_LINK_AT ?? '20')
 
 /** The pin as query parameters, derived from the one constant. */
-const PIN_PARAMS: Readonly<Record<string, string>> = Object.fromEntries(new URLSearchParams(PINNED))
+/**
+ * DEV-988: `SHADER_LINK_MULTIVIEW=1` runs every arm with `?multiview=1` and,
+ * before each sweep, `__ff2.multiviewProbe()`, which compiles AND draws the
+ * stage's multiview programs (one pass into a two-layer target, the per-eye
+ * block bound), so the sweep below holds them and checks their link like any
+ * other. Flat: the XR layer is the rig's (`xr-multiview.spec.ts`). Unset, the
+ * spec is byte for byte what it was.
+ */
+const MULTIVIEW = process.env.SHADER_LINK_MULTIVIEW === '1'
+const PIN = MULTIVIEW ? `${PINNED}&multiview=1` : PINNED
+const PIN_PARAMS: Readonly<Record<string, string>> = Object.fromEntries(new URLSearchParams(PIN))
 /**
  * DEV-583's arm: the same pin with the tier at `ultra`, the only tier whose
  * Anniversary sea carries the mirror's define. Every photo's name carries the
@@ -142,7 +152,7 @@ const PIN_PARAMS: Readonly<Record<string, string>> = Object.fromEntries(new URLS
  * unpinned or for `high`.
  */
 // DEV-837 shipped the mirror off, so this arm pins it back on to keep its variants checked.
-const ULTRA_PIN = `${PINNED.replace('quality=high', 'quality=ultra')}&feature=render.seaReflection:on`
+const ULTRA_PIN = `${PIN.replace('quality=high', 'quality=ultra')}&feature=render.seaReflection:on`
 const ULTRA_PARAMS: Readonly<Record<string, string>> = Object.fromEntries(
   new URLSearchParams(ULTRA_PIN),
 )
@@ -197,8 +207,19 @@ const verify = async (
   arm: string,
   view: string,
   /** The quality pin this arm loaded with, for the photo's name and the record. */
-  pin: string = PINNED,
+  pin: string = PIN,
 ): Promise<Reading> => {
+  if (MULTIVIEW) {
+    const probe = await page.evaluate(() => {
+      const w = globalThis as unknown as Ff2Global
+      const p = w.__ff2.multiviewProbe({ width: 256, height: 256 })
+      return p ? { calls: p.multiview.calls, report: w.__ff2.multiview() } : null
+    })
+    console.info(`shader-link ${arm} · ${view}: multiview ${JSON.stringify(probe)}`)
+    expect(probe, 'the page loaded with ?multiview=1').not.toBeNull()
+    expect(probe?.calls ?? 0, 'the multiview pass drew').toBeGreaterThan(0)
+    expect(probe?.report?.fallbacks, 'sources the multiview rewrite refused').toEqual([])
+  }
   const sweep = await sweepPrograms(page)
   const lines = ledger.lines()
   const consoleFailures = collapseRepeats(
@@ -297,7 +318,7 @@ test.describe('@measure @gpu every program links: DEV-324', () => {
   for (const edition of EDITIONS) {
     test(`the title screen, then the hangar · ${edition}`, async ({ page }, testInfo) => {
       const ledger = watchShaderConsole(page)
-      await page.goto(`/?xr=off&edition=${edition}&${PINNED}`)
+      await page.goto(`/?xr=off&edition=${edition}&${PIN}`)
       await firstPress(page)
       await bootReady(page)
       // Not `focusCanvas`: a click on the title is a real press (DEV-301).
@@ -344,7 +365,7 @@ test.describe('@measure @gpu every program links: DEV-324', () => {
   test('int_01_hoverJet · anniversary · ultra, the sea mirror (DEV-583) · cockpit, then third person', async ({
     page,
   }, testInfo) => {
-    expect(ULTRA_PIN, 'the ultra pin differs from the pin it was cut from').not.toBe(PINNED)
+    expect(ULTRA_PIN, 'the ultra pin differs from the pin it was cut from').not.toBe(PIN)
     const ledger = watchShaderConsole(page)
     await flyToFreeze(page, {
       mission: 'int_01_hoverJet',

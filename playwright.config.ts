@@ -202,6 +202,7 @@ export const XR_SERIAL_SPECS = [
   'xr-viewport-scale-probe.spec.ts',
   'xr-vrto3d-probe.spec.ts',
   'xr-vrto3d-trace.spec.ts',
+  'xr-multiview.spec.ts',
 ]
 
 export default defineConfig({

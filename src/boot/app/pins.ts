@@ -23,6 +23,7 @@ import {
   parseAdaptivePin,
   parseHzPin,
   parseMsaaPin,
+  parseMultiviewPin,
   parseQualityPin,
   parseSubmitPin,
   type QualityPins,
@@ -1764,5 +1765,18 @@ export const LAUNCH_RIG_2016_WAIT_MS = 10_000
 export const SUBMIT_PIN: SubmitPin = (() => {
   const pin = parseSubmitPin(params.get('submit'), (m) => console.warn(`submit: ${m}`))
   if (pin !== 'off') console.info(`submit: ${pin} (DEV-971)`)
+  return pin
+})()
+
+/**
+ * `?multiview=1`: draw both eyes in one pass in a headset session, through
+ * `OVR_multiview2` and a texture-array projection layer (DEV-986,
+ * `render/multiview.ts`). OFF by default; absent, nothing is installed and the
+ * renderer is today's, byte for byte. Turning it on for players is Matt's call
+ * after a worn session. It costs MSAA in the session (the header says why).
+ */
+export const MULTIVIEW_PIN: boolean = (() => {
+  const pin = parseMultiviewPin(params.get('multiview'), (m) => console.warn(`multiview: ${m}`))
+  if (pin) console.info('multiview: requested (DEV-986)')
   return pin
 })()

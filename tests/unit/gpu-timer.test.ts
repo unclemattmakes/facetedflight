@@ -222,4 +222,20 @@ describe('gpu timer — DEV-118', () => {
     t.end()
     expect(t.enabled).toBe(false)
   })
+
+  // DEV-987: on the rig, a TIME_ELAPSED query open around a multiview draw made
+  // Chrome refuse every draw of the frame (GL 1282, the eye buffer left blank).
+  it('opens no query while blocked (multiview drawing), and resumes after', () => {
+    const { gl, log } = fakeGl()
+    let blocked = true
+    const t = createGpuTimer(gl, { blocked: () => blocked })
+    t.enable()
+    t.begin()
+    t.end()
+    expect(log.filter((l) => l.startsWith('begin'))).toHaveLength(0)
+    blocked = false
+    t.begin()
+    t.end()
+    expect(log.filter((l) => l.startsWith('begin'))).toHaveLength(1)
+  })
 })

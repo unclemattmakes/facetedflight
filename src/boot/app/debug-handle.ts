@@ -63,6 +63,8 @@ import { hudFontState } from '@/render/hud-font'
 import { type HudGauges, parseHudGauges } from '@/render/hud-gauges'
 import type { LensMask } from '@/render/lens-mask'
 import type { LoadingScene } from '@/render/loading-scene'
+import type { Multiview } from '@/render/multiview'
+import { captureXrEyes, type ProbeOptions, runMultiviewProbe } from '@/render/multiview-probe'
 import type { PauseOption, PausePage } from '@/render/pause'
 import { panelHeight, rowBand, rowCentreLocalY, TOP_LOCAL_Y, WIDTH } from '@/render/pause'
 import type { PerfPlate } from '@/render/perf-plate'
@@ -264,6 +266,8 @@ export interface DebugHandleCtx extends PageHandleCtx {
   readonly tvPanelInput: TvPanelInput
   readonly tvView: TvView
   readonly lensMask: LensMask
+  /** DEV-986: null unless `?multiview=1`. */
+  readonly multiview: Multiview | null
   readonly vignette: Vignette
   readonly world: Promise<World> | null
   readonly worldProps: ReturnType<typeof createWorldProps>
@@ -313,6 +317,7 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     sceneTint,
     setChunkBatch,
     lensMask,
+    multiview,
     shareReport,
     springArm,
     thirdPersonNow,
@@ -1086,6 +1091,31 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
     /** DEV-930: read, size (NDC radius) or, with `0` or `null`, turn off the lens mask. */
     lensMask(radius?: number | null) {
       return radius === undefined ? lensMask.report() : lensMask.set(radius)
+    },
+    /** DEV-986: multiview's report, or null without `?multiview=1`. */
+    multiview() {
+      return multiview?.report() ?? null
+    },
+    /** DEV-988: the stage both ways, compared per eye. `render/multiview-probe.ts`. */
+    multiviewProbe(options?: ProbeOptions) {
+      if (!multiview) return null
+      return runMultiviewProbe(
+        render.renderer,
+        multiview,
+        router.screen === 'menu' ? menuScene : render.scene,
+        render.camera,
+        options,
+      )
+    },
+    /** DEV-989: the next XR frame's real eye buffer. `render/multiview-probe.ts`. */
+    xrEyeCapture(step?: number) {
+      const stage = router.screen === 'menu' ? menuScene : render.scene
+      return captureXrEyes(
+        render.renderer,
+        stage,
+        multiview ? () => multiview.texture() : null,
+        step,
+      )
     },
     /**
      * DEV-238. What the GPU is actually handed, in order.

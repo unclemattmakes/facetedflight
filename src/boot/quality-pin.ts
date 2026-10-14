@@ -135,6 +135,21 @@ export const parseSubmitPin = (
 }
 
 /**
+ * `?multiview=1|0` (DEV-986). Same spellings as `?adaptive=`. Anything else,
+ * and absence, is OFF: a typo must not switch the eye path under a measurement.
+ */
+export const parseMultiviewPin = (
+  raw: string | null,
+  warn: (message: string) => void = () => {},
+): boolean => {
+  if (raw === null) return false
+  if (raw === '1' || raw === 'on' || raw === 'true' || raw === '') return true
+  if (raw === '0' || raw === 'off' || raw === 'false') return false
+  warn(`?multiview=${raw} is not 0 or 1; ignored`)
+  return false
+}
+
+/**
  * `?aa=0|1`. Same spellings as `?adaptive=`, for the same reason: this is
  * typed into a headset's address bar by hand.
  */

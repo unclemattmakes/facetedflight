@@ -66,6 +66,7 @@
 // keep the clear colour, since colour writes are off.
 
 import * as THREE from 'three'
+import { drawsBothEyes } from './multiview'
 
 /**
  * The NDC radius of the visible region, by default. Conservative on purpose:
@@ -292,7 +293,11 @@ export const createLensMask = (radius: number | null = LENS_MASK_RADIUS_DEFAULT)
 
   mesh.onBeforeRender = (renderer, _scene, camera) => {
     const xr = (renderer as unknown as { xr?: XrLike }).xr
-    const eye = xr?.isPresenting === true && xr.getCamera().cameras.includes(camera)
+    // DEV-986: under `?multiview=1` the eyes are ONE draw with three's XR
+    // camera, and `drawsBothEyes` is the question asked of that camera.
+    const eye =
+      xr?.isPresenting === true &&
+      (xr.getCamera().cameras.includes(camera) || drawsBothEyes(xr, camera))
     geometry.setDrawRange(0, eye ? Number.POSITIVE_INFINITY : 0)
     if (eye) eyeDraws++
   }
