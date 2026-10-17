@@ -669,7 +669,6 @@ test.describe('@gpu the ship in the air: it casts, and the cockpit receives', ()
   test("from the seat: the airframe's shadow across the dashboard, four ways (DEV-306)", async ({
     page,
   }) => {
-    knownRed('KR-07')
     await page.bringToFront()
     await flyToFreeze(page, {
       mission: MISSION,

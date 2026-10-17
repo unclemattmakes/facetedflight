@@ -175,6 +175,7 @@ import {
   CAMERA_AT_BOOT,
   EDIT_AT_BOOT,
   EDITION_PARAM,
+  EYE_BUFFER_PIN,
   FEATURE_PINS,
   FLY,
   FOG_ENABLED,
@@ -363,6 +364,8 @@ export const bootApp = async (
     // DEV-165. Not part of `pinned()` because MSAA is a context attribute and
     // never a `ComfortSettings` field — see `QualityPins.msaa`.
     appSettings.qualityPins.msaa,
+    // DEV-994: `?eyeBuffer=1` (null, the default, installs nothing).
+    EYE_BUFFER_PIN,
   )
   pageContamination.attach(render.renderer.xr)
   // `import.meta.env.DEV` is a literal `false` in a build, so this branch and

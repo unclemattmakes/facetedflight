@@ -1117,6 +1117,16 @@ export const createDebugHandle = (ctx: DebugHandleCtx): App => {
         step,
       )
     },
+    /** DEV-997: the eye buffer's report, or a live pin. `render/eye-buffer.ts`. */
+    eyeBuffer(scale?: number | null) {
+      const eye = render.eyeBuffer
+      if (!eye) return null
+      return scale === undefined ? eye.report() : eye.pin(scale)
+    },
+    /** DEV-994: direct against the eye buffer, one XR frame, one turn. */
+    eyeBufferProbe(options?: { scale?: number; png?: boolean }) {
+      return render.eyeBuffer?.probe(options) ?? null
+    },
     /**
      * DEV-238. What the GPU is actually handed, in order.
      *

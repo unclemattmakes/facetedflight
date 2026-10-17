@@ -15,8 +15,8 @@
 //      what will work instead of failing silently, and a headset plugged in
 //      later is found by `devicechange`.
 
-import { describe, expect, it } from 'vitest'
-import { createTitleVr, type EnterVrOutcome, type TitleVrDeps } from '@/boot/enter-vr'
+import { describe, expect, it, vi } from 'vitest'
+import { createTitleVr, type EnterVrOutcome, MAX_POLLS, type TitleVrDeps } from '@/boot/enter-vr'
 import { titleVrShown, titleVrText } from '@/render/title-vr'
 
 describe('the words', () => {
@@ -145,5 +145,147 @@ describe('the state machine', () => {
     expect(later.state).toBe('enter')
     later.dispose()
     expect(q.watching()).toBe(false)
+  })
+})
+
+// DEV-992: a headset that comes up AFTER the page loaded. Matt, 2026-10-14: the
+// probe answered false in 4 ms (SteamVR still starting), the page booted flat,
+// SteamVR came up, and H did nothing until a reload. Each case below is a way
+// that stayed dead: the press only re-lit the row, a hung ask held `checking`
+// forever, and nothing asked again unless `devicechange` fired.
+describe('a headset that arrives after boot (DEV-992)', () => {
+  /** A runtime that says no until `up()`, and whose answer can be held. */
+  const runtime = (o: { activation?: boolean } = {}) => {
+    let isUp = false
+    let hang = false
+    const calls = { ask: 0, enter: 0 }
+    const deps: TitleVrDeps = {
+      supported: false,
+      probe: true,
+      ask: () => {
+        calls.ask += 1
+        return hang ? new Promise<boolean>(() => {}) : Promise.resolve(isUp)
+      },
+      activation: () => o.activation ?? true,
+      enter: async () => {
+        calls.enter += 1
+        return 'entered'
+      },
+      watchDevices: () => () => {},
+      pollMs: 1000,
+      askTimeoutMs: 500,
+    }
+    return {
+      deps,
+      calls,
+      up: () => {
+        isUp = true
+      },
+      hang: (h: boolean) => {
+        hang = h
+      },
+    }
+  }
+
+  it('H once the runtime is up asks again and ENTERS, not just lights the row', async () => {
+    const r = runtime()
+    const vr = createTitleVr(r.deps)
+    expect(vr.state).toBe('connect')
+    r.up()
+    vr.press()
+    await settle()
+    expect(r.calls.enter).toBe(1)
+    vr.dispose()
+  })
+
+  it('a press while the runtime is still down stays on connect, and a later press can enter', async () => {
+    const r = runtime()
+    const vr = createTitleVr(r.deps)
+    vr.press()
+    await settle()
+    expect(vr.state).toBe('connect')
+    expect(r.calls.enter).toBe(0)
+    r.up()
+    vr.press()
+    await settle()
+    expect(r.calls.enter).toBe(1)
+    vr.dispose()
+  })
+
+  it('a gamepad press (no activation) asks, lights the row, and does not try to enter', async () => {
+    const r = runtime({ activation: false })
+    const vr = createTitleVr(r.deps)
+    r.up()
+    vr.press()
+    await settle()
+    expect(r.calls.enter).toBe(0)
+    expect(vr.state).toBe('enter')
+    vr.dispose()
+  })
+
+  it('an ask that never answers is given up on, so the next press asks afresh', async () => {
+    vi.useFakeTimers()
+    try {
+      const r = runtime()
+      r.hang(true)
+      const vr = createTitleVr(r.deps)
+      vr.press()
+      expect(vr.state).toBe('checking')
+      await vi.advanceTimersByTimeAsync(600)
+      expect(vr.state).toBe('connect')
+      r.hang(false)
+      r.up()
+      vr.press()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(r.calls.ask).toBe(2)
+      expect(r.calls.enter).toBe(1)
+      vr.dispose()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('with no devicechange and no press, a poll finds the headset and lights the row', async () => {
+    vi.useFakeTimers()
+    try {
+      const r = runtime()
+      const vr = createTitleVr(r.deps)
+      await vi.advanceTimersByTimeAsync(1100)
+      expect(vr.state).toBe('connect')
+      expect(r.calls.ask).toBe(1)
+      r.up()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(vr.state).toBe('enter')
+      expect(r.calls.enter).toBe(0)
+      vr.dispose()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('the poll is bounded, so a closed SteamVR is not relaunched for ever', async () => {
+    vi.useFakeTimers()
+    try {
+      const r = runtime()
+      const vr = createTitleVr(r.deps)
+      await vi.advanceTimersByTimeAsync((MAX_POLLS + 20) * 1000)
+      expect(r.calls.ask).toBe(MAX_POLLS)
+      vr.dispose()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('?xr=off never polls', async () => {
+    vi.useFakeTimers()
+    try {
+      const r = runtime()
+      const vr = createTitleVr({ ...r.deps, probe: false })
+      await vi.advanceTimersByTimeAsync(60 * 1000)
+      expect(r.calls.ask).toBe(0)
+      vr.dispose()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -1,6 +1,6 @@
 {
   "name": "facetedflight2",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.4",
@@ -55,6 +55,7 @@
     "content:pull": "node tools/assets/pull-content-pack.mjs",
     "stats": "node tools/stats/stats.mjs",
     "assets:push": "rclone copy public/assets r2-ff2:ff2-content/assets --transfers 16 --checkers 16 --s3-no-check-bucket --exclude \"*.bak\" --exclude \"*.tmp\" --exclude \"*~\" --exclude \"*-trees.png\"",
+    "perf:worn-trace": "node --max-old-space-size=8192 tools/perf/worn-trace.mjs",
     "release:list": "node tools/release/copy-list.mjs",
     "public:export": "node tools/release/export-public.mjs",
     "public:drift": "node tools/release/export-public.mjs --drift",

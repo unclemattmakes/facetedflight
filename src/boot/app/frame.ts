@@ -4868,6 +4868,9 @@ export const createFrame = (ctx: FrameCtx) => {
     // is then overwritten. The seed case that matters is the EMA's, and
     // `stepAdaptive` seeds from the first sample rather than easing from zero.
     render.quality.frame(frameSeconds, perfSys.lastCostSeconds)
+    // DEV-996: the eye buffer's scale moves on the XR frame PERIOD (a missed
+    // vsync), not on our cost. Null without `?eyeBuffer=1`; flat, a no-op.
+    render.eyeBuffer?.frame(frameSeconds, render.quality.report.displayHz)
     horizon.setVisible(appSettings.comfort.horizon && router.screen === 'mission')
     horizon.update(cameraWorld)
     // Null RELEASES the vignette rather than freezing it. Paused, in the

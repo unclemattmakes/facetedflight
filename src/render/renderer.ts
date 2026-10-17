@@ -8,6 +8,7 @@
 import * as THREE from 'three'
 import { type ComfortSettings, DEFAULT_SETTINGS } from '@/boot/settings'
 import { attachCanvasFit, type FitWindow } from '@/render/canvas-fit'
+import { type EyeBuffer, type EyeBufferOptions, installEyeBuffer } from '@/render/eye-buffer'
 import { useEyeConsistentDither } from '@/render/eye-dither'
 import {
   createQualityController,
@@ -53,6 +54,12 @@ export interface Renderer {
    * `applyBeforeSession()` before `requestSession`.
    */
   readonly quality: QualityController
+  /**
+   * DEV-994: the app-owned eye buffer, or null without `?eyeBuffer=1`. In a
+   * session it draws the eyes at a scale that can move every frame and
+   * upsamples them into three's XR target (`render/eye-buffer.ts`).
+   */
+  readonly eyeBuffer: EyeBuffer | null
   dispose(): void
 }
 
@@ -86,6 +93,11 @@ export const createRenderer = (
    * string that is not there.
    */
   msaaPin: boolean | null = null,
+  /**
+   * DEV-994: `?eyeBuffer=1`'s options, or null (the default) for none. Null
+   * installs nothing and the renderer is today's, byte for byte.
+   */
+  eyeBufferOptions: EyeBufferOptions | null = null,
 ): Renderer => {
   // ── `antialias` is the QUALITY TIER's now, not a constant (DEV-165) ──────
   //
@@ -156,6 +168,9 @@ export const createRenderer = (
   // the preset's, and at `high` it is the same 2.
   const quality = createQualityController(renderer, qualityOptions)
   quality.apply(settings)
+  // DEV-994: before any session, so its hooks see three's XR target from the
+  // session's first frame. Absent the pin, nothing is wrapped.
+  const eyeBuffer = eyeBufferOptions ? installEyeBuffer(renderer, eyeBufferOptions) : null
 
   // ── the canvas's box, followed (DEV-595) ────────────────────────────────
   //
@@ -200,7 +215,9 @@ export const createRenderer = (
     camera,
     rig,
     quality,
+    eyeBuffer,
     dispose() {
+      eyeBuffer?.dispose()
       canvasFit.dispose()
       renderer.xr.removeEventListener('sessionend', onSessionEnd)
       // The quality controller listens on `renderer.xr` for both ends of a

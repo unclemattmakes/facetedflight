@@ -58,6 +58,12 @@ export interface FakeXrOptions {
  * this rather than reaching into the app, so the app needs no test hooks.
  */
 export interface FakeXrRecord {
+  /**
+   * What the runtime answers NOW. Starts as the `supported` option; a spec
+   * flips it to model a runtime that comes up after the page loaded (DEV-992),
+   * without firing `devicechange`, as a SteamVR that starts late may not.
+   */
+  supported: boolean
   /** Ordered log of every double method the page called. */
   calls: string[]
   /** How many sessions were requested. */
@@ -85,6 +91,7 @@ export const installFakeXr = (options: FakeXrOptions = {}): void => {
   const withSticks = options.sticks === true
 
   const record: FakeXrRecord = {
+    supported,
     calls: [],
     sessions: 0,
     frames: 0,
@@ -253,11 +260,11 @@ export const installFakeXr = (options: FakeXrOptions = {}): void => {
     async isSessionSupported(mode: string) {
       note(`isSessionSupported:${mode}`)
       if (rejectQuery) throw new DOMException('fake-xr: query rejected', 'NotSupportedError')
-      return supported && mode === 'immersive-vr'
+      return record.supported && mode === 'immersive-vr'
     },
     async requestSession(mode: string, init?: XRSessionInit) {
       note(`requestSession:${mode}`)
-      if (!supported || mode !== 'immersive-vr') {
+      if (!record.supported || mode !== 'immersive-vr') {
         throw new DOMException('fake-xr: mode not supported', 'NotSupportedError')
       }
       record.sessions += 1

@@ -171,6 +171,51 @@ test.describe('XR entry path', () => {
     expect(problems.list(), problems.list().join('\n')).toEqual([])
   })
 
+  // ── DEV-992: the runtime that comes up AFTER the page loaded ───────────────
+  //
+  // Matt, 2026-10-14: the probe answered false in 4 ms (SteamVR still starting),
+  // the page booted flat, SteamVR came up, and H did nothing until a reload. The
+  // double says no at boot, then yes, with no `devicechange` (its listener is a
+  // no-op, as a late SteamVR may not fire one).
+  test('a headset that comes up after boot: H enters, with no reload', async ({ page }) => {
+    const problems = watchPageErrors(page)
+    await page.addInitScript(installFakeXr, { supported: false })
+    await page.goto('/')
+    await loadSettled(page, READY.timeout)
+    await titleRowsUp(page)
+    await expect.poll(async () => (await titleVr(page))?.state ?? null, BOOTED).toBe('connect')
+    await splashGone(page)
+
+    await page.evaluate(() => {
+      ;(globalThis as unknown as { __ff2FakeXr: FakeXrRecord }).__ff2FakeXr.supported = true
+    })
+    await hold(page, 'h', 250)
+    await expect
+      .poll(async () => (await readRecord(page))?.frames ?? 0, { timeout: 15_000 })
+      .toBeGreaterThan(0)
+    expect((await readRecord(page))?.sessions).toBe(1)
+    expect(problems.list(), problems.list().join('\n')).toEqual([])
+  })
+
+  test('a headset that comes up after boot lights the row by itself', async ({ page }) => {
+    const problems = watchPageErrors(page)
+    await page.addInitScript(installFakeXr, { supported: false })
+    await page.goto('/')
+    await loadSettled(page, READY.timeout)
+    await titleRowsUp(page)
+    await expect.poll(async () => (await titleVr(page))?.state ?? null, BOOTED).toBe('connect')
+
+    await page.evaluate(() => {
+      ;(globalThis as unknown as { __ff2FakeXr: FakeXrRecord }).__ff2FakeXr.supported = true
+    })
+    // The page's own poll (every 10 s); nobody presses anything.
+    await expect
+      .poll(async () => (await titleVr(page))?.state ?? null, { timeout: 40_000 })
+      .toBe('enter')
+    expect((await readRecord(page))?.sessions).toBe(0)
+    expect(problems.list(), problems.list().join('\n')).toEqual([])
+  })
+
   test('entering a faked immersive session does not throw and runs XR frames', async ({ page }) => {
     const problems = watchPageErrors(page)
     await page.addInitScript(installFakeXr, { supported: true })

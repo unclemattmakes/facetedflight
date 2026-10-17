@@ -51,7 +51,9 @@ import type { LoadState } from '@/boot/load-progress'
  * The blank's words, the last one the game. Matt, 2026-10-03: *"ones similar
  * to the website"*: unclemattmakes.com's own `MAKES`, in the site's order, eight
  * of its eleven (a mess, toys and glowy bits sat out to keep the typing short),
- * with games last so the game follows it.
+ * with games last so the game follows it. Matt, 2026-10-15: *"add PolyFish as
+ * one of the words it cycles through"*, his other game, just before this one
+ * (PolyFish's own splash returns the favour with Faceted Flight).
  */
 export const SPLASH_WORDS = [
   'stuff',
@@ -62,6 +64,7 @@ export const SPLASH_WORDS = [
   'doughnuts',
   'mistakes',
   'games',
+  'PolyFish',
   'Faceted Flight',
 ] as const
 

@@ -38,6 +38,7 @@ import type { TouchControls } from '@/input/touch-overlay'
 import type { BoardKey } from '@/net/lap-client'
 import type { BakedLightReport } from '@/render/baked-light'
 import type { YourCoursesProbe } from '@/render/course-shelf'
+import type { EyeBufferProbe, EyeBufferReport } from '@/render/eye-buffer'
 import type { FadePhase } from '@/render/fade'
 import type { HangarAim, HangarView } from '@/render/hangar'
 import type { CanvasPanelReport, HudReport } from '@/render/hud'
@@ -678,6 +679,18 @@ export interface App {
    * session must be single-sampled (`?aa=0`). Rejects when not presenting.
    */
   xrEyeCapture(step?: number): Promise<XrEyeCapture>
+  /**
+   * DEV-997: the eye buffer's report (`render/eye-buffer.ts`), or null without
+   * `?eyeBuffer=1`. A number pins the scale live; `null` hands it back to the
+   * controller.
+   */
+  eyeBuffer(scale?: number | null): EyeBufferReport | null
+  /**
+   * DEV-994: on the next XR frame, the stage drawn straight into the XR target
+   * and through the eye buffer at `scale` in one turn, both read back and
+   * compared per eye. Null without `?eyeBuffer=1`; rejects when not presenting.
+   */
+  eyeBufferProbe(options?: { scale?: number; png?: boolean }): Promise<EyeBufferProbe> | null
   /**
    * DEV-238. The REAL per-frame submission sequence, folded into runs.
    *

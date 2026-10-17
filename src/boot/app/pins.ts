@@ -19,6 +19,7 @@
 // that constant stayed with them.
 
 import * as THREE from 'three'
+import { type EyeBufferPin, parseEyeBufferPins } from '@/boot/eye-buffer-pin'
 import {
   parseAdaptivePin,
   parseHzPin,
@@ -1778,5 +1779,22 @@ export const SUBMIT_PIN: SubmitPin = (() => {
 export const MULTIVIEW_PIN: boolean = (() => {
   const pin = parseMultiviewPin(params.get('multiview'), (m) => console.warn(`multiview: ${m}`))
   if (pin) console.info('multiview: requested (DEV-986)')
+  return pin
+})()
+
+/**
+ * `?eyeBuffer=1`, with `?eyeScale=` and `?eyeMsaa=` (DEV-997): draw a headset
+ * session through the app-owned eye buffer, whose scale moves on the missed
+ * frames (`render/eye-buffer.ts`, `render/eye-scale.ts`). OFF by default;
+ * null installs nothing. Not combined with multiview: under `?multiview=1` it
+ * is ignored with a warning, because both own the XR target.
+ */
+export const EYE_BUFFER_PIN: EyeBufferPin | null = (() => {
+  const pin = parseEyeBufferPins(params, (m) => console.warn(`eyeBuffer: ${m}`))
+  if (pin && MULTIVIEW_PIN) {
+    console.warn('eyeBuffer: ignored under ?multiview=1 (both draw the XR target)')
+    return null
+  }
+  if (pin) console.info(`eyeBuffer: requested (DEV-994) ${JSON.stringify(pin)}`)
   return pin
 })()

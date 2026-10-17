@@ -149,7 +149,16 @@ const MULTIVIEW =
   process.env.SHADER_LINK_MULTIVIEW === undefined
     ? MULTIVIEW_SHIPPED
     : process.env.SHADER_LINK_MULTIVIEW === '1'
-const PIN = `${PINNED}&multiview=${MULTIVIEW ? 1 : 0}`
+/**
+ * DEV-994: `SHADER_LINK_EYE_BUFFER=1` runs every arm with `?eyeBuffer=1`. The
+ * eye buffer patches no scene shader (its target keys programs exactly as
+ * three's XR target does); what it adds is ONE program, the upsample, which it
+ * compiles at install so a session never links it in the air. This arm proves
+ * that program is in three's cache, so the sweep below checks its link. Not
+ * combined with multiview (the pins refuse the pair).
+ */
+const EYE_BUFFER = process.env.SHADER_LINK_EYE_BUFFER === '1'
+const PIN = `${PINNED}&multiview=${MULTIVIEW ? 1 : 0}${EYE_BUFFER ? '&eyeBuffer=1' : ''}`
 const PIN_PARAMS: Readonly<Record<string, string>> = Object.fromEntries(new URLSearchParams(PIN))
 /**
  * DEV-583's arm: the same pin with the tier at `ultra`, the only tier whose
@@ -225,6 +234,17 @@ const verify = async (
     expect(probe, 'the page loaded with ?multiview=1').not.toBeNull()
     expect(probe?.calls ?? 0, 'the multiview pass drew').toBeGreaterThan(0)
     expect(probe?.report?.fallbacks, 'sources the multiview rewrite refused').toEqual([])
+  }
+  if (EYE_BUFFER) {
+    const eye = await page.evaluate(() => {
+      const w = globalThis as unknown as Ff2Global
+      const names = (w.__ff2.render.renderer.info.programs ?? []).map(
+        (p) => (p as unknown as { name: string }).name,
+      )
+      return { report: w.__ff2.eyeBuffer(), upsample: names.includes('eye-buffer-upsample') }
+    })
+    expect(eye.report, 'the page loaded with ?eyeBuffer=1').not.toBeNull()
+    expect(eye.upsample, "the upsample program is in three's cache").toBe(true)
   }
   const sweep = await sweepPrograms(page)
   const lines = ledger.lines()

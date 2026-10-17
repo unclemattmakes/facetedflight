@@ -177,6 +177,13 @@ export const createTitleMenu = (ctx: TitleMenuCtx) => {
     // DEV-603: a probe that answered after boot stopped waiting is a device
     // change too: a late yes makes the row ask again, and light.
     watchDevices: (onChange) => watchXrDevices(onChange, capabilities.xrProbeLate),
+    // DEV-992: a runtime that came up after boot need not fire `devicechange`
+    // (Matt, 2026-10-14: SteamVR started after the page loaded, and the page
+    // stayed flat). While the row says "connect", ask quietly every 10 s (at
+    // most `MAX_POLLS` times a page) so it lights without a press; a press asks
+    // too and, on a yes, enters. Never under `?xr=off` (`probe` is false there).
+    pollMs: 10_000,
+    canPoll: () => !globalThis.document?.hidden && !render.renderer.xr.isPresenting,
   })
   /** Edge state for H, ENTER VR's key. */
   const enterVrKey = createEdge()

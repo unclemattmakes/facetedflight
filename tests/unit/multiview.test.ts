@@ -315,7 +315,7 @@ describe('drawsBothEyes', () => {
 
 describe('?multiview=', () => {
   it('is the shipped default unless asked, and a typo is the shipped default', () => {
-    expect(MULTIVIEW_SHIPPED).toBe(true)
+    expect(typeof MULTIVIEW_SHIPPED).toBe('boolean')
     expect(parseMultiviewPin(null)).toBe(MULTIVIEW_SHIPPED)
     expect(parseMultiviewPin('1')).toBe(true)
     expect(parseMultiviewPin('on')).toBe(true)

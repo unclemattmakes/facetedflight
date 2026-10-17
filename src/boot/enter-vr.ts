@@ -99,7 +99,32 @@ export interface TitleVrDeps {
   readonly enter: () => Promise<EnterVrOutcome>
   /** Subscribe to the platform's device changes; returns the unsubscribe. */
   readonly watchDevices: (onChange: () => void) => () => void
+  /**
+   * DEV-992: how long a re-ask may stay unanswered before the row stops
+   * waiting on it. A runtime that is still starting can leave
+   * `isSessionSupported` pending for seconds, and a press that finds the row
+   * `checking` does nothing, so one hung ask would be a dead key for good.
+   * Default `ASK_TIMEOUT_MS`.
+   */
+  readonly askTimeoutMs?: number
+  /**
+   * DEV-992: re-ask on this interval while the row says "connect a headset",
+   * for a runtime that comes up without firing `devicechange`. 0 or absent:
+   * never. Silent: the row does not flicker to "looking for one".
+   */
+  readonly pollMs?: number
+  /** Polls only while this says so (tab visible, not presenting). Default always. */
+  readonly canPoll?: () => boolean
 }
+
+/** DEV-992: a hung re-ask is given up on after this long. */
+export const ASK_TIMEOUT_MS = 4000
+/**
+ * DEV-992: the interval poll's cap per page. `isSessionSupported` STARTS the
+ * runtime, so a box whose owner closed SteamVR would otherwise relaunch it for
+ * as long as the title is open. A press or `devicechange` earns another run.
+ */
+export const MAX_POLLS = 18
 
 export interface TitleVr {
   readonly state: TitleVrState
@@ -113,22 +138,69 @@ export interface TitleVr {
 /**
  * The plate's state machine, with the platform injected so a unit test can
  * drive it. See `TitleVrState` for what each state means.
+ *
+ * DEV-992: a press in `connect` re-asks AND, on a yes while its activation is
+ * still live, goes on to enter. Until then the yes only lit the row, and the
+ * visitor whose headset came up after the page loaded had to press twice (or,
+ * with a hung ask, never).
  */
 export const createTitleVr = (d: TitleVrDeps): TitleVr => {
   let state: TitleVrState = !d.probe ? 'off' : d.supported ? 'enter' : 'connect'
   let asking = false
-  const ask = (): void => {
-    if (!d.probe || asking) return
-    asking = true
-    if (state === 'connect') state = 'checking'
-    void d.ask().then((ok) => {
-      asking = false
-      // A session in flight keeps its word; anything else follows the answer.
-      if (state === 'starting') return
-      state = ok ? 'enter' : 'connect'
+  let generation = 0
+  let pendingEnter = false
+  let polls = 0
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const begin = (): void => {
+    state = 'starting'
+    void d.enter().then((outcome) => {
+      state = outcome === 'entered' ? 'enter' : outcome === 'refused' ? 'refused' : 'connect'
     })
   }
-  const unwatch = d.probe ? d.watchDevices(ask) : () => {}
+  const ask = (o: { enter: boolean; quiet: boolean }): void => {
+    if (!d.probe || asking) return
+    asking = true
+    pendingEnter = o.enter
+    if (state === 'connect' && !o.quiet) state = 'checking'
+    const mine = ++generation
+    timer = setTimeout(() => {
+      if (mine !== generation) return
+      // Given up on: the next press asks afresh. A late yes still lights the row.
+      asking = false
+      generation += 1
+      pendingEnter = false
+      if (state === 'checking') state = 'connect'
+    }, d.askTimeoutMs ?? ASK_TIMEOUT_MS)
+    void d.ask().then((ok) => {
+      if (mine !== generation) {
+        if (ok && (state === 'connect' || state === 'checking')) state = 'enter'
+        return
+      }
+      asking = false
+      if (timer) clearTimeout(timer)
+      const wanted = pendingEnter
+      pendingEnter = false
+      // A session in flight keeps its word; anything else follows the answer.
+      if (state === 'starting') return
+      if (ok && wanted && d.activation()) begin()
+      else state = ok ? 'enter' : 'connect'
+    })
+  }
+  const rearm = (): void => {
+    polls = 0
+    ask({ enter: false, quiet: false })
+  }
+  const unwatch = d.probe ? d.watchDevices(rearm) : () => {}
+  const pollMs = d.pollMs ?? 0
+  const poller =
+    d.probe && pollMs > 0
+      ? setInterval(() => {
+          if (state !== 'connect' || asking || polls >= MAX_POLLS) return
+          if (d.canPoll && !d.canPoll()) return
+          polls += 1
+          ask({ enter: false, quiet: true })
+        }, pollMs)
+      : null
   return {
     get state() {
       return state
@@ -147,13 +219,13 @@ export const createTitleVr = (d: TitleVrDeps): TitleVr => {
             state = 'needs-key'
             return
           }
-          state = 'starting'
-          void d.enter().then((outcome) => {
-            state = outcome === 'entered' ? 'enter' : outcome === 'refused' ? 'refused' : 'connect'
-          })
+          begin()
           return
         case 'connect':
-          ask()
+          polls = 0
+          // A key or a click is an activation that outlives a quick answer; a
+          // gamepad press is none, so it asks only.
+          ask({ enter: d.activation(), quiet: false })
           return
         default:
           // `checking`, `starting`: already asking. `off`: told not to.
@@ -162,6 +234,8 @@ export const createTitleVr = (d: TitleVrDeps): TitleVr => {
     },
     dispose() {
       unwatch()
+      if (poller) clearInterval(poller)
+      if (timer) clearTimeout(timer)
     },
   }
 }
